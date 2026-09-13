@@ -9,7 +9,7 @@ import { inicializarPagamentoLote, abrirPagamentoLote, EVENTO_PAGAMENTO_LOTE_REG
 const cfg = () => document.getElementById('dadosTelaDespesa').dataset;
 
 let todas = [];
-let ordenacao = { col: 'competencia', asc: false };
+let ordenacao = { col: 'ordem', asc: true };
 let selecionadasMap = new Map();
 let idsParaDuplicar = [];
 
@@ -26,10 +26,13 @@ const podePagar = () => !!document.querySelector('[data-perm="pagar"]');
 const podeImportar = () => !!document.querySelector('[data-perm="importar"]');
 const podeRatear = () => !!document.querySelector('[data-perm="ratear"]') || cfg().podeRatear === 'true';
 
+const CHAVE_STORAGE_ORDEM = 'dsc_despesas_ordem_ids_v2';
+
 function restaurarOuInicializarOrdem() {
     let savedIds = null;
     try {
-        const raw = localStorage.getItem('dsc_despesas_ordem_ids');
+        localStorage.removeItem('dsc_despesas_ordem_ids');
+        const raw = localStorage.getItem(CHAVE_STORAGE_ORDEM);
         if (raw) savedIds = JSON.parse(raw);
     } catch (e) {
         console.warn('Erro ao ler ordem do localStorage', e);
@@ -45,15 +48,13 @@ function restaurarOuInicializarOrdem() {
             if (hasA && hasB) {
                 return idIndexMap.get(a.id) - idIndexMap.get(b.id);
             }
-            if (!hasA && hasB) return -1;
-            if (hasA && !hasB) return 1;
-            return (b.id || 0) - (a.id || 0);
+            if (hasA && !hasB) return -1;
+            if (!hasA && hasB) return 1;
+            return (a.id || 0) - (b.id || 0);
         });
     } else {
-        const ordenacaoOriginal = { ...ordenacao };
-        ordenacao = { col: 'competencia', asc: false };
-        todas = ordenar(todas);
-        ordenacao = ordenacaoOriginal;
+        // A contagem segue rigorosamente o ID em ordem crescente (1 a X)
+        todas.sort((a, b) => (a.id || 0) - (b.id || 0));
     }
 
     todas.forEach((d, idx) => {
@@ -64,7 +65,7 @@ function restaurarOuInicializarOrdem() {
 function salvarOrdemLocalStorage() {
     try {
         const ids = todas.map(d => d.id);
-        localStorage.setItem('dsc_despesas_ordem_ids', JSON.stringify(ids));
+        localStorage.setItem(CHAVE_STORAGE_ORDEM, JSON.stringify(ids));
     } catch (e) {
         console.warn('Erro ao salvar ordem no localStorage', e);
     }

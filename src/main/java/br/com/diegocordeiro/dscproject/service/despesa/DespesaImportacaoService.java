@@ -165,6 +165,12 @@ public class DespesaImportacaoService {
                 Cell cellDesc = row.getCell(2);
                 Cell cellValor = row.getCell(4);
 
+                if (cellData == null || cellDesc == null || cellValor == null) {
+                    cellData = row.getCell(0);
+                    cellDesc = row.getCell(1);
+                    cellValor = row.getCell(3) != null ? row.getCell(3) : row.getCell(2);
+                }
+
                 if (cellData == null || cellDesc == null || cellValor == null) continue;
 
                 String textoDesc = obterTextoCelula(cellDesc);
