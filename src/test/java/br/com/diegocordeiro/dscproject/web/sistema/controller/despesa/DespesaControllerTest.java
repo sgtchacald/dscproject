@@ -380,6 +380,48 @@ class DespesaControllerTest {
     }
 
     @Test
+    @DisplayName("EDP18 / RN35 - Atualizar nome com nome vazio ou em branco retorna 422")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_EDITAR")
+    void atualizarNome_comNomeInvalido_deveRetornar422() throws Exception {
+        mockMvc.perform(patch("/despesas/10/nome")
+                        .param("nome", "   ")
+                        .with(csrf()))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.sucesso").value(false))
+                .andExpect(jsonPath("$.errosCampos.nome").exists());
+
+        verify(despesaService, never()).atualizarNome(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("EDP18 / RN35 - Atualizar nome com sucesso retorna 200")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_EDITAR")
+    void atualizarNome_comSucesso_deveRetornar200() throws Exception {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setNome("Mercado Central");
+        when(despesaService.atualizarNome(10L, "Mercado Central", 1L, "user_teste")).thenReturn(d);
+
+        mockMvc.perform(patch("/despesas/10/nome")
+                        .param("nome", "Mercado Central")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sucesso").value(true))
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.nome").value("Mercado Central"));
+    }
+
+    @Test
+    @DisplayName("EDP18 / RN01 - Atualizar nome sem permissão retorna 403")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_LISTAR")
+    void atualizarNome_semPermissao_deveRetornar403() throws Exception {
+        mockMvc.perform(patch("/despesas/10/nome")
+                        .param("nome", "Mercado Central")
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("EDP13 / RN27 - Atualizar valor com valor zero ou negativo retorna 422")
     @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_EDITAR")
     void atualizarValor_comValorInvalido_deveRetornar422() throws Exception {

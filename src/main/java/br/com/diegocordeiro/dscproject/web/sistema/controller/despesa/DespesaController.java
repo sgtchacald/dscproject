@@ -263,6 +263,25 @@ public class DespesaController {
         return ResponseEntity.ok(Map.of("sucesso", true, "mensagem", mensagem("msg.despesa.duplicada", locale)));
     }
 
+    @PatchMapping("/despesas/{id}/nome")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> atualizarNome(@PathVariable Long id, @RequestParam(value = "nome", required = false) String nome, Principal principal, Locale locale) {
+        if (nome == null || nome.isBlank()) {
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("sucesso", false);
+            body.put("errosCampos", Map.of("nome", mensagem("msg.despesa.nome-obrigatorio", locale)));
+            body.put("errosNegocio", Map.of());
+            return ResponseEntity.unprocessableEntity().body(body);
+        }
+        Usuario usuario = obterUsuarioAutenticado(principal);
+        Despesa d = despesaService.atualizarNome(id, nome.trim(), usuario.getId(), usuario.getLogin());
+        return ResponseEntity.ok(Map.of(
+                "sucesso", true,
+                "mensagem", mensagem("msg.despesa.nome-atualizado", locale),
+                "id", d.getId(),
+                "nome", d.getNome()));
+    }
+
     @PatchMapping("/despesas/{id}/valor")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> atualizarValor(@PathVariable Long id, @RequestParam(value = "valor", required = false) BigDecimal valor, Principal principal, Locale locale) {

@@ -581,6 +581,30 @@ class DespesaServiceTest {
     }
 
     @Test
+    @DisplayName("RN35 - Atualizar nome com valor nulo ou em branco lança RegraNegocioException")
+    void atualizarNome_comNomeInvalido_deveLancarExcecao() {
+        assertThrows(RegraNegocioException.class, () -> despesaService.atualizarNome(10L, null, 1L, "autor"));
+        assertThrows(RegraNegocioException.class, () -> despesaService.atualizarNome(10L, "", 1L, "autor"));
+        assertThrows(RegraNegocioException.class, () -> despesaService.atualizarNome(10L, "   ", 1L, "autor"));
+    }
+
+    @Test
+    @DisplayName("RN35 - Atualizar nome com sucesso")
+    void atualizarNome_comSucesso_deveAtualizar() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setNome("Nome Antigo");
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Despesa atualizada = despesaService.atualizarNome(10L, "  Novo Nome  ", 1L, "autor");
+
+        assertEquals("Novo Nome", atualizada.getNome());
+        assertEquals("autor", atualizada.getAlteradoPor());
+        verify(despesaRepository).save(d);
+    }
+
+    @Test
     @DisplayName("RN27 - Atualizar valor com valor menor ou igual a zero lança RegraNegocioException")
     void atualizarValor_comValorInvalido_deveLancarExcecao() {
         assertThrows(RegraNegocioException.class, () -> despesaService.atualizarValor(10L, BigDecimal.ZERO, 1L, "autor"));

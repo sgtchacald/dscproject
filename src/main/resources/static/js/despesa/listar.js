@@ -446,6 +446,10 @@ function render() {
             const classeCompetencia = podeEditarCompetencia ? 'cursor-pointer celula-competencia' : '';
             const titleCompetencia = podeEditarCompetencia ? 'Clique para editar a competência' : '';
 
+            const podeEditarNome = podeEditar() && !d.excluido;
+            const classeNome = podeEditarNome ? 'cursor-pointer celula-nome' : '';
+            const titleNome = podeEditarNome ? 'Clique para editar o nome' : '';
+
             const podeEditarCategoria = podeEditar() && !d.excluido;
             const classeCategoria = podeEditarCategoria ? 'cursor-pointer celula-categoria' : '';
             const titleCategoria = podeEditarCategoria ? 'Clique para editar a categoria' : '';
@@ -467,7 +471,7 @@ function render() {
                     </div>
                 </td>
                 <td class="${classeCompetencia}" data-id="${d.id}" title="${titleCompetencia}">${formatarCompetencia(d.competencia)}</td>
-                <td><strong>${d.nome}</strong>${parcelaBadge}${recorrenteBadge}</td>
+                <td class="${classeNome}" data-id="${d.id}" title="${titleNome}"><strong>${d.nome}</strong>${parcelaBadge}${recorrenteBadge}</td>
                 <td class="${classeCategoria}" data-id="${d.id}" title="${titleCategoria}">${categoriaHtml}</td>
                 <td class="${classeForma}" data-id="${d.id}" title="${titleForma}">${badgeForma(d)}</td>
                 <td class="${classeValor}" data-id="${d.id}" title="${titleValor}">${formatarMoeda(d.valor)}</td>
@@ -555,6 +559,90 @@ function inicializarEdicaoInline() {
             } catch (err) {
                 toast('Erro de comunicação ao atualizar valor.', true);
                 celula.innerHTML = formatarMoeda(d.valor);
+            }
+        }
+
+        input.addEventListener('keydown', function (evt) {
+            if (evt.key === 'Enter') {
+                evt.preventDefault();
+                salvar();
+            } else if (evt.key === 'Escape') {
+                evt.preventDefault();
+                restaurar();
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            salvar();
+        });
+    });
+}
+
+function inicializarEdicaoInlineNome() {
+    corpo.addEventListener('click', function (e) {
+        const celula = e.target.closest('td.celula-nome');
+        if (!celula || celula.querySelector('input')) return;
+
+        const id = Number(celula.dataset.id);
+        const d = todas.find(item => item.id === id);
+        if (!d) return;
+
+        const nomeOriginal = d.nome || '';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control form-control-sm';
+        input.maxLength = 100;
+        input.style.minWidth = '140px';
+        input.style.maxWidth = '250px';
+        input.style.display = 'inline-block';
+        input.value = nomeOriginal;
+
+        celula.innerHTML = '';
+        celula.appendChild(input);
+        input.focus();
+        input.select();
+
+        let finalizado = false;
+
+        function restaurar() {
+            if (finalizado) return;
+            finalizado = true;
+            render();
+        }
+
+        async function salvar() {
+            if (finalizado) return;
+            finalizado = true;
+            const novoNome = (input.value || '').trim();
+            if (!novoNome) {
+                toast('O nome da despesa é obrigatório.', true);
+                render();
+                return;
+            }
+
+            if (novoNome === d.nome) {
+                render();
+                return;
+            }
+
+            try {
+                const urlBase = cfg().urlAtualizarNome || cfg().urlAtualizarValor || `${cfg().urlBase || ''}/despesas`;
+                const url = `${urlBase}/${id}/nome`;
+                const body = new URLSearchParams();
+                body.append('nome', novoNome);
+                const res = await enviar(url, 'PATCH', body);
+                if (res.sucesso) {
+                    d.nome = novoNome;
+                    toast(res.mensagem || 'Nome da despesa atualizado com sucesso.');
+                    render();
+                } else {
+                    const erroMsg = res.errosCampos?.nome || res.mensagem || 'Erro ao atualizar nome.';
+                    toast(erroMsg, true);
+                    render();
+                }
+            } catch (err) {
+                toast('Erro de comunicação ao atualizar nome da despesa.', true);
+                render();
             }
         }
 
@@ -1321,6 +1409,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarDuplicacao();
     inicializarImportacaoFatura();
     inicializarEdicaoInline();
+    inicializarEdicaoInlineNome();
     inicializarEdicaoInlineCompetencia();
     inicializarEdicaoInlineCategoria();
     inicializarEdicaoInlineForma();

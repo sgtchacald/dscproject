@@ -181,7 +181,7 @@ public class SecurityConfig {
                     .hasAuthority("PERM_DESPESAS_INSERIR")
                 .requestMatchers(HttpMethod.PUT, "/despesas/editar/**")
                     .hasAuthority("PERM_DESPESAS_EDITAR")
-                .requestMatchers(HttpMethod.PATCH, "/despesas/*/valor", "/despesas/*/competencia", "/despesas/*/categoria", "/despesas/*/forma-pagamento")
+                .requestMatchers(HttpMethod.PATCH, "/despesas/*/valor", "/despesas/*/competencia", "/despesas/*/categoria", "/despesas/*/forma-pagamento", "/despesas/*/nome")
                     .hasAuthority("PERM_DESPESAS_EDITAR")
                 .requestMatchers(HttpMethod.POST, "/despesas/registrar-pagamento-lote")
                     .hasAuthority("PERM_DESPESAS_PAGAR")

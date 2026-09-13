@@ -602,6 +602,17 @@ public class DespesaService {
     }
 
     @Transactional
+    public Despesa atualizarNome(Long id, String nome, Long usuarioId, String loginAutor) {
+        if (nome == null || nome.isBlank()) {
+            throw new RegraNegocioException("nome", "msg.despesa.nome-obrigatorio");
+        }
+        Despesa d = buscarPorIdEUsuario(id, usuarioId);
+        d.setNome(nome.trim());
+        d.setAlteradoPor(loginAutor);
+        return despesaRepository.save(d);
+    }
+
+    @Transactional
     public Despesa atualizarValor(Long id, BigDecimal novoValor, Long usuarioId, String loginAutor) {
         if (novoValor == null || novoValor.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RegraNegocioException("valor", "msg.despesa.valor-invalido");
