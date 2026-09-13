@@ -12,6 +12,7 @@ import br.com.diegocordeiro.dscproject.enums.MeioPagamento;
 import br.com.diegocordeiro.dscproject.enums.OrigemLancamento;
 import br.com.diegocordeiro.dscproject.enums.StatusContato;
 import br.com.diegocordeiro.dscproject.enums.StatusPagamento;
+import br.com.diegocordeiro.dscproject.enums.TipoConta;
 import br.com.diegocordeiro.dscproject.enums.TipoContato;
 import br.com.diegocordeiro.dscproject.model.cartao.CartaoCredito;
 import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
@@ -457,7 +458,7 @@ public class DespesaService {
         Despesa d = despesaRepository.buscarPorIdEUsuario(id, usuarioId)
                 .orElseThrow(() -> new RegistroNaoEncontradoException("msg.despesa.nao-encontrada"));
 
-        if (d.getOrigem() != OrigemLancamento.MANUAL) {
+        if (d.getOrigem() == OrigemLancamento.OPEN_FINANCE) {
             throw new RegraNegocioException("msg.despesa.importada.nao-excluivel");
         }
 
@@ -641,6 +642,87 @@ public class DespesaService {
         } else {
             d.setCategoria(null);
         }
+        d.setAlteradoPor(loginAutor);
+        return despesaRepository.save(d);
+    }
+
+    @Transactional
+    public Despesa atualizarFormaPagamento(
+            Long id,
+            String formaPagamento,
+            Long cartaoId,
+            Long contaId,
+            MeioPagamento meioPagamento,
+            Long usuarioId,
+            String loginAutor) {
+        Despesa d = buscarPorIdEUsuario(id, usuarioId);
+
+        if (d.getOrigem() == OrigemLancamento.OPEN_FINANCE) {
+            throw new RegraNegocioException("msg.despesa.importada.nao-editavel");
+        }
+
+        if (formaPagamento == null || formaPagamento.isBlank()) {
+            throw new RegraNegocioException("despesa.validacao.formaPagamento.obrigatoria");
+        }
+
+        String forma = formaPagamento.trim().toUpperCase();
+        if ("CARTAO".equals(forma)) {
+            if (cartaoId == null) {
+                throw new RegraNegocioException("msg.despesa.forma-pagamento.invalida");
+            }
+            CartaoCredito cc = cartaoCreditoRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(cartaoId, usuarioId)
+                    .orElseThrow(() -> new RegraNegocioException("msg.despesa.cartao.invalido"));
+            if (!cc.isAtivo()) {
+                throw new RegraNegocioException("msg.despesa.cartao.invalido");
+            }
+            d.setCartao(cc);
+            d.setConta(null);
+            d.setMeioPagamento(MeioPagamento.CREDITO);
+            d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
+            d.setDataPagamento(null);
+        } else if ("DINHEIRO".equals(forma)) {
+            Conta c = null;
+            if (contaId != null) {
+                c = contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(contaId, usuarioId)
+                        .orElseThrow(() -> new RegraNegocioException("msg.despesa.conta.invalida"));
+            } else {
+                List<Conta> ativas = contaRepository.listarAtivasPorUsuario(usuarioId);
+                c = ativas.stream()
+                        .filter(a -> a.getTipo() == TipoConta.CARTEIRA)
+                        .findFirst()
+                        .orElse(null);
+                if (c == null && !ativas.isEmpty()) {
+                    c = ativas.get(0);
+                }
+            }
+            if (c == null || !c.isAtivo()) {
+                throw new RegraNegocioException("msg.despesa.conta.invalida");
+            }
+            d.setConta(c);
+            d.setCartao(null);
+            d.setMeioPagamento(MeioPagamento.DINHEIRO);
+            if (d.getStatusPagamento() == StatusPagamento.NAO_SE_APLICA) {
+                d.setStatusPagamento(StatusPagamento.NAO);
+            }
+        } else if ("CONTA".equals(forma)) {
+            if (contaId == null) {
+                throw new RegraNegocioException("msg.despesa.forma-pagamento.invalida");
+            }
+            Conta c = contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(contaId, usuarioId)
+                    .orElseThrow(() -> new RegraNegocioException("msg.despesa.conta.invalida"));
+            if (!c.isAtivo()) {
+                throw new RegraNegocioException("msg.despesa.conta.invalida");
+            }
+            d.setConta(c);
+            d.setCartao(null);
+            d.setMeioPagamento(meioPagamento != null ? meioPagamento : MeioPagamento.DEBITO);
+            if (d.getStatusPagamento() == StatusPagamento.NAO_SE_APLICA) {
+                d.setStatusPagamento(StatusPagamento.NAO);
+            }
+        } else {
+            throw new RegraNegocioException("msg.despesa.forma-pagamento.invalida");
+        }
+
         d.setAlteradoPor(loginAutor);
         return despesaRepository.save(d);
     }

@@ -26,13 +26,20 @@ const podePagar = () => !!document.querySelector('[data-perm="pagar"]');
 const podeImportar = () => !!document.querySelector('[data-perm="importar"]');
 const podeRatear = () => !!document.querySelector('[data-perm="ratear"]') || cfg().podeRatear === 'true';
 
-const CHAVE_STORAGE_ORDEM = 'dsc_despesas_ordem_ids_v2';
+function obterChaveStorageOrdem() {
+    const f = obterFiltroAtual();
+    const ini = f.competenciaInicio || 'todas';
+    const fim = f.competenciaFim || 'todas';
+    return `dsc_despesas_ordem_ids_${ini}_${fim}`;
+}
 
-function restaurarOuInicializarOrdem() {
+function aplicarOrdemEEnumeracao(filtradas) {
+    const chave = obterChaveStorageOrdem();
     let savedIds = null;
     try {
         localStorage.removeItem('dsc_despesas_ordem_ids');
-        const raw = localStorage.getItem(CHAVE_STORAGE_ORDEM);
+        localStorage.removeItem('dsc_despesas_ordem_ids_v2');
+        const raw = localStorage.getItem(chave);
         if (raw) savedIds = JSON.parse(raw);
     } catch (e) {
         console.warn('Erro ao ler ordem do localStorage', e);
@@ -42,7 +49,7 @@ function restaurarOuInicializarOrdem() {
         const idIndexMap = new Map();
         savedIds.forEach((id, idx) => idIndexMap.set(Number(id), idx));
 
-        todas.sort((a, b) => {
+        filtradas.sort((a, b) => {
             const hasA = idIndexMap.has(a.id);
             const hasB = idIndexMap.has(b.id);
             if (hasA && hasB) {
@@ -54,27 +61,17 @@ function restaurarOuInicializarOrdem() {
         });
     } else {
         // A contagem segue rigorosamente o ID em ordem crescente (1 a X)
-        todas.sort((a, b) => (a.id || 0) - (b.id || 0));
+        filtradas.sort((a, b) => (a.id || 0) - (b.id || 0));
     }
 
-    todas.forEach((d, idx) => {
+    filtradas.forEach((d, idx) => {
         d.ordem = idx + 1;
     });
-}
-
-function salvarOrdemLocalStorage() {
-    try {
-        const ids = todas.map(d => d.id);
-        localStorage.setItem(CHAVE_STORAGE_ORDEM, JSON.stringify(ids));
-    } catch (e) {
-        console.warn('Erro ao salvar ordem no localStorage', e);
-    }
 }
 
 async function carregar() {
     try {
         todas = await getJson(cfg().urlDados);
-        restaurarOuInicializarOrdem();
         selecionadasMap.clear();
         atualizarBotoesLote();
         if (chkTodos) chkTodos.checked = false;
@@ -356,6 +353,7 @@ function atualizarTotalizador(filtradas) {
 function render() {
     atualizarCabecalhoOrdenacao();
     const filtradas = filtrar(todas);
+    aplicarOrdemEEnumeracao(filtradas);
     const lista = ordenar(filtradas);
     corpo.innerHTML = '';
 
@@ -422,8 +420,8 @@ function render() {
                     </button> `;
                 }
 
-                // Excluir (somente MANUAL e tiver permissão)
-                if (d.origem === 'MANUAL' && podeExcluir()) {
+                // Excluir (MANUAL e IMPORTACAO permitidas; bloqueia apenas OPEN_FINANCE)
+                if (d.origem !== 'OPEN_FINANCE' && podeExcluir()) {
                     acaoHtml += `<button type="button" class="btn btn-action text-danger" data-acao="excluir"
                         data-id="${d.id}" data-nome="${d.nome}" data-parcelada="${d.parcelada}"
                         data-nro="${d.nroParcela}" data-qtd="${d.qtdParcelas}"
@@ -450,6 +448,10 @@ function render() {
             const classeCategoria = podeEditarCategoria ? 'cursor-pointer celula-categoria' : '';
             const titleCategoria = podeEditarCategoria ? 'Clique para editar a categoria' : '';
 
+            const podeEditarForma = podeEditar() && !d.excluido && d.origem !== 'OPEN_FINANCE';
+            const classeForma = podeEditarForma ? 'cursor-pointer celula-forma' : '';
+            const titleForma = podeEditarForma ? 'Clique para alterar a forma/meio de pagamento' : '';
+
             const podeEditarValor = podeEditar() && !d.excluido;
             const classeValor = podeEditarValor ? 'text-end fw-bold cursor-pointer celula-valor' : 'text-end fw-bold';
             const titleValor = podeEditarValor ? 'Clique para editar o valor' : '';
@@ -463,9 +465,9 @@ function render() {
                     </div>
                 </td>
                 <td class="${classeCompetencia}" data-id="${d.id}" title="${titleCompetencia}">${formatarCompetencia(d.competencia)}</td>
-                <td><strong>${d.nome}</strong>${parcelaBadge}${recorrenteBadge}${descHtml}</td>
+                <td><strong>${d.nome}</strong>${parcelaBadge}${recorrenteBadge}</td>
                 <td class="${classeCategoria}" data-id="${d.id}" title="${titleCategoria}">${categoriaHtml}</td>
-                <td>${badgeForma(d)}</td>
+                <td class="${classeForma}" data-id="${d.id}" title="${titleForma}">${badgeForma(d)}</td>
                 <td class="${classeValor}" data-id="${d.id}" title="${titleValor}">${formatarMoeda(d.valor)}</td>
                 <td>${d.dataVencimento ? dataBr(d.dataVencimento) : '<span class="text-muted">—</span>'}</td>
                 <td>${badgeStatus(d)}</td>
@@ -517,8 +519,8 @@ function inicializarEdicaoInline() {
             if (finalizado) return;
             finalizado = true;
             const novoValor = parseDecimal(input.value);
-            if (novoValor <= 0) {
-                toast('O valor da despesa deve ser maior que zero.', true);
+            if (novoValor < 0) {
+                toast('O valor da despesa deve ser maior ou igual a zero.', true);
                 celula.innerHTML = formatarMoeda(d.valor);
                 return;
             }
@@ -775,6 +777,199 @@ function inicializarEdicaoInlineCategoria() {
     });
 }
 
+let opcoesFormaCache = null;
+
+async function obterOpcoesForma() {
+    if (opcoesFormaCache) {
+        return opcoesFormaCache;
+    }
+    try {
+        const [contas, cartoes] = await Promise.all([
+            getJson(cfg().urlContasOpcoes),
+            getJson(cfg().urlCartoesOpcoes)
+        ]);
+        opcoesFormaCache = {
+            contas: contas || [],
+            cartoes: cartoes || []
+        };
+        return opcoesFormaCache;
+    } catch (err) {
+        console.error('Erro ao carregar opções de forma de pagamento:', err);
+        return { contas: [], cartoes: [] };
+    }
+}
+
+function inicializarEdicaoInlineForma() {
+    corpo.addEventListener('click', async function (e) {
+        const celula = e.target.closest('td.celula-forma');
+        if (!celula || celula.dataset.editando === 'true' || celula.querySelector('select')) return;
+
+        const id = Number(celula.dataset.id);
+        const d = todas.find(item => item.id === id);
+        if (!d) return;
+
+        celula.dataset.editando = 'true';
+
+        const { contas, cartoes } = await obterOpcoesForma();
+        if (!celula.isConnected) return;
+
+        const select = document.createElement('select');
+        select.className = 'form-select form-select-sm';
+        select.style.minWidth = '180px';
+        select.style.maxWidth = '260px';
+        select.style.display = 'inline-block';
+
+        const labelsMeio = {
+            DEBITO: 'Débito',
+            PIX: 'PIX',
+            BOLETO: 'Boleto',
+            TRANSFERENCIA: 'Transferência',
+            DINHEIRO: 'Dinheiro',
+            CREDITO: 'Crédito'
+        };
+
+        let optionsHtml = '';
+
+        // Grupo Cartões de Crédito
+        if (cartoes && cartoes.length > 0) {
+            optionsHtml += '<optgroup label="Cartões de Crédito">';
+            cartoes.forEach(c => {
+                const val = `CARTAO:${c.id}:`;
+                const isSelected = d.formaPagamento === 'CARTAO' && Number(d.cartaoId) === Number(c.id);
+                optionsHtml += `<option value="${val}"${isSelected ? ' selected' : ''}>${c.descricao || c.nome}</option>`;
+            });
+            optionsHtml += '</optgroup>';
+        }
+
+        // Grupo Contas Bancárias
+        const contasBancarias = contas.filter(c => c.tipo !== 'CARTEIRA');
+        if (contasBancarias.length > 0) {
+            optionsHtml += '<optgroup label="Contas Bancárias">';
+            contasBancarias.forEach(c => {
+                ['DEBITO', 'PIX', 'BOLETO', 'TRANSFERENCIA'].forEach(meio => {
+                    const val = `CONTA:${c.id}:${meio}`;
+                    const isSelected = (d.formaPagamento === 'CONTA' || (!d.formaPagamento && !d.cartaoId && d.meioPagamento !== 'DINHEIRO')) &&
+                        Number(d.contaId) === Number(c.id) &&
+                        (d.meioPagamento === meio || (!d.meioPagamento && meio === 'DEBITO'));
+                    optionsHtml += `<option value="${val}"${isSelected ? ' selected' : ''}>${c.descricao} (${labelsMeio[meio]})</option>`;
+                });
+            });
+            optionsHtml += '</optgroup>';
+        }
+
+        // Grupo Dinheiro / Carteira
+        const carteiras = contas.filter(c => c.tipo === 'CARTEIRA');
+        optionsHtml += '<optgroup label="Dinheiro / Carteira">';
+        if (carteiras.length > 0) {
+            carteiras.forEach(c => {
+                const val = `DINHEIRO:${c.id}:DINHEIRO`;
+                const isSelected = (d.formaPagamento === 'DINHEIRO' || d.meioPagamento === 'DINHEIRO') &&
+                    (Number(d.contaId) === Number(c.id) || carteiras.length === 1);
+                optionsHtml += `<option value="${val}"${isSelected ? ' selected' : ''}>${c.descricao}</option>`;
+            });
+        } else {
+            const val = 'DINHEIRO::DINHEIRO';
+            const isSelected = d.formaPagamento === 'DINHEIRO' || d.meioPagamento === 'DINHEIRO';
+            optionsHtml += `<option value="${val}"${isSelected ? ' selected' : ''}>Dinheiro</option>`;
+        }
+        optionsHtml += '</optgroup>';
+
+        select.innerHTML = optionsHtml;
+
+        // Se nenhuma opção foi marcada como selected, tenta casar com o valor atual
+        const optSelected = select.querySelector('option[selected]');
+        if (!optSelected) {
+            if (d.formaPagamento === 'CARTAO' && d.cartaoId) {
+                const opt = select.querySelector(`option[value^="CARTAO:${d.cartaoId}:"]`);
+                if (opt) opt.selected = true;
+            } else if (d.contaId) {
+                const opt = select.querySelector(`option[value^="CONTA:${d.contaId}:"]`);
+                if (opt) opt.selected = true;
+            }
+        }
+
+        const valorOriginalSelect = select.value;
+        celula.innerHTML = '';
+        celula.appendChild(select);
+        select.focus();
+
+        let finalizado = false;
+
+        function restaurar() {
+            if (finalizado) return;
+            finalizado = true;
+            delete celula.dataset.editando;
+            celula.innerHTML = badgeForma(d);
+        }
+
+        async function salvar() {
+            if (finalizado) return;
+            finalizado = true;
+            delete celula.dataset.editando;
+
+            const novoValor = select.value;
+            if (novoValor === valorOriginalSelect) {
+                celula.innerHTML = badgeForma(d);
+                return;
+            }
+
+            const [forma, idRef, meio] = novoValor.split(':');
+            const body = new URLSearchParams();
+            body.append('formaPagamento', forma);
+            if (forma === 'CARTAO') {
+                body.append('cartaoId', idRef);
+            } else if (forma === 'CONTA') {
+                body.append('contaId', idRef);
+                if (meio) body.append('meioPagamento', meio);
+            } else if (forma === 'DINHEIRO') {
+                if (idRef) body.append('contaId', idRef);
+                body.append('meioPagamento', 'DINHEIRO');
+            }
+
+            try {
+                const urlBase = cfg().urlAtualizarForma || cfg().urlAtualizarValor || `${cfg().urlBase || ''}/despesas`;
+                const url = `${urlBase}/${id}/forma-pagamento`;
+                const res = await enviar(url, 'PATCH', body);
+                if (res.sucesso) {
+                    d.formaPagamento = res.formaPagamento || forma;
+                    d.cartaoId = res.cartaoId != null ? res.cartaoId : null;
+                    d.cartaoDescricao = res.cartaoDescricao || '';
+                    d.contaId = res.contaId != null ? res.contaId : null;
+                    d.contaDescricao = res.contaDescricao || '';
+                    d.meioPagamento = res.meioPagamento || '';
+                    if (res.statusPagamento) {
+                        d.statusPagamento = res.statusPagamento;
+                    }
+                    toast(res.mensagem || 'Forma de pagamento atualizada com sucesso.');
+                    render();
+                } else {
+                    const erroMsg = res.errosNegocio?.formaPagamento || res.errosCampos?.formaPagamento || res.mensagem || 'Erro ao atualizar forma de pagamento.';
+                    toast(erroMsg, true);
+                    celula.innerHTML = badgeForma(d);
+                }
+            } catch (err) {
+                toast('Erro de comunicação ao atualizar forma de pagamento.', true);
+                celula.innerHTML = badgeForma(d);
+            }
+        }
+
+        select.addEventListener('change', function () {
+            salvar();
+        });
+
+        select.addEventListener('keydown', function (evt) {
+            if (evt.key === 'Escape') {
+                evt.preventDefault();
+                restaurar();
+            }
+        });
+
+        select.addEventListener('blur', function () {
+            salvar();
+        });
+    });
+}
+
 export function abrirModalDuplicar(despesas) {
     if (!despesas || despesas.length === 0) return;
     idsParaDuplicar = despesas.map(d => d.id);
@@ -1003,22 +1198,32 @@ function inicializarOrdenacao() {
 }
 
 function reordenarItens(origemId, destinoId, antes) {
-    const idxOrigem = todas.findIndex(item => item.id === origemId);
-    const idxDestino = todas.findIndex(item => item.id === destinoId);
+    const filtradas = filtrar(todas);
+    aplicarOrdemEEnumeracao(filtradas);
+    const listaAtual = ordenacao.col === 'ordem' && ordenacao.asc ? filtradas : ordenar(filtradas);
+
+    const idxOrigem = listaAtual.findIndex(item => item.id === origemId);
+    const idxDestino = listaAtual.findIndex(item => item.id === destinoId);
     if (idxOrigem === -1 || idxDestino === -1) return;
 
-    const [item] = todas.splice(idxOrigem, 1);
-    let novoIdxDestino = todas.findIndex(item => item.id === destinoId);
+    const [item] = listaAtual.splice(idxOrigem, 1);
+    let novoIdxDestino = listaAtual.findIndex(item => item.id === destinoId);
     if (!antes) {
         novoIdxDestino++;
     }
-    todas.splice(novoIdxDestino, 0, item);
+    listaAtual.splice(novoIdxDestino, 0, item);
 
-    todas.forEach((d, idx) => {
+    listaAtual.forEach((d, idx) => {
         d.ordem = idx + 1;
     });
 
-    salvarOrdemLocalStorage();
+    try {
+        const ids = listaAtual.map(d => d.id);
+        localStorage.setItem(obterChaveStorageOrdem(), JSON.stringify(ids));
+    } catch (e) {
+        console.warn('Erro ao salvar ordem no localStorage', e);
+    }
+
     ordenacao = { col: 'ordem', asc: true };
     render();
     toast('Ordem das despesas atualizada com sucesso.');
@@ -1116,6 +1321,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarEdicaoInline();
     inicializarEdicaoInlineCompetencia();
     inicializarEdicaoInlineCategoria();
+    inicializarEdicaoInlineForma();
     inicializarFiltro(() => render());
     inicializarOrdenacao();
     inicializarDragAndDrop();

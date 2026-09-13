@@ -11,6 +11,7 @@ import br.com.diegocordeiro.dscproject.enums.MeioPagamento;
 import br.com.diegocordeiro.dscproject.enums.OrigemLancamento;
 import br.com.diegocordeiro.dscproject.enums.StatusPagamento;
 import br.com.diegocordeiro.dscproject.enums.TipoConta;
+import br.com.diegocordeiro.dscproject.model.cartao.CartaoCredito;
 import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
 import br.com.diegocordeiro.dscproject.model.conta.Conta;
 import br.com.diegocordeiro.dscproject.model.despesa.Despesa;
@@ -524,6 +525,47 @@ class DespesaControllerTest {
                         .param("cartaoId", "1")
                         .param("competencia", "2026-09")
                         .param("formato", "C6BANK")
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("EDP17 / RN34 - Atualizar forma de pagamento com PERM_DESPESAS_EDITAR retorna 200")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_EDITAR")
+    void atualizarFormaPagamento_comPermissao_deveRetornar200() throws Exception {
+        CartaoCredito cc = new CartaoCredito();
+        cc.setId(5L);
+        cc.setDescricao("Cartão Teste");
+
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setCartao(cc);
+        d.setMeioPagamento(MeioPagamento.CREDITO);
+        d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
+
+        when(despesaService.atualizarFormaPagamento(eq(10L), eq("CARTAO"), eq(5L), any(), any(), eq(1L), eq("user_teste")))
+                .thenReturn(d);
+
+        mockMvc.perform(patch("/despesas/10/forma-pagamento")
+                        .param("formaPagamento", "CARTAO")
+                        .param("cartaoId", "5")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sucesso").value(true))
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.formaPagamento").value("CARTAO"))
+                .andExpect(jsonPath("$.cartaoId").value(5))
+                .andExpect(jsonPath("$.cartaoDescricao").value("Cartão Teste"))
+                .andExpect(jsonPath("$.statusPagamento").value("NAO_SE_APLICA"));
+    }
+
+    @Test
+    @DisplayName("EDP17 / RN01 - Atualizar forma de pagamento sem permissão retorna 403")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_LISTAR")
+    void atualizarFormaPagamento_semPermissao_deveRetornar403() throws Exception {
+        mockMvc.perform(patch("/despesas/10/forma-pagamento")
+                        .param("formaPagamento", "CARTAO")
+                        .param("cartaoId", "5")
                         .with(csrf()))
                 .andExpect(status().isForbidden());
     }

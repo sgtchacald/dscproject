@@ -9,6 +9,7 @@ import br.com.diegocordeiro.dscproject.dto.despesa.DespesaPagamentoDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.DespesaPagamentoLoteDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.DespesaRateioAcertoDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.UsuarioRateioDTO;
+import br.com.diegocordeiro.dscproject.enums.MeioPagamento;
 import br.com.diegocordeiro.dscproject.model.despesa.Despesa;
 import br.com.diegocordeiro.dscproject.model.usuario.Usuario;
 import br.com.diegocordeiro.dscproject.config.permissao.PermissaoDespesaCatalogo;
@@ -320,6 +321,40 @@ public class DespesaController {
         resp.put("id", d.getId());
         resp.put("categoriaId", d.getCategoria() != null ? d.getCategoria().getId() : null);
         resp.put("categoriaNome", d.getCategoria() != null ? d.getCategoria().getNome() : "");
+        return ResponseEntity.ok(resp);
+    }
+
+    @PatchMapping("/despesas/{id}/forma-pagamento")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> atualizarFormaPagamento(
+            @PathVariable Long id,
+            @RequestParam("formaPagamento") String formaPagamento,
+            @RequestParam(value = "cartaoId", required = false) Long cartaoId,
+            @RequestParam(value = "contaId", required = false) Long contaId,
+            @RequestParam(value = "meioPagamento", required = false) MeioPagamento meioPagamento,
+            Principal principal,
+            Locale locale) {
+        Usuario usuario = obterUsuarioAutenticado(principal);
+        Despesa d = despesaService.atualizarFormaPagamento(
+                id,
+                formaPagamento,
+                cartaoId,
+                contaId,
+                meioPagamento,
+                usuario.getId(),
+                usuario.getLogin());
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("sucesso", true);
+        resp.put("mensagem", mensagem("msg.despesa.forma-pagamento-atualizada", locale));
+        resp.put("id", d.getId());
+        String forma = d.getCartao() != null ? "CARTAO" : (d.getMeioPagamento() == MeioPagamento.DINHEIRO ? "DINHEIRO" : "CONTA");
+        resp.put("formaPagamento", forma);
+        resp.put("cartaoId", d.getCartao() != null ? d.getCartao().getId() : null);
+        resp.put("cartaoDescricao", d.getCartao() != null ? d.getCartao().getDescricao() : "");
+        resp.put("contaId", d.getConta() != null ? d.getConta().getId() : null);
+        resp.put("contaDescricao", d.getConta() != null ? d.getConta().getDescricao() : "");
+        resp.put("meioPagamento", d.getMeioPagamento() != null ? d.getMeioPagamento().name() : "");
+        resp.put("statusPagamento", d.getStatusPagamento() != null ? d.getStatusPagamento().name() : "");
         return ResponseEntity.ok(resp);
     }
 

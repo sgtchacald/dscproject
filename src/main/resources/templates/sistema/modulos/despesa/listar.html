@@ -122,7 +122,7 @@
                     </th>
                     <th data-col="ordem" class="sortable w-1 text-center" role="button" th:text="#{despesa.col.ordem}">Nº Ordem</th>
                     <th data-col="competencia" class="sortable" role="button" th:text="#{despesa.col.competencia}">Competência</th>
-                    <th data-col="nome" class="sortable" role="button" th:text="#{despesa.col.nome}">Nome / Descrição</th>
+                    <th data-col="nome" class="sortable" role="button" th:text="#{despesa.col.nome}">Nome</th>
                     <th data-col="categoria" class="sortable" role="button" th:text="#{despesa.col.categoria}">Categoria</th>
                     <th data-col="forma" class="sortable" role="button" th:text="#{despesa.col.forma}">Forma / Meio</th>
                     <th data-col="valor" class="sortable text-end" role="button" th:text="#{despesa.col.valor}">Valor</th>
@@ -168,6 +168,7 @@
          th:data-url-atualizar-valor="@{/despesas}"
          th:data-url-atualizar-competencia="@{/despesas}"
          th:data-url-atualizar-categoria="@{/despesas}"
+         th:data-url-atualizar-forma="@{/despesas}"
          th:data-url-importar="@{/despesas/importar-extrato}"
          th:data-url-pagamento="@{/despesas/registrar-pagamento}"
          th:data-url-pagamento-lote="@{/despesas/registrar-pagamento-lote}"

@@ -233,14 +233,30 @@ class DespesaServiceTest {
     }
 
     @Test
-    @DisplayName("RN08 / MSG16b - Excluir despesa importada lança RegraNegocioException")
-    void excluir_despesaImportada_lancaExcecao() {
+    @DisplayName("RN08 / MSG16b - Excluir despesa OPEN_FINANCE lança RegraNegocioException")
+    void excluir_despesaOpenFinance_lancaExcecao() {
         Despesa existente = new Despesa();
         existente.setId(50L);
         existente.setOrigem(OrigemLancamento.OPEN_FINANCE);
         when(despesaRepository.buscarPorIdEUsuario(50L, 1L)).thenReturn(Optional.of(existente));
 
         assertThrows(RegraNegocioException.class, () -> despesaService.excluir(50L, 1L, "user_teste"));
+    }
+
+    @Test
+    @DisplayName("RN08 - Excluir despesa com origem IMPORTACAO é permitido e realiza soft delete")
+    void excluir_despesaImportacaoCartao_permiteExclusao() {
+        Despesa d = new Despesa();
+        d.setId(51L);
+        d.setOrigem(OrigemLancamento.IMPORTACAO);
+        when(despesaRepository.buscarPorIdEUsuario(51L, 1L)).thenReturn(Optional.of(d));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        despesaService.excluir(51L, 1L, "user_teste");
+
+        assertNotNull(d.getDataExclusao());
+        assertEquals("user_teste", d.getExcluidoPor());
+        verify(despesaRepository).save(d);
     }
 
     @Test
@@ -606,5 +622,109 @@ class DespesaServiceTest {
         catReceita.setAplicaA(AplicaA.RECEITA);
         when(categoriaRepository.findByIdAndDataExclusaoIsNull(4L)).thenReturn(Optional.of(catReceita));
         assertThrows(RegraNegocioException.class, () -> despesaService.atualizarCategoria(10L, 4L, 1L, "autor"));
+    }
+
+    @Test
+    @DisplayName("RN34 - Atualizar forma de pagamento para CARTAO altera cartão, meio para CREDITO e status para NAO_SE_APLICA")
+    void atualizarFormaPagamento_paraCartao_sucesso() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setOrigem(OrigemLancamento.MANUAL);
+        d.setConta(contaAtiva(1L, 1L));
+        d.setStatusPagamento(StatusPagamento.NAO);
+
+        CartaoCredito cc = cartaoAtivo(5L, 1L);
+
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+        when(cartaoCreditoRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(5L, 1L)).thenReturn(Optional.of(cc));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Despesa res = despesaService.atualizarFormaPagamento(10L, "CARTAO", 5L, null, null, 1L, "autor");
+
+        assertEquals(cc, res.getCartao());
+        assertNull(res.getConta());
+        assertEquals(MeioPagamento.CREDITO, res.getMeioPagamento());
+        assertEquals(StatusPagamento.NAO_SE_APLICA, res.getStatusPagamento());
+        assertNull(res.getDataPagamento());
+        assertEquals("autor", res.getAlteradoPor());
+    }
+
+    @Test
+    @DisplayName("RN34 - Atualizar forma de pagamento para CONTA com meio PIX altera conta e meio de pagamento")
+    void atualizarFormaPagamento_paraConta_sucesso() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setOrigem(OrigemLancamento.MANUAL);
+        d.setCartao(cartaoAtivo(5L, 1L));
+        d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
+
+        Conta c = contaAtiva(2L, 1L);
+
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+        when(contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(2L, 1L)).thenReturn(Optional.of(c));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Despesa res = despesaService.atualizarFormaPagamento(10L, "CONTA", null, 2L, MeioPagamento.PIX, 1L, "autor");
+
+        assertEquals(c, res.getConta());
+        assertNull(res.getCartao());
+        assertEquals(MeioPagamento.PIX, res.getMeioPagamento());
+        assertEquals(StatusPagamento.NAO, res.getStatusPagamento());
+        assertEquals("autor", res.getAlteradoPor());
+    }
+
+    @Test
+    @DisplayName("RN34 - Atualizar forma de pagamento para DINHEIRO altera para conta CARTEIRA e meio DINHEIRO")
+    void atualizarFormaPagamento_paraDinheiro_sucesso() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setOrigem(OrigemLancamento.MANUAL);
+        d.setCartao(cartaoAtivo(5L, 1L));
+        d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
+
+        Conta carteira = new Conta();
+        carteira.setId(3L);
+        carteira.setDescricao("Carteira");
+        carteira.setTipo(TipoConta.CARTEIRA);
+        carteira.setAtivo(true);
+
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+        when(contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(3L, 1L)).thenReturn(Optional.of(carteira));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Despesa res = despesaService.atualizarFormaPagamento(10L, "DINHEIRO", null, 3L, null, 1L, "autor");
+
+        assertEquals(carteira, res.getConta());
+        assertNull(res.getCartao());
+        assertEquals(MeioPagamento.DINHEIRO, res.getMeioPagamento());
+        assertEquals(StatusPagamento.NAO, res.getStatusPagamento());
+        assertEquals("autor", res.getAlteradoPor());
+    }
+
+    @Test
+    @DisplayName("RN34 - Atualizar forma de pagamento de despesa OPEN_FINANCE lança RegraNegocioException")
+    void atualizarFormaPagamento_openFinance_lancaExcecao() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setOrigem(OrigemLancamento.OPEN_FINANCE);
+
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+
+        assertThrows(RegraNegocioException.class, () ->
+                despesaService.atualizarFormaPagamento(10L, "CARTAO", 5L, null, null, 1L, "autor"));
+    }
+
+    @Test
+    @DisplayName("RN34 - Atualizar forma de pagamento com cartão inválido lança RegraNegocioException")
+    void atualizarFormaPagamento_cartaoInvalido_lancaExcecao() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setOrigem(OrigemLancamento.MANUAL);
+
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+        when(cartaoCreditoRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(99L, 1L)).thenReturn(Optional.empty());
+
+        assertThrows(RegraNegocioException.class, () ->
+                despesaService.atualizarFormaPagamento(10L, "CARTAO", 99L, null, null, 1L, "autor"));
     }
 }
