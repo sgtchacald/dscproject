@@ -583,7 +583,7 @@ class DespesaControllerTest {
         d.setId(10L);
         d.setCartao(cc);
         d.setMeioPagamento(MeioPagamento.CREDITO);
-        d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
+        d.setStatusPagamento(StatusPagamento.NAO);
 
         when(despesaService.atualizarFormaPagamento(eq(10L), eq("CARTAO"), eq(5L), any(), any(), eq(1L), eq("user_teste")))
                 .thenReturn(d);
@@ -598,7 +598,7 @@ class DespesaControllerTest {
                 .andExpect(jsonPath("$.formaPagamento").value("CARTAO"))
                 .andExpect(jsonPath("$.cartaoId").value(5))
                 .andExpect(jsonPath("$.cartaoDescricao").value("Cartão Teste"))
-                .andExpect(jsonPath("$.statusPagamento").value("NAO_SE_APLICA"));
+                .andExpect(jsonPath("$.statusPagamento").value("NAO"));
     }
 
     @Test

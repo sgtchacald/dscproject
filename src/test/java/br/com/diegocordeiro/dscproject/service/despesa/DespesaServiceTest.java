@@ -315,16 +315,19 @@ class DespesaServiceTest {
     }
 
     @Test
-    @DisplayName("RN21 / MSG20 - Registrar pagamento em despesa de cartão de crédito lança exceção")
-    void registrarPagamento_despesaCartao_lancaExcecao() {
+    @DisplayName("RN21 / RN23 - Registrar pagamento em despesa manual de cartão com status NAO_SE_APLICA marca status SIM")
+    void registrarPagamento_despesaCartaoManual_marcaPago() {
         Despesa d = new Despesa();
         d.setId(10L);
         d.setOrigem(OrigemLancamento.MANUAL);
         d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
         when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
 
-        assertThrows(RegraNegocioException.class, () ->
-                despesaService.registrarPagamento(10L, LocalDate.of(2026, 9, 10), 1L, "user_teste"));
+        despesaService.registrarPagamento(10L, LocalDate.of(2026, 9, 10), 1L, "user_teste");
+
+        assertEquals(StatusPagamento.SIM, d.getStatusPagamento());
+        assertEquals(LocalDate.of(2026, 9, 10), d.getDataPagamento());
+        verify(despesaRepository).save(d);
     }
 
     @Test
@@ -743,7 +746,7 @@ class DespesaServiceTest {
         assertEquals(cc, res.getCartao());
         assertNull(res.getConta());
         assertEquals(MeioPagamento.CREDITO, res.getMeioPagamento());
-        assertEquals(StatusPagamento.NAO_SE_APLICA, res.getStatusPagamento());
+        assertEquals(StatusPagamento.NAO, res.getStatusPagamento());
         assertNull(res.getDataPagamento());
         assertEquals("autor", res.getAlteradoPor());
     }

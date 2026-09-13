@@ -132,7 +132,7 @@ export function definirForma(forma) {
         grupoConta.style.display = 'none';
         grupoCartao.style.display = 'block';
         grupoMeio.style.display = 'none';
-        linhaStatus.style.display = 'none';
+        linhaStatus.style.display = 'flex';
     } else if (forma === 'DINHEIRO') {
         grupoConta.style.display = 'block';
         grupoCartao.style.display = 'none';
@@ -645,15 +645,6 @@ export function inicializarForm() {
 
         if (formaAtual === 'CARTAO') {
             body.append('cartaoId', document.getElementById('despesaCartaoId').value || '');
-            if (modoEdicao && origemAtual === 'IMPORTACAO') {
-                const pago = document.getElementById('despesaPago').checked;
-                body.append('statusPagamento', pago ? 'SIM' : 'NAO');
-                if (pago) {
-                    body.append('dataPagamento', document.getElementById('despesaDataPagamento').value || '');
-                }
-            } else {
-                body.append('statusPagamento', 'NAO_SE_APLICA');
-            }
         } else {
             body.append('contaId', document.getElementById('despesaContaId').value || '');
             if (formaAtual === 'CONTA') {
@@ -661,11 +652,12 @@ export function inicializarForm() {
             } else {
                 body.append('meioPagamento', 'DINHEIRO');
             }
-            const pago = document.getElementById('despesaPago').checked;
-            body.append('statusPagamento', pago ? 'SIM' : 'NAO');
-            if (pago) {
-                body.append('dataPagamento', document.getElementById('despesaDataPagamento').value || '');
-            }
+        }
+
+        const pago = document.getElementById('despesaPago').checked;
+        body.append('statusPagamento', pago ? 'SIM' : 'NAO');
+        if (pago) {
+            body.append('dataPagamento', document.getElementById('despesaDataPagamento').value || '');
         }
 
         const catId = document.getElementById('despesaCategoriaId').value;

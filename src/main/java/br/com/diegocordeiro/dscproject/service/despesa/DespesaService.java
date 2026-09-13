@@ -103,7 +103,12 @@ public class DespesaService {
             cartao = cartaoCreditoRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(dto.getCartaoId(), usuarioId)
                     .orElse(null);
             meioPagamento = MeioPagamento.CREDITO;
-            statusPagamento = StatusPagamento.NAO_SE_APLICA;
+            statusPagamento = (dto.getStatusPagamento() != null && dto.getStatusPagamento() != StatusPagamento.NAO_SE_APLICA)
+                    ? dto.getStatusPagamento()
+                    : StatusPagamento.NAO;
+            if (statusPagamento == StatusPagamento.SIM) {
+                dataPagamento = dto.getDataPagamento();
+            }
         } else if ("DINHEIRO".equals(forma)) {
             conta = contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(dto.getContaId(), usuarioId)
                     .orElse(null);
@@ -186,8 +191,8 @@ public class DespesaService {
                 filha.setConta(conta);
                 filha.setCartao(cartao);
                 filha.setMeioPagamento(meioPagamento);
-                filha.setStatusPagamento(statusPagamento);
-                filha.setDataPagamento(dataPagamento);
+                filha.setStatusPagamento(StatusPagamento.NAO);
+                filha.setDataPagamento(null);
                 filha.setCategoria(categoria);
                 filha.setOrigem(OrigemLancamento.MANUAL);
                 filha.setCriadoPor(loginAutor);
@@ -228,7 +233,7 @@ public class DespesaService {
             mae = despesaRepository.save(mae);
             salvarRateios(mae, dto.getRateio(), 1, 1, podeRatear, loginAutor);
 
-            StatusPagamento statusFilhas = "CARTAO".equals(forma) ? StatusPagamento.NAO_SE_APLICA : StatusPagamento.NAO;
+            StatusPagamento statusFilhas = StatusPagamento.NAO;
 
             for (int i = 2; i <= meses; i++) {
                 Despesa filha = new Despesa();
@@ -366,8 +371,7 @@ public class DespesaService {
                 d.setCartao(cc);
                 d.setConta(null);
                 d.setMeioPagamento(MeioPagamento.CREDITO);
-                d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
-                d.setDataPagamento(null);
+                atualizarStatusPagamento(d, dto);
             } else if ("DINHEIRO".equals(forma)) {
                 Conta c = contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(dto.getContaId(), usuarioId).orElse(null);
                 d.setConta(c);
@@ -382,9 +386,7 @@ public class DespesaService {
                 atualizarStatusPagamento(d, dto);
             }
         } else {
-            if (d.getCartao() == null || d.getOrigem() == OrigemLancamento.IMPORTACAO) {
-                atualizarStatusPagamento(d, dto);
-            }
+            atualizarStatusPagamento(d, dto);
         }
 
         d.setAlteradoPor(loginAutor);
@@ -505,10 +507,6 @@ public class DespesaService {
         Despesa d = despesaRepository.buscarPorIdEUsuario(id, usuarioId)
                 .orElseThrow(() -> new RegistroNaoEncontradoException("msg.despesa.nao-encontrada"));
 
-        if (d.getStatusPagamento() == StatusPagamento.NAO_SE_APLICA && d.getOrigem() != OrigemLancamento.IMPORTACAO) {
-            throw new RegraNegocioException("msg.despesa.pagamento.cartao-invalido");
-        }
-
         d.setStatusPagamento(StatusPagamento.SIM);
         d.setDataPagamento(dataPagamento);
         d.setAlteradoPor(loginAutor);
@@ -525,13 +523,11 @@ public class DespesaService {
         List<Despesa> lista = despesaRepository.buscarPorIdsEUsuario(ids, usuarioId);
         int alteradas = 0;
         for (Despesa d : lista) {
-            if (d.getStatusPagamento() != StatusPagamento.NAO_SE_APLICA || d.getOrigem() == OrigemLancamento.IMPORTACAO) {
-                d.setStatusPagamento(StatusPagamento.SIM);
-                d.setDataPagamento(dataPagamento);
-                d.setAlteradoPor(loginAutor);
-                despesaRepository.save(d);
-                alteradas++;
-            }
+            d.setStatusPagamento(StatusPagamento.SIM);
+            d.setDataPagamento(dataPagamento);
+            d.setAlteradoPor(loginAutor);
+            despesaRepository.save(d);
+            alteradas++;
         }
         return alteradas;
     }
@@ -568,7 +564,7 @@ public class DespesaService {
             copia.setMeioPagamento(origem.getMeioPagamento());
             copia.setCategoria(origem.getCategoria());
             copia.setOrigem(OrigemLancamento.MANUAL);
-            copia.setStatusPagamento(origem.getCartao() != null ? StatusPagamento.NAO_SE_APLICA : StatusPagamento.NAO);
+            copia.setStatusPagamento(StatusPagamento.NAO);
             copia.setDataPagamento(null);
             copia.setParcelada(false);
             copia.setNroParcela(null);
@@ -689,10 +685,7 @@ public class DespesaService {
             d.setCartao(cc);
             d.setConta(null);
             d.setMeioPagamento(MeioPagamento.CREDITO);
-            if (d.getOrigem() != OrigemLancamento.IMPORTACAO) {
-                d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
-                d.setDataPagamento(null);
-            } else if (d.getStatusPagamento() == StatusPagamento.NAO_SE_APLICA) {
+            if (d.getStatusPagamento() == StatusPagamento.NAO_SE_APLICA || d.getStatusPagamento() == null) {
                 d.setStatusPagamento(StatusPagamento.NAO);
             }
         } else if ("DINHEIRO".equals(forma)) {
