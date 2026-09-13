@@ -7,6 +7,7 @@ import br.com.diegocordeiro.dscproject.dto.despesa.DespesaFormDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.DespesaGridDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.DespesaRateioDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.UsuarioRateioDTO;
+import br.com.diegocordeiro.dscproject.enums.AplicaA;
 import br.com.diegocordeiro.dscproject.enums.MeioPagamento;
 import br.com.diegocordeiro.dscproject.enums.OrigemLancamento;
 import br.com.diegocordeiro.dscproject.enums.StatusContato;
@@ -623,6 +624,23 @@ public class DespesaService {
         }
         Despesa d = buscarPorIdEUsuario(id, usuarioId);
         d.setCompetencia(novaCompetencia);
+        d.setAlteradoPor(loginAutor);
+        return despesaRepository.save(d);
+    }
+
+    @Transactional
+    public Despesa atualizarCategoria(Long id, Long novaCategoriaId, Long usuarioId, String loginAutor) {
+        Despesa d = buscarPorIdEUsuario(id, usuarioId);
+        if (novaCategoriaId != null) {
+            Categoria categoria = categoriaRepository.findByIdAndDataExclusaoIsNull(novaCategoriaId)
+                    .orElseThrow(() -> new RegraNegocioException("categoriaId", "msg.despesa.categoria-invalida"));
+            if (!categoria.isAtivo() || (categoria.getAplicaA() != AplicaA.DESPESA && categoria.getAplicaA() != AplicaA.AMBOS)) {
+                throw new RegraNegocioException("categoriaId", "msg.despesa.categoria-invalida");
+            }
+            d.setCategoria(categoria);
+        } else {
+            d.setCategoria(null);
+        }
         d.setAlteradoPor(loginAutor);
         return despesaRepository.save(d);
     }

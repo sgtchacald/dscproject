@@ -11,7 +11,9 @@
     cursor: pointer;
 }
 
-td.celula-valor.cursor-pointer:hover {
+td.celula-valor.cursor-pointer:hover,
+td.celula-competencia.cursor-pointer:hover,
+td.celula-categoria.cursor-pointer:hover {
     background-color: rgba(var(--tblr-primary-rgb, 32, 107, 196), 0.05);
 }
 

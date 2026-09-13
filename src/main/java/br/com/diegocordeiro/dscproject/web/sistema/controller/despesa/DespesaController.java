@@ -309,6 +309,20 @@ public class DespesaController {
                 "competencia", d.getCompetencia() != null ? d.getCompetencia().toString() : ""));
     }
 
+    @PatchMapping("/despesas/{id}/categoria")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> atualizarCategoria(@PathVariable Long id, @RequestParam(value = "categoriaId", required = false) Long categoriaId, Principal principal, Locale locale) {
+        Usuario usuario = obterUsuarioAutenticado(principal);
+        Despesa d = despesaService.atualizarCategoria(id, categoriaId, usuario.getId(), usuario.getLogin());
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("sucesso", true);
+        resp.put("mensagem", mensagem("msg.despesa.categoria-atualizada", locale));
+        resp.put("id", d.getId());
+        resp.put("categoriaId", d.getCategoria() != null ? d.getCategoria().getId() : null);
+        resp.put("categoriaNome", d.getCategoria() != null ? d.getCategoria().getNome() : "");
+        return ResponseEntity.ok(resp);
+    }
+
     @PostMapping("/despesas/importar-extrato")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> importarExtrato(

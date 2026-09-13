@@ -282,6 +282,12 @@ function formatarCompetencia(competencia) {
     return `${mes}/${ano}`;
 }
 
+function renderCategoriaBadge(categoriaNome) {
+    return categoriaNome
+        ? `<span class="badge bg-blue-lt">${categoriaNome}</span>`
+        : '<span class="text-muted">—</span>';
+}
+
 function badgeStatus(d) {
     const st = situacaoCodigo(d);
     if (st === 'EXCLUIDA') return `<span class="badge bg-red text-red-fg">${cfg().labelExcluida || 'Excluída'}</span>`;
@@ -364,9 +370,7 @@ function render() {
             tr.draggable = true;
             tr.dataset.id = d.id;
 
-            const categoriaHtml = d.categoriaNome
-                ? `<span class="badge bg-blue-lt">${d.categoriaNome}</span>`
-                : '<span class="text-muted">—</span>';
+            const categoriaHtml = renderCategoriaBadge(d.categoriaNome);
 
             const parcelaBadge = d.parcelada
                 ? `<span class="badge bg-teal-lt ms-1">${d.nroParcela || 1}/${d.qtdParcelas || 1}x</span>`
@@ -441,6 +445,10 @@ function render() {
             const classeCompetencia = podeEditarCompetencia ? 'cursor-pointer celula-competencia' : '';
             const titleCompetencia = podeEditarCompetencia ? 'Clique para editar a competência' : '';
 
+            const podeEditarCategoria = podeEditar() && !d.excluido;
+            const classeCategoria = podeEditarCategoria ? 'cursor-pointer celula-categoria' : '';
+            const titleCategoria = podeEditarCategoria ? 'Clique para editar a categoria' : '';
+
             const podeEditarValor = podeEditar() && !d.excluido;
             const classeValor = podeEditarValor ? 'text-end fw-bold cursor-pointer celula-valor' : 'text-end fw-bold';
             const titleValor = podeEditarValor ? 'Clique para editar o valor' : '';
@@ -455,7 +463,7 @@ function render() {
                 </td>
                 <td class="${classeCompetencia}" data-id="${d.id}" title="${titleCompetencia}">${formatarCompetencia(d.competencia)}</td>
                 <td><strong>${d.nome}</strong>${parcelaBadge}${recorrenteBadge}${descHtml}</td>
-                <td>${categoriaHtml}</td>
+                <td class="${classeCategoria}" data-id="${d.id}" title="${titleCategoria}">${categoriaHtml}</td>
                 <td>${badgeForma(d)}</td>
                 <td class="${classeValor}" data-id="${d.id}" title="${titleValor}">${formatarMoeda(d.valor)}</td>
                 <td>${d.dataVencimento ? dataBr(d.dataVencimento) : '<span class="text-muted">—</span>'}</td>
@@ -639,6 +647,128 @@ function inicializarEdicaoInlineCompetencia() {
         });
 
         input.addEventListener('blur', function () {
+            salvar();
+        });
+    });
+}
+
+let categoriasOpcoesCache = null;
+
+async function obterCategoriasOpcoes() {
+    if (categoriasOpcoesCache) {
+        return categoriasOpcoesCache;
+    }
+    const url = cfg().urlCategoriasOpcoes;
+    if (!url) return [];
+    try {
+        categoriasOpcoesCache = await getJson(url);
+        return categoriasOpcoesCache || [];
+    } catch (err) {
+        console.error('Erro ao carregar opções de categorias:', err);
+        return [];
+    }
+}
+
+function inicializarEdicaoInlineCategoria() {
+    corpo.addEventListener('click', async function (e) {
+        const celula = e.target.closest('td.celula-categoria');
+        if (!celula || celula.dataset.editando === 'true' || celula.querySelector('select')) return;
+
+        const id = Number(celula.dataset.id);
+        const d = todas.find(item => item.id === id);
+        if (!d) return;
+
+        celula.dataset.editando = 'true';
+
+        const categorias = await obterCategoriasOpcoes();
+
+        if (!celula.isConnected) return;
+
+        const categoriaIdOriginal = d.categoriaId != null ? Number(d.categoriaId) : null;
+        const categoriaNomeOriginal = d.categoriaNome || '';
+
+        const select = document.createElement('select');
+        select.className = 'form-select form-select-sm';
+        select.style.minWidth = '140px';
+        select.style.maxWidth = '200px';
+        select.style.display = 'inline-block';
+
+        let optionsHtml = '<option value="">Sem categoria</option>';
+        let encontrouOriginal = false;
+        categorias.forEach(cat => {
+            const isSelected = categoriaIdOriginal !== null && Number(cat.id) === categoriaIdOriginal;
+            if (isSelected) encontrouOriginal = true;
+            optionsHtml += `<option value="${cat.id}"${isSelected ? ' selected' : ''}>${cat.nome}</option>`;
+        });
+
+        if (categoriaIdOriginal !== null && !encontrouOriginal) {
+            optionsHtml += `<option value="${categoriaIdOriginal}" selected>${categoriaNomeOriginal}</option>`;
+        }
+
+        select.innerHTML = optionsHtml;
+        celula.innerHTML = '';
+        celula.appendChild(select);
+        select.focus();
+
+        let finalizado = false;
+
+        function restaurar() {
+            if (finalizado) return;
+            finalizado = true;
+            delete celula.dataset.editando;
+            celula.innerHTML = renderCategoriaBadge(d.categoriaNome);
+        }
+
+        async function salvar() {
+            if (finalizado) return;
+            finalizado = true;
+            delete celula.dataset.editando;
+
+            const novaCategoriaVal = select.value.trim();
+            const novaCategoriaId = novaCategoriaVal ? Number(novaCategoriaVal) : null;
+
+            if (novaCategoriaId === categoriaIdOriginal) {
+                celula.innerHTML = renderCategoriaBadge(d.categoriaNome);
+                return;
+            }
+
+            try {
+                const urlBase = cfg().urlAtualizarCategoria || cfg().urlAtualizarValor || `${cfg().urlBase || ''}/despesas`;
+                const url = `${urlBase}/${id}/categoria`;
+                const body = new URLSearchParams();
+                if (novaCategoriaId !== null) {
+                    body.append('categoriaId', novaCategoriaId);
+                }
+                const res = await enviar(url, 'PATCH', body);
+                if (res.sucesso) {
+                    d.categoriaId = res.categoriaId != null ? res.categoriaId : null;
+                    d.categoriaNome = res.categoriaNome || '';
+                    toast(res.mensagem || 'Categoria atualizada com sucesso.');
+                    celula.innerHTML = renderCategoriaBadge(d.categoriaNome);
+                    render();
+                } else {
+                    const erroMsg = res.errosNegocio?.categoriaId || res.errosCampos?.categoriaId || res.mensagem || 'Erro ao atualizar categoria.';
+                    toast(erroMsg, true);
+                    celula.innerHTML = renderCategoriaBadge(d.categoriaNome);
+                }
+            } catch (err) {
+                toast('Erro de comunicação ao atualizar categoria.', true);
+                celula.innerHTML = renderCategoriaBadge(d.categoriaNome);
+            }
+        }
+
+        select.addEventListener('change', function () {
+            salvar();
+        });
+
+        select.addEventListener('keydown', function (evt) {
+            if (evt.key === 'Escape') {
+                evt.preventDefault();
+                restaurar();
+            }
+        });
+
+        select.addEventListener('blur', function () {
             salvar();
         });
     });
@@ -984,6 +1114,7 @@ document.addEventListener('DOMContentLoaded', function () {
     inicializarImportacaoFatura();
     inicializarEdicaoInline();
     inicializarEdicaoInlineCompetencia();
+    inicializarEdicaoInlineCategoria();
     inicializarFiltro(() => render());
     inicializarOrdenacao();
     inicializarDragAndDrop();

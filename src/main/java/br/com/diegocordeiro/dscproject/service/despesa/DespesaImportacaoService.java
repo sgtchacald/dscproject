@@ -161,9 +161,9 @@ public class DespesaImportacaoService {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
 
-                Cell cellData = row.getCell(0);
-                Cell cellDesc = row.getCell(1);
-                Cell cellValor = row.getCell(3);
+                Cell cellData = row.getCell(1);
+                Cell cellDesc = row.getCell(2);
+                Cell cellValor = row.getCell(4);
 
                 if (cellData == null || cellDesc == null || cellValor == null) continue;
 

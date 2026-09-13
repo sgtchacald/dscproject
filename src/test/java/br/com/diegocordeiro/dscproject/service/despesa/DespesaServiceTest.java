@@ -4,11 +4,13 @@ import br.com.diegocordeiro.dscproject.dto.despesa.DespesaFormDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.DespesaGridDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.DespesaRateioDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.UsuarioRateioDTO;
+import br.com.diegocordeiro.dscproject.enums.AplicaA;
 import br.com.diegocordeiro.dscproject.enums.MeioPagamento;
 import br.com.diegocordeiro.dscproject.enums.OrigemLancamento;
 import br.com.diegocordeiro.dscproject.enums.StatusPagamento;
 import br.com.diegocordeiro.dscproject.enums.TipoConta;
 import br.com.diegocordeiro.dscproject.model.cartao.CartaoCredito;
+import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
 import br.com.diegocordeiro.dscproject.model.conta.Conta;
 import br.com.diegocordeiro.dscproject.model.despesa.Despesa;
 import br.com.diegocordeiro.dscproject.model.despesa.DespesaUsuario;
@@ -533,5 +535,76 @@ class DespesaServiceTest {
         assertEquals(YearMonth.of(2026, 10), atualizada.getCompetencia());
         assertEquals("autor", atualizada.getAlteradoPor());
         verify(despesaRepository).save(d);
+    }
+
+    @Test
+    @DisplayName("RN33 - Atualizar categoria com sucesso vincula categoria à despesa")
+    void atualizarCategoria_comCategoriaValida_deveAtualizar() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+
+        Categoria cat = new Categoria();
+        cat.setId(2L);
+        cat.setNome("Alimentação");
+        cat.setAtivo(true);
+        cat.setAplicaA(AplicaA.DESPESA);
+
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+        when(categoriaRepository.findByIdAndDataExclusaoIsNull(2L)).thenReturn(Optional.of(cat));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Despesa atualizada = despesaService.atualizarCategoria(10L, 2L, 1L, "autor");
+
+        assertEquals(cat, atualizada.getCategoria());
+        assertEquals("autor", atualizada.getAlteradoPor());
+        verify(despesaRepository).save(d);
+    }
+
+    @Test
+    @DisplayName("RN33 - Atualizar categoria com categoriaId nulo desvincula a categoria")
+    void atualizarCategoria_comCategoriaNull_deveDesvincular() {
+        Categoria cat = new Categoria();
+        cat.setId(2L);
+
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setCategoria(cat);
+
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Despesa atualizada = despesaService.atualizarCategoria(10L, null, 1L, "autor");
+
+        assertNull(atualizada.getCategoria());
+        assertEquals("autor", atualizada.getAlteradoPor());
+        verify(despesaRepository).save(d);
+    }
+
+    @Test
+    @DisplayName("RN33 - Atualizar categoria inexistente, inativa ou que não se aplica a despesa lança RegraNegocioException")
+    void atualizarCategoria_invalida_deveLancarExcecao() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+
+        // Categoria não encontrada
+        when(categoriaRepository.findByIdAndDataExclusaoIsNull(99L)).thenReturn(Optional.empty());
+        assertThrows(RegraNegocioException.class, () -> despesaService.atualizarCategoria(10L, 99L, 1L, "autor"));
+
+        // Categoria inativa
+        Categoria catInativa = new Categoria();
+        catInativa.setId(3L);
+        catInativa.setAtivo(false);
+        catInativa.setAplicaA(AplicaA.DESPESA);
+        when(categoriaRepository.findByIdAndDataExclusaoIsNull(3L)).thenReturn(Optional.of(catInativa));
+        assertThrows(RegraNegocioException.class, () -> despesaService.atualizarCategoria(10L, 3L, 1L, "autor"));
+
+        // Categoria que aplica apenas a RECEITA
+        Categoria catReceita = new Categoria();
+        catReceita.setId(4L);
+        catReceita.setAtivo(true);
+        catReceita.setAplicaA(AplicaA.RECEITA);
+        when(categoriaRepository.findByIdAndDataExclusaoIsNull(4L)).thenReturn(Optional.of(catReceita));
+        assertThrows(RegraNegocioException.class, () -> despesaService.atualizarCategoria(10L, 4L, 1L, "autor"));
     }
 }

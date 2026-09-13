@@ -11,6 +11,7 @@ import br.com.diegocordeiro.dscproject.enums.MeioPagamento;
 import br.com.diegocordeiro.dscproject.enums.OrigemLancamento;
 import br.com.diegocordeiro.dscproject.enums.StatusPagamento;
 import br.com.diegocordeiro.dscproject.enums.TipoConta;
+import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
 import br.com.diegocordeiro.dscproject.model.conta.Conta;
 import br.com.diegocordeiro.dscproject.model.despesa.Despesa;
 import br.com.diegocordeiro.dscproject.model.usuario.Usuario;
@@ -437,6 +438,57 @@ class DespesaControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.sucesso").value(true))
                 .andExpect(jsonPath("$.competencia").value("2026-10"));
+    }
+
+    @Test
+    @DisplayName("EDP16 / RN33 - Atualizar categoria com sucesso retorna 200")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_EDITAR")
+    void atualizarCategoria_comSucesso_deveRetornar200() throws Exception {
+        Categoria cat = new Categoria();
+        cat.setId(2L);
+        cat.setNome("Alimentação");
+
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setCategoria(cat);
+        when(despesaService.atualizarCategoria(10L, 2L, 1L, "user_teste")).thenReturn(d);
+
+        mockMvc.perform(patch("/despesas/10/categoria")
+                        .param("categoriaId", "2")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sucesso").value(true))
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.categoriaId").value(2))
+                .andExpect(jsonPath("$.categoriaNome").value("Alimentação"));
+    }
+
+    @Test
+    @DisplayName("EDP16 / RN33 - Atualizar categoria sem categoriaId (desvincular) retorna 200")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_EDITAR")
+    void atualizarCategoria_desvincular_deveRetornar200() throws Exception {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setCategoria(null);
+        when(despesaService.atualizarCategoria(10L, null, 1L, "user_teste")).thenReturn(d);
+
+        mockMvc.perform(patch("/despesas/10/categoria")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sucesso").value(true))
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.categoriaId").isEmpty())
+                .andExpect(jsonPath("$.categoriaNome").value(""));
+    }
+
+    @Test
+    @DisplayName("EDP16 / RN01 - Atualizar categoria sem permissão retorna 403")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_LISTAR")
+    void atualizarCategoria_semPermissao_deveRetornar403() throws Exception {
+        mockMvc.perform(patch("/despesas/10/categoria")
+                        .param("categoriaId", "2")
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
     }
 
     @Test
