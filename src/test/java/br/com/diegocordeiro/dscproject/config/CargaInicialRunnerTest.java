@@ -23,6 +23,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -123,5 +124,26 @@ class CargaInicialRunnerTest {
         runner("admin", "admin@dsc.com", "s3nha", false).run(null);
 
         verify(passwordEncoder).encode("s3nha");
+    }
+
+    @Test
+    void vinculaPermissaoRateioParaAdminEUser() {
+        Perfil admin = new Perfil("ADMIN", "ADMIN", null, true);
+        Perfil user = new Perfil("USER", "USER", null, true);
+        Permissao permRateio = new Permissao("DESPESA_RATEAR_MULTIUSUARIO", "Ratear", null, "Despesas");
+        permRateio.setConcedivelPorPlano(false);
+
+        when(perfilRepository.findByCodigo("ADMIN")).thenReturn(Optional.of(admin));
+        when(perfilRepository.findByCodigo("USER")).thenReturn(Optional.of(user));
+        when(permissaoRepository.findAll()).thenReturn(java.util.List.of(permRateio));
+        when(perfilPermissaoRepository.existsByPerfilAndPermissao(any(), any())).thenReturn(false);
+        when(usuarioRepository.contarAdminsAtivos()).thenReturn(1L);
+
+        runner("", "", "", false).run(null);
+
+        verify(perfilPermissaoRepository).save(argThat(v ->
+                "ADMIN".equals(v.getPerfil().getCodigo()) && "DESPESA_RATEAR_MULTIUSUARIO".equals(v.getPermissao().getCodigo())));
+        verify(perfilPermissaoRepository).save(argThat(v ->
+                "USER".equals(v.getPerfil().getCodigo()) && "DESPESA_RATEAR_MULTIUSUARIO".equals(v.getPermissao().getCodigo())));
     }
 }

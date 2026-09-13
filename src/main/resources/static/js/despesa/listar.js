@@ -1245,8 +1245,10 @@ function inicializarAcoes() {
         const recorrente = btn.dataset.recorrente === 'true';
         const idRecorrentePai = btn.dataset.recorrentePai ? Number(btn.dataset.recorrentePai) : null;
 
-        if (acao === 'editar' || acao === 'ratear') {
-            abrirEdicao(id);
+        if (acao === 'editar') {
+            abrirEdicao(id, false);
+        } else if (acao === 'ratear') {
+            abrirEdicao(id, true);
         } else if (acao === 'duplicar') {
             const desp = todas.find(item => item.id === id);
             if (desp) abrirModalDuplicar([desp]);

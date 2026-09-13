@@ -8,7 +8,7 @@ public enum PermissaoDespesaCatalogo implements PermissaoDefinida {
     DESPESAS_EXCLUIR("Excluir despesas", "Excluir logicamente despesas manuais do próprio usuário (individuais, parceladas ou séries recorrentes)."),
     DESPESAS_PAGAR("Registrar pagamento de despesas", "Registrar e reverter o pagamento de despesas em aberto (individual ou em lote)."),
     DESPESAS_IMPORTAR("Importar faturas de cartão", "Importar faturas e extratos de cartão de crédito (Excel Itaú, Bradesco, C6 Bank e arquivos OFX)."),
-    DESPESA_RATEAR_MULTIUSUARIO("Ratear despesas entre usuários", "Dividir despesas entre múltiplos usuários com gestão de fatias e acerto.", true);
+    DESPESA_RATEAR_MULTIUSUARIO("Ratear despesas entre usuários", "Dividir despesas entre múltiplos usuários com gestão de fatias e acerto.");
 
     public static final String MODULO = "Despesas";
 

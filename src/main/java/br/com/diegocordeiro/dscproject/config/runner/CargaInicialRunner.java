@@ -86,13 +86,12 @@ public class CargaInicialRunner implements ApplicationRunner {
 
         for (Permissao permissao : permissaoRepository.findAll()) {
             if (!permissao.isOrfa()) {
-                if (!"DESPESA_RATEAR_MULTIUSUARIO".equals(permissao.getCodigo())) {
-                    vincular(admin, permissao);
-                }
+                vincular(admin, permissao);
                 boolean isUserPerm = permissao.getCodigo().startsWith("CONTAS_")
                         || permissao.getCodigo().startsWith("CARTOES_")
                         || permissao.getCodigo().startsWith("RECEITAS_")
-                        || permissao.getCodigo().startsWith("DESPESAS_");
+                        || permissao.getCodigo().startsWith("DESPESAS_")
+                        || "DESPESA_RATEAR_MULTIUSUARIO".equals(permissao.getCodigo());
                 if (isUserPerm && !permissao.isConcedivelPorPlano()) {
                     vincular(user, permissao);
                 }

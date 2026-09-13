@@ -286,7 +286,7 @@ export async function abrirNovo() {
     abrirModal('modalDespesa');
 }
 
-export async function abrirEdicao(id) {
+export async function abrirEdicao(id, focarRateio = false) {
     limparErros();
     modoEdicao = true;
     itensRateio = [];
@@ -356,6 +356,17 @@ export async function abrirEdicao(id) {
         renderizarRateios();
 
         abrirModal('modalDespesa');
+
+        if (focarRateio) {
+            setTimeout(() => {
+                const sec = document.getElementById('secaoRateio');
+                if (sec) {
+                    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const busca = document.getElementById('buscaUsuarioRateio');
+                    if (busca) busca.focus();
+                }
+            }, 300);
+        }
     } catch (e) {
         toast('Erro ao carregar despesa para edição.', true);
     }
