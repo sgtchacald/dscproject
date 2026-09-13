@@ -233,6 +233,37 @@ class DespesaServiceTest {
     }
 
     @Test
+    @DisplayName("RN21 / RN23 - Editar despesa importada do cartão atualiza status de pagamento")
+    void editar_despesaImportadaCartao_atualizaStatusPagamento() {
+        CartaoCredito cc = new CartaoCredito();
+        cc.setId(5L);
+
+        Despesa existente = new Despesa();
+        existente.setId(60L);
+        existente.setCartao(cc);
+        existente.setOrigem(OrigemLancamento.IMPORTACAO);
+        existente.setStatusPagamento(StatusPagamento.NAO);
+
+        when(despesaRepository.buscarPorIdEUsuario(60L, 1L)).thenReturn(Optional.of(existente));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DespesaFormDTO dto = new DespesaFormDTO();
+        dto.setNome("Despesa Importada Paga");
+        dto.setValor(new BigDecimal("150.00"));
+        dto.setCompetencia("2026-09");
+        dto.setDataLancamento(LocalDate.of(2026, 9, 5));
+        dto.setStatusPagamento(StatusPagamento.SIM);
+        dto.setDataPagamento(LocalDate.of(2026, 9, 10));
+
+        Despesa editada = despesaService.editar(60L, dto, 1L, "user_teste", false);
+
+        assertEquals(StatusPagamento.SIM, editada.getStatusPagamento());
+        assertEquals(LocalDate.of(2026, 9, 10), editada.getDataPagamento());
+        assertEquals(cc, editada.getCartao());
+        assertEquals(OrigemLancamento.IMPORTACAO, editada.getOrigem());
+    }
+
+    @Test
     @DisplayName("RN08 / MSG16b - Excluir despesa OPEN_FINANCE lança RegraNegocioException")
     void excluir_despesaOpenFinance_lancaExcecao() {
         Despesa existente = new Despesa();
@@ -288,11 +319,28 @@ class DespesaServiceTest {
     void registrarPagamento_despesaCartao_lancaExcecao() {
         Despesa d = new Despesa();
         d.setId(10L);
+        d.setOrigem(OrigemLancamento.MANUAL);
         d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
         when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
 
         assertThrows(RegraNegocioException.class, () ->
                 despesaService.registrarPagamento(10L, LocalDate.of(2026, 9, 10), 1L, "user_teste"));
+    }
+
+    @Test
+    @DisplayName("RN21 / RN23 - Registrar pagamento em despesa importada de cartão marca status SIM")
+    void registrarPagamento_despesaCartaoImportada_marcaPago() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setOrigem(OrigemLancamento.IMPORTACAO);
+        d.setStatusPagamento(StatusPagamento.NAO);
+        when(despesaRepository.buscarPorIdEUsuario(10L, 1L)).thenReturn(Optional.of(d));
+
+        despesaService.registrarPagamento(10L, LocalDate.of(2026, 9, 10), 1L, "user_teste");
+
+        assertEquals(StatusPagamento.SIM, d.getStatusPagamento());
+        assertEquals(LocalDate.of(2026, 9, 10), d.getDataPagamento());
+        verify(despesaRepository).save(d);
     }
 
     @Test
@@ -317,6 +365,33 @@ class DespesaServiceTest {
 
         assertThrows(RegistroNaoEncontradoException.class, () ->
                 despesaService.registrarPagamentoLote(List.of(1L, 2L), LocalDate.now(), 10L, "user_teste"));
+    }
+
+    @Test
+    @DisplayName("RN21 - Registrar pagamento em lote atualiza despesa importada de cartão")
+    void registrarPagamentoLote_comDespesaImportada_baixaComSucesso() {
+        Despesa d1 = new Despesa();
+        d1.setId(1L);
+        d1.setStatusPagamento(StatusPagamento.NAO);
+        d1.setOrigem(OrigemLancamento.MANUAL);
+
+        Despesa d2 = new Despesa();
+        d2.setId(2L);
+        d2.setStatusPagamento(StatusPagamento.NAO);
+        d2.setOrigem(OrigemLancamento.IMPORTACAO);
+
+        when(despesaRepository.countPorIdsEUsuario(List.of(1L, 2L), 10L)).thenReturn(2L);
+        when(despesaRepository.buscarPorIdsEUsuario(List.of(1L, 2L), 10L)).thenReturn(List.of(d1, d2));
+
+        int alteradas = despesaService.registrarPagamentoLote(List.of(1L, 2L), LocalDate.of(2026, 9, 12), 10L, "user_teste");
+
+        assertEquals(2, alteradas);
+        assertEquals(StatusPagamento.SIM, d1.getStatusPagamento());
+        assertEquals(StatusPagamento.SIM, d2.getStatusPagamento());
+        assertEquals(LocalDate.of(2026, 9, 12), d1.getDataPagamento());
+        assertEquals(LocalDate.of(2026, 9, 12), d2.getDataPagamento());
+        verify(despesaRepository).save(d1);
+        verify(despesaRepository).save(d2);
     }
 
     @Test

@@ -83,6 +83,7 @@ async function carregar() {
 
 function situacaoCodigo(d) {
     if (d.excluido) return 'EXCLUIDA';
+    if (d.origem === 'IMPORTACAO' && d.statusPagamento === 'NAO_SE_APLICA') return 'NAO';
     return d.statusPagamento || 'NAO';
 }
 
@@ -318,7 +319,7 @@ function atualizarBotoesLote() {
         btnDuplicarLote.disabled = selecionadasMap.size === 0;
     }
     if (btnPagarLote) {
-        const temParaPagar = Array.from(selecionadasMap.values()).some(d => d.statusPagamento === 'NAO');
+        const temParaPagar = Array.from(selecionadasMap.values()).some(d => d.statusPagamento === 'NAO' || (d.origem === 'IMPORTACAO' && d.statusPagamento === 'NAO_SE_APLICA'));
         btnPagarLote.disabled = !temParaPagar;
     }
 }
@@ -333,7 +334,7 @@ function atualizarTotalizador(filtradas) {
             .filter(d => !d.excluido && d.statusPagamento === 'SIM')
             .reduce((acc, d) => acc + (d.valor != null ? Number(d.valor) : 0), 0);
         const totalPendente = filtradas
-            .filter(d => !d.excluido && d.statusPagamento === 'NAO')
+            .filter(d => !d.excluido && (d.statusPagamento === 'NAO' || (d.origem === 'IMPORTACAO' && d.statusPagamento === 'NAO_SE_APLICA')))
             .reduce((acc, d) => acc + (d.valor != null ? Number(d.valor) : 0), 0);
         const totalGeral = totalPago + totalPendente;
 
@@ -388,8 +389,9 @@ function render() {
 
             let acaoHtml = '';
             if (!d.excluido) {
-                // Registrar Pagamento (somente se status for NAO e tiver permissão)
-                if (d.statusPagamento === 'NAO' && podePagar()) {
+                // Registrar Pagamento (somente se status for NAO ou se for importada pendente e tiver permissão)
+                const podePagarItem = (d.statusPagamento === 'NAO' || (d.origem === 'IMPORTACAO' && d.statusPagamento === 'NAO_SE_APLICA')) && podePagar();
+                if (podePagarItem) {
                     acaoHtml += `<button type="button" class="btn btn-action text-success" data-acao="pagamento"
                         data-id="${d.id}" data-valor="${d.valor}" title="${cfg().acaoPagamento || 'Registrar pagamento'}" aria-label="Registrar pagamento">
                         <i class="ph ph-currency-dollar" aria-hidden="true"></i>
@@ -1134,7 +1136,7 @@ function inicializarSelecaoMultipla() {
 
     if (btnPagarLote) {
         btnPagarLote.addEventListener('click', function () {
-            const paraPagar = Array.from(selecionadasMap.values()).filter(d => d.statusPagamento === 'NAO');
+            const paraPagar = Array.from(selecionadasMap.values()).filter(d => d.statusPagamento === 'NAO' || (d.origem === 'IMPORTACAO' && d.statusPagamento === 'NAO_SE_APLICA'));
             if (paraPagar.length === 0) return;
             abrirPagamentoLote(paraPagar);
         });

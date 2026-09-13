@@ -14,6 +14,7 @@ let categoriasOriginais = [];
 let opcoesCarregadas = false;
 let formaAtual = 'CONTA';
 let modoEdicao = false;
+let origemAtual = 'MANUAL';
 let taxaBuscaTimeout = null;
 
 // Mapa de usuários adicionados ao rateio na tela: { id, nome, valor, statusPagamento, dataAcerto }
@@ -232,6 +233,7 @@ export async function abrirNovo() {
     f.reset();
     limparErros();
     modoEdicao = false;
+    origemAtual = 'MANUAL';
     itensRateio = [];
 
     await carregarOpcoes();
@@ -305,9 +307,11 @@ export async function abrirEdicao(id) {
         definirValorMoeda(document.getElementById('despesaValor'), d.valor);
         document.getElementById('despesaCategoriaId').value = d.categoriaId || '';
 
-        // Se importada do Open Finance
+        // Se importada do Open Finance / Cartão
+        origemAtual = d.origem || 'MANUAL';
+        const ehOpenFinance = d.origem === 'OPEN_FINANCE';
         const ehManual = d.origem === 'MANUAL';
-        document.getElementById('avisoDespesaImportada').style.display = ehManual ? 'none' : 'block';
+        document.getElementById('avisoDespesaImportada').style.display = ehOpenFinance ? 'block' : 'none';
         document.getElementById('despesaContaId').disabled = !ehManual;
         document.getElementById('despesaCartaoId').disabled = !ehManual;
         document.getElementById('btnFormaConta').disabled = !ehManual;
@@ -318,6 +322,9 @@ export async function abrirEdicao(id) {
         definirForma(d.formaPagamento || 'CONTA');
         if (d.formaPagamento === 'CARTAO') {
             document.getElementById('despesaCartaoId').value = d.cartaoId || '';
+            if (d.origem === 'IMPORTACAO') {
+                document.getElementById('linhaStatusPagamento').style.display = 'flex';
+            }
         } else {
             document.getElementById('despesaContaId').value = d.contaId || '';
             if (d.meioPagamento) {
@@ -638,7 +645,15 @@ export function inicializarForm() {
 
         if (formaAtual === 'CARTAO') {
             body.append('cartaoId', document.getElementById('despesaCartaoId').value || '');
-            body.append('statusPagamento', 'NAO_SE_APLICA');
+            if (modoEdicao && origemAtual === 'IMPORTACAO') {
+                const pago = document.getElementById('despesaPago').checked;
+                body.append('statusPagamento', pago ? 'SIM' : 'NAO');
+                if (pago) {
+                    body.append('dataPagamento', document.getElementById('despesaDataPagamento').value || '');
+                }
+            } else {
+                body.append('statusPagamento', 'NAO_SE_APLICA');
+            }
         } else {
             body.append('contaId', document.getElementById('despesaContaId').value || '');
             if (formaAtual === 'CONTA') {

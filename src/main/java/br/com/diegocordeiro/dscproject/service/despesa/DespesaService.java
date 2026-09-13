@@ -382,7 +382,7 @@ public class DespesaService {
                 atualizarStatusPagamento(d, dto);
             }
         } else {
-            if (d.getCartao() == null) {
+            if (d.getCartao() == null || d.getOrigem() == OrigemLancamento.IMPORTACAO) {
                 atualizarStatusPagamento(d, dto);
             }
         }
@@ -505,7 +505,7 @@ public class DespesaService {
         Despesa d = despesaRepository.buscarPorIdEUsuario(id, usuarioId)
                 .orElseThrow(() -> new RegistroNaoEncontradoException("msg.despesa.nao-encontrada"));
 
-        if (d.getStatusPagamento() == StatusPagamento.NAO_SE_APLICA) {
+        if (d.getStatusPagamento() == StatusPagamento.NAO_SE_APLICA && d.getOrigem() != OrigemLancamento.IMPORTACAO) {
             throw new RegraNegocioException("msg.despesa.pagamento.cartao-invalido");
         }
 
@@ -525,7 +525,7 @@ public class DespesaService {
         List<Despesa> lista = despesaRepository.buscarPorIdsEUsuario(ids, usuarioId);
         int alteradas = 0;
         for (Despesa d : lista) {
-            if (d.getStatusPagamento() != StatusPagamento.NAO_SE_APLICA) {
+            if (d.getStatusPagamento() != StatusPagamento.NAO_SE_APLICA || d.getOrigem() == OrigemLancamento.IMPORTACAO) {
                 d.setStatusPagamento(StatusPagamento.SIM);
                 d.setDataPagamento(dataPagamento);
                 d.setAlteradoPor(loginAutor);
@@ -678,8 +678,12 @@ public class DespesaService {
             d.setCartao(cc);
             d.setConta(null);
             d.setMeioPagamento(MeioPagamento.CREDITO);
-            d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
-            d.setDataPagamento(null);
+            if (d.getOrigem() != OrigemLancamento.IMPORTACAO) {
+                d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
+                d.setDataPagamento(null);
+            } else if (d.getStatusPagamento() == StatusPagamento.NAO_SE_APLICA) {
+                d.setStatusPagamento(StatusPagamento.NAO);
+            }
         } else if ("DINHEIRO".equals(forma)) {
             Conta c = null;
             if (contaId != null) {

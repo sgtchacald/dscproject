@@ -123,7 +123,7 @@ class DespesaImportacaoServiceTest {
         assertEquals(LocalDate.of(2026, 9, 15), d.getDataVencimento());
         assertEquals(YearMonth.of(2026, 9), d.getCompetencia());
         assertEquals(OrigemLancamento.IMPORTACAO, d.getOrigem());
-        assertEquals(StatusPagamento.NAO_SE_APLICA, d.getStatusPagamento());
+        assertEquals(StatusPagamento.NAO, d.getStatusPagamento());
     }
 
     @Test

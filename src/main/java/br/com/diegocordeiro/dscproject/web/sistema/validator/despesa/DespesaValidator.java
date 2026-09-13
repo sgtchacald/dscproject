@@ -163,7 +163,7 @@ public class DespesaValidator implements Validator {
     }
 
     private void validarStatusPagamento(DespesaFormDTO dto, Errors errors) {
-        if ("CARTAO".equalsIgnoreCase(dto.getFormaPagamento())) {
+        if ("CARTAO".equalsIgnoreCase(dto.getFormaPagamento()) && !edicaoDeDespesaImportada(dto)) {
             return;
         }
         if (dto.getStatusPagamento() == StatusPagamento.SIM && dto.getDataPagamento() == null) {

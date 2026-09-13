@@ -115,7 +115,7 @@ public class DespesaImportacaoService {
             d.setConta(null);
             d.setCategoria(categoria);
             d.setMeioPagamento(MeioPagamento.CREDITO);
-            d.setStatusPagamento(StatusPagamento.NAO_SE_APLICA);
+            d.setStatusPagamento(StatusPagamento.NAO);
             d.setDataPagamento(null);
             d.setOrigem(OrigemLancamento.IMPORTACAO);
             d.setParcelada(false);
