@@ -1,7 +1,7 @@
 package br.com.diegocordeiro.dscproject.dto.parametro;
 
 import br.com.diegocordeiro.dscproject.enums.TipoParametro;
-import br.com.diegocordeiro.dscproject.model.ParametroGlobal;
+import br.com.diegocordeiro.dscproject.model.parametro.ParametroGlobal;
 import lombok.Getter;
 
 /**

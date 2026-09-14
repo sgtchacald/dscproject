@@ -34,7 +34,11 @@
                 <i class="ph ph-funnel" aria-hidden="true"></i>
                 <span th:text="#{receita.lista.botao.filtrar}">Filtrar</span>
             </button>
-            <button class="btn btn-primary" id="btnNovaReceita" sec:authorize="hasAuthority('PERM_RECEITAS_MANTER')"
+            <button class="btn" id="btnDuplicarReceitaLote" disabled sec:authorize="hasAuthority('PERM_RECEITAS_INSERIR')">
+                <i class="ph ph-copy" aria-hidden="true"></i>
+                <span th:text="#{receita.lista.botao.duplicar}">Duplicar</span>
+            </button>
+            <button class="btn btn-primary" id="btnNovaReceita" sec:authorize="hasAuthority('PERM_RECEITAS_INSERIR')"
                     data-bs-toggle="modal" data-bs-target="#modalReceita">
                 <i class="ph ph-plus" aria-hidden="true"></i>
                 <span th:text="#{receita.lista.botao.novo}">Nova receita</span>
@@ -44,11 +48,68 @@
 </div>
 
 <section layout:fragment="corpo">
+    <div class="row row-cards mb-3" id="cardTotalizadorReceita" style="display: none;">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-green text-white avatar">
+                                <i class="ph ph-check-circle" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{receita.totalizador.recebido}">Recebido</div>
+                            <div class="text-secondary" id="totalReceitaRecebido">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-yellow text-white avatar">
+                                <i class="ph ph-clock" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{receita.totalizador.previsto}">Previsto</div>
+                            <div class="text-secondary" id="totalReceitaPrevisto">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar">
+                                <i class="ph ph-money" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{receita.totalizador.total}">Total Geral</div>
+                            <div class="text-secondary fw-bold" id="totalReceitaGeral">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table" id="tabelaReceitas">
+            <table class="table table-vcenter card-table table-hover" id="tabelaReceitas">
                 <thead>
                 <tr>
+                    <th class="w-1">
+                        <input class="form-check-input" type="checkbox" id="chkTodosReceitas">
+                    </th>
                     <th data-col="competencia" class="sortable" role="button" th:text="#{receita.col.competencia}">Competência</th>
                     <th data-col="nome" class="sortable" role="button" th:text="#{receita.col.nome}">Nome</th>
                     <th data-col="categoria" class="sortable" role="button" th:text="#{receita.col.categoria}">Categoria</th>
@@ -58,7 +119,7 @@
                     <th data-col="situacao" class="sortable" role="button" th:text="#{receita.col.situacao}">Situação</th>
                     <th data-col="dataRecebimento" class="sortable" role="button" th:text="#{receita.col.dataRecebimento}">Data de recebimento</th>
                     <th data-col="origem" class="sortable" role="button" th:text="#{receita.col.origem}">Origem</th>
-                    <th class="w-1" th:text="#{receita.col.acoes}">Ações</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{receita.col.acoes}">Ações</th>
                 </tr>
                 </thead>
                 <tbody id="corpoTabelaReceitas"></tbody>
@@ -75,7 +136,10 @@
 
     <div id="toastArea" class="position-fixed bottom-0 end-0 p-3" style="z-index:1100;"></div>
 
-    <span sec:authorize="hasAuthority('PERM_RECEITAS_MANTER')" data-perm="manter" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_RECEITAS_INSERIR')" data-perm="inserir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_RECEITAS_EDITAR')" data-perm="editar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_RECEITAS_EXCLUIR')" data-perm="excluir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_RECEITAS_REGISTRAR_RECEBIMENTO')" data-perm="receber" hidden></span>
 
     <div id="dadosTelaReceita"
          th:data-url-dados="@{/receitas/listar-dados}"
@@ -84,9 +148,11 @@
          th:data-url-editar="@{/receitas/editar}"
          th:data-url-marcar-recebida="@{/receitas/marcar-recebida}"
          th:data-url-excluir="@{/receitas/excluir}"
+         th:data-url-duplicar="@{/receitas/duplicar}"
          th:data-url-contas-opcoes="@{/contas/opcoes}"
          th:data-url-categorias-opcoes="@{/categorias/opcoes(aplicaA='RECEITA')}"
          th:data-msg-filtro-vazio="#{msg.receita.filtro.vazio}"
+         th:data-msg-confirma-duplicar="#{msg.receita.duplicar.vazio}"
          th:data-msg-confirma-exclusao="#{msg.receita.confirma.exclusao}"
          th:data-label-recebida="#{receita.badge.recebida}"
          th:data-label-prevista="#{receita.badge.prevista}"

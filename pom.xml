@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>br.com.diegocordeiro.dscproject</groupId>
 	<artifactId>dscproject</artifactId>
-	<version>1.6.0</version>
+	<version>1.7.0</version>
 	<name/>
 	<description/>
 	<url/>
@@ -133,6 +133,21 @@
 			<groupId>org.webjars</groupId>
 			<artifactId>webjars-locator-core</artifactId>
 			<version>0.52</version>
+		</dependency>
+		<dependency>
+			<groupId>com.webcohesion.ofx4j</groupId>
+			<artifactId>ofx4j</artifactId>
+			<version>1.38</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>5.4.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.4.1</version>
 		</dependency>
 	</dependencies>
 

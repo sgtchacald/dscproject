@@ -99,7 +99,7 @@ function renderSeletor(marcadas) {
 function aplicarTravaProprioPerfil(cb) {
     const ehProprioPerfil = perfilEmEdicao && perfilEmEdicao.codigo
         && perfilEmEdicao.codigo === cfg().perfilLogado;
-    if (ehProprioPerfil && cb.dataset.codigo === 'PERFIS_MANTER' && !cb.checked) {
+    if (ehProprioPerfil && cb.dataset.codigo === 'PERFIS_VINCULAR_PERMISSAO' && !cb.checked) {
         cb.checked = true;
         toast(cfg().msgAntilockoutProprio, true);
         return false;

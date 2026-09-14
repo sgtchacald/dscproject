@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalDuplicarDespesa" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ph ph-copy me-1" aria-hidden="true"></i>
+                    <span th:text="#{despesa.duplicar.titulo}">Duplicar despesa(s)</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info" id="duplicarResumoSelecao">
+                    Selecione as despesas a serem duplicadas.
+                </div>
+                <div class="mb-3">
+                    <label class="form-label required" for="duplicarCompetenciaDestino" th:text="#{despesa.duplicar.campo.competenciaDestino.label}">Competência de destino</label>
+                    <input type="month" class="form-control" id="duplicarCompetenciaDestino" required>
+                    <small class="form-hint" th:text="#{despesa.duplicar.campo.competenciaDestino.ajuda}">Competência (mês/ano) em que as novas despesas serão criadas.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" data-bs-dismiss="modal" th:text="#{despesa.duplicar.botao.cancelar}">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarDuplicar">
+                    <i class="ph ph-copy" aria-hidden="true"></i>
+                    <span th:text="#{despesa.duplicar.botao.duplicar}">Duplicar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+

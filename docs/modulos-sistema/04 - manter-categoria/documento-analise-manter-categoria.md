@@ -2,7 +2,7 @@
 ## Módulo Categorias — ADMIN — Manter Categoria
 
 **Gerado em:** 07/09/2026
-**Versão:** 1.1
+**Versão:** 1.2
 **Status:** Desenvolvido
 **Projeto:** `dscproject-spring-mvc` (geração 2)
 
@@ -27,6 +27,7 @@
 |---|---|---|---|
 | 1.0 | 07/09/2026 | Diego dos Santos Cordeiro | Criação do documento. CRUD administrativo de Categoria (substitui o enum `CategoriaRegistroFinanceiro` da geração 1) e a tela do mapa `CATEGORIAS_PROVEDOR` (rótulo de categoria de um provedor de Open Finance → categoria do sistema), usada na conciliação automática. A estrutura das duas tabelas é a do Documento 0 ([QUADRO_DESCRITIVO_3](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-3) e [QUADRO_DESCRITIVO_15](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-15)) — este documento não introduz tabela nova |
 | 1.1 | 09/09/2026 | Diego dos Santos Cordeiro | (1) As permissões guarda-chuva `CATEGORIAS_MANTER` e `CATEGORIAS_PROVEDOR_MANTER` são quebradas em uma permissão por operação: `CATEGORIAS_LISTAR` / `CATEGORIAS_INSERIR` / `CATEGORIAS_EDITAR` / `CATEGORIAS_EXCLUIR` e `CATEGORIAS_PROVEDOR_LISTAR` / `CATEGORIAS_PROVEDOR_INSERIR` / `CATEGORIAS_PROVEDOR_EDITAR` / `CATEGORIAS_PROVEDOR_EXCLUIR` (convenção domínio-primeiro, espelhando o documento `01 - manter-usuario`). Desativar/reativar categoria não é permissão própria — é gravar `CATE_FL_ATIVO` por `CATEGORIAS_EDITAR`. Nova matriz 13.1 com as oito permissões; Seções 1, 3.2, 5, 7, 8, 9, 13, 14 e 17 realinhadas. (2) As duas telas passam a ser CRUD sem AJAX: grid renderizado no servidor, modal de cadastro/edição preenchido pelos dados da linha do grid (`data-*` / `<template>`), filtro por GET, gravação por POST → redirect → mensagem flash. Removidos os endpoints JSON `/listar-dados`, `/buscar/{id}` e `/provedores-opcoes`; [EDP05](#edp05) (combobox das telas de lançamento) permanece em JSON. Seções 1, 2, 3.2, 5, 7, 8, 11, 12, 15 e 16 ajustadas |
+| 1.2 | 12/09/2026 | Diego dos Santos Cordeiro | Padronização visual do sistema: explicitação do alinhamento à esquerda para a coluna de Ações nos grids de Categorias (QUADRO_DESCRITIVO_1) e Categorias por Provedor (QUADRO_DESCRITIVO_4). |
 
 ---
 
@@ -250,7 +251,7 @@ Protótipo navegável: `prototipo/manter-categoria-prototipo.html`. Wireframes e
 | <a id="qdd1-10"></a>10 | Nº DE LANÇAMENTOS | Tipo: Coluna (número)<br>Ordenação: Sim | Exibe [C1](#c1).qtdUso — soma de receitas, despesas e transações não excluídas que usam a categoria. |
 | <a id="qdd1-11"></a>11 | TIPO | Tipo: Coluna (badge)<br>Ordenação: Sim | "Sistema" quando `CATE_FL_SISTEMA`; "Comum" caso contrário. |
 | <a id="qdd1-12"></a>12 | SITUAÇÃO | Tipo: Coluna (badge)<br>Ordenação: Sim | "Ativa" (verde) quando `CATE_FL_ATIVO` e sem `audit_data_exclusao`; "Inativa" (cinza) quando `CATE_FL_ATIVO = FALSE`; "Excluída" quando há `audit_data_exclusao`. |
-| <a id="qdd1-13"></a>13 | AÇÃO | Tipo: Coluna | Visível a quem tem [PERM03](#perm03) ou [PERM04](#perm04). Ícones [ID14](#qdd1-14). |
+| <a id="qdd1-13"></a>13 | AÇÃO | Tipo: Coluna (alinhada à esquerda) | Visível a quem tem [PERM03](#perm03) ou [PERM04](#perm04). Ícones [ID14](#qdd1-14). |
 | <a id="qdd1-14"></a>14 | ÍCONES DE AÇÃO | Tipo: Ícones<br>Editar (ícone: edit, tooltip: Editar categoria)<br>Excluir (ícone: trash, tooltip: Excluir categoria) | Editar → [RT05](#rt05), visível com [PERM03](#perm03). Excluir → [RT07](#rt07), visível com [PERM04](#perm04); oculto quando a categoria já está excluída. |
 
 ### <a id="quadro-descritivo-2"></a>7.2 Modal: Filtrar Categorias — QUADRO_DESCRITIVO_2
@@ -306,7 +307,7 @@ Protótipo navegável: `prototipo/manter-categoria-prototipo.html`. Wireframes e
 | <a id="qdd4-7"></a>7 | PROVEDOR | Tipo: Coluna<br>Ordenação: Sim | Exibe [C3](#c3).provedorNome. |
 | <a id="qdd4-8"></a>8 | RÓTULO EXTERNO | Tipo: Coluna<br>Ordenação: Sim | Exibe [C3](#c3).rotuloExterno — a categoria como o provedor a nomeia. |
 | <a id="qdd4-9"></a>9 | CATEGORIA DO SISTEMA | Tipo: Coluna (badge)<br>Ordenação: Sim | Exibe [C3](#c3).categoriaNome. |
-| <a id="qdd4-10"></a>10 | AÇÃO | Tipo: Coluna | Ícone Editar → [RT11](#rt11), visível com [PERM07](#perm07). Ícone Excluir → [RT13](#rt13), visível com [PERM08](#perm08). |
+| <a id="qdd4-10"></a>10 | AÇÃO | Tipo: Coluna (alinhada à esquerda) | Ícone Editar → [RT11](#rt11), visível com [PERM07](#perm07). Ícone Excluir → [RT13](#rt13), visível com [PERM08](#perm08). |
 
 ### <a id="quadro-descritivo-5"></a>7.5 Modal: Cadastro / Edição de Vínculo Categoria × Provedor — QUADRO_DESCRITIVO_5
 

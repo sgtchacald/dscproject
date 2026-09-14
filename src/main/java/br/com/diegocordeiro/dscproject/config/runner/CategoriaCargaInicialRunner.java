@@ -1,10 +1,10 @@
 package br.com.diegocordeiro.dscproject.config.runner;
 
 import br.com.diegocordeiro.dscproject.enums.AplicaA;
-import br.com.diegocordeiro.dscproject.model.Categoria;
-import br.com.diegocordeiro.dscproject.model.OpfiProvedor;
-import br.com.diegocordeiro.dscproject.repository.CategoriaRepository;
-import br.com.diegocordeiro.dscproject.repository.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;

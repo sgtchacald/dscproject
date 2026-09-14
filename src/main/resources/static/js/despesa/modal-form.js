@@ -1,5 +1,7 @@
 import { getJson, enviar } from '../comum/http.js';
 import { toast, abrirModal, fecharModal } from '../comum/ui.js';
+import { definirValorMoeda } from '../comum/mascara.js';
+import { obterFiltroAtual } from './modal-filtro.js';
 
 export const EVENTO_ALTERADO = 'despesa:alterada';
 
@@ -12,6 +14,7 @@ let categoriasOriginais = [];
 let opcoesCarregadas = false;
 let formaAtual = 'CONTA';
 let modoEdicao = false;
+let origemAtual = 'MANUAL';
 let taxaBuscaTimeout = null;
 
 // Mapa de usuários adicionados ao rateio na tela: { id, nome, valor, statusPagamento, dataAcerto }
@@ -129,7 +132,7 @@ export function definirForma(forma) {
         grupoConta.style.display = 'none';
         grupoCartao.style.display = 'block';
         grupoMeio.style.display = 'none';
-        linhaStatus.style.display = 'none';
+        linhaStatus.style.display = 'flex';
     } else if (forma === 'DINHEIRO') {
         grupoConta.style.display = 'block';
         grupoCartao.style.display = 'none';
@@ -202,7 +205,7 @@ function renderizarRateios() {
                 ${infoPix}
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm input-fatia-rateio"
+                <input type="text" class="form-control form-control-sm input-fatia-rateio mascara-moeda"
                        data-index="${index}" value="${formatarInputDecimal(item.valor)}">
             </td>
             <td>
@@ -230,6 +233,7 @@ export async function abrirNovo() {
     f.reset();
     limparErros();
     modoEdicao = false;
+    origemAtual = 'MANUAL';
     itensRateio = [];
 
     await carregarOpcoes();
@@ -244,9 +248,25 @@ export async function abrirNovo() {
     document.getElementById('btnFormaCartao').disabled = false;
     document.getElementById('btnFormaDinheiro').disabled = false;
 
-    const hoje = new Date().toISOString().slice(0, 10);
-    document.getElementById('despesaDataLancamento').value = hoje;
-    document.getElementById('despesaCompetencia').value = mesDaData(hoje);
+    const hoje = new Date();
+    const hojeIso = hoje.toISOString().slice(0, 10);
+    const filtroAtual = typeof obterFiltroAtual === 'function' ? obterFiltroAtual() : null;
+    const compFiltro = (filtroAtual && filtroAtual.competenciaInicio) ? filtroAtual.competenciaInicio : null;
+    const competenciaPadrao = compFiltro || mesDaData(hojeIso);
+
+    let dataLancamentoPadrao = hojeIso;
+    if (compFiltro && compFiltro !== mesDaData(hojeIso)) {
+        const [anoStr, mesStr] = compFiltro.split('-');
+        const ano = parseInt(anoStr, 10);
+        const mes = parseInt(mesStr, 10);
+        const diaAtual = hoje.getDate();
+        const ultimoDiaDoMes = new Date(ano, mes, 0).getDate();
+        const diaAjustado = Math.min(diaAtual, ultimoDiaDoMes);
+        dataLancamentoPadrao = `${compFiltro}-${String(diaAjustado).padStart(2, '0')}`;
+    }
+
+    document.getElementById('despesaDataLancamento').value = dataLancamentoPadrao;
+    document.getElementById('despesaCompetencia').value = competenciaPadrao;
 
     definirForma('CONTA');
 
@@ -266,7 +286,7 @@ export async function abrirNovo() {
     abrirModal('modalDespesa');
 }
 
-export async function abrirEdicao(id) {
+export async function abrirEdicao(id, focarRateio = false) {
     limparErros();
     modoEdicao = true;
     itensRateio = [];
@@ -284,12 +304,14 @@ export async function abrirEdicao(id) {
         document.getElementById('despesaCompetencia').value = d.competencia || '';
         document.getElementById('despesaDataLancamento').value = d.dataLancamento || '';
         document.getElementById('despesaDataVencimento').value = d.dataVencimento || '';
-        document.getElementById('despesaValor').value = formatarInputDecimal(d.valor);
+        definirValorMoeda(document.getElementById('despesaValor'), d.valor);
         document.getElementById('despesaCategoriaId').value = d.categoriaId || '';
 
-        // Se importada do Open Finance
+        // Se importada do Open Finance / Cartão
+        origemAtual = d.origem || 'MANUAL';
+        const ehOpenFinance = d.origem === 'OPEN_FINANCE';
         const ehManual = d.origem === 'MANUAL';
-        document.getElementById('avisoDespesaImportada').style.display = ehManual ? 'none' : 'block';
+        document.getElementById('avisoDespesaImportada').style.display = ehOpenFinance ? 'block' : 'none';
         document.getElementById('despesaContaId').disabled = !ehManual;
         document.getElementById('despesaCartaoId').disabled = !ehManual;
         document.getElementById('btnFormaConta').disabled = !ehManual;
@@ -300,6 +322,9 @@ export async function abrirEdicao(id) {
         definirForma(d.formaPagamento || 'CONTA');
         if (d.formaPagamento === 'CARTAO') {
             document.getElementById('despesaCartaoId').value = d.cartaoId || '';
+            if (d.origem === 'IMPORTACAO') {
+                document.getElementById('linhaStatusPagamento').style.display = 'flex';
+            }
         } else {
             document.getElementById('despesaContaId').value = d.contaId || '';
             if (d.meioPagamento) {
@@ -331,6 +356,17 @@ export async function abrirEdicao(id) {
         renderizarRateios();
 
         abrirModal('modalDespesa');
+
+        if (focarRateio) {
+            setTimeout(() => {
+                const sec = document.getElementById('secaoRateio');
+                if (sec) {
+                    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const busca = document.getElementById('buscaUsuarioRateio');
+                    if (busca) busca.focus();
+                }
+            }, 300);
+        }
     } catch (e) {
         toast('Erro ao carregar despesa para edição.', true);
     }
@@ -620,7 +656,6 @@ export function inicializarForm() {
 
         if (formaAtual === 'CARTAO') {
             body.append('cartaoId', document.getElementById('despesaCartaoId').value || '');
-            body.append('statusPagamento', 'NAO_SE_APLICA');
         } else {
             body.append('contaId', document.getElementById('despesaContaId').value || '');
             if (formaAtual === 'CONTA') {
@@ -628,11 +663,12 @@ export function inicializarForm() {
             } else {
                 body.append('meioPagamento', 'DINHEIRO');
             }
-            const pago = document.getElementById('despesaPago').checked;
-            body.append('statusPagamento', pago ? 'SIM' : 'NAO');
-            if (pago) {
-                body.append('dataPagamento', document.getElementById('despesaDataPagamento').value || '');
-            }
+        }
+
+        const pago = document.getElementById('despesaPago').checked;
+        body.append('statusPagamento', pago ? 'SIM' : 'NAO');
+        if (pago) {
+            body.append('dataPagamento', document.getElementById('despesaDataPagamento').value || '');
         }
 
         const catId = document.getElementById('despesaCategoriaId').value;

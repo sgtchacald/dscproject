@@ -1,6 +1,6 @@
 package br.com.diegocordeiro.dscproject.dto.parametro;
 
-import br.com.diegocordeiro.dscproject.model.ParametroGlobal;
+import br.com.diegocordeiro.dscproject.model.parametro.ParametroGlobal;
 import lombok.Getter;
 import org.springframework.data.history.Revision;
 import org.springframework.data.history.RevisionMetadata;

@@ -118,7 +118,7 @@ function render() {
                 + formatarValor(p) + '</td>'
                 + '<td>' + situacaoBadge(p) + '</td>'
                 + '<td>' + ultimaAlteracao(p) + '</td>'
-                + '<td class="text-nowrap">' + acoes(p) + '</td>';
+                + '<td class="col-acoes text-start text-nowrap">' + acoes(p) + '</td>';
             corpo.appendChild(tr);
         });
     }

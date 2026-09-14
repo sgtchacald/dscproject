@@ -34,12 +34,21 @@
                 <i class="ph ph-funnel" aria-hidden="true"></i>
                 <span th:text="#{despesa.lista.botao.filtrar}">Filtrar</span>
             </button>
-            <button class="btn" id="btnPagarLote" disabled sec:authorize="hasAuthority('PERM_DESPESAS_MANTER')"
+            <button class="btn" id="btnImportarFatura" sec:authorize="hasAuthority('PERM_DESPESAS_IMPORTAR')"
+                    data-bs-toggle="modal" data-bs-target="#modalImportarFatura">
+                <i class="ph ph-upload-simple" aria-hidden="true"></i>
+                <span th:text="#{despesa.lista.botao.importar}">Importar extrato</span>
+            </button>
+            <button class="btn" id="btnDuplicarLote" disabled sec:authorize="hasAuthority('PERM_DESPESAS_INSERIR')">
+                <i class="ph ph-copy" aria-hidden="true"></i>
+                <span th:text="#{despesa.lista.botao.duplicar}">Duplicar</span>
+            </button>
+            <button class="btn" id="btnPagarLote" disabled sec:authorize="hasAuthority('PERM_DESPESAS_PAGAR')"
                     data-bs-toggle="modal" data-bs-target="#modalPagamentoLote">
                 <i class="ph ph-currency-dollar" aria-hidden="true"></i>
                 <span th:text="#{despesa.lista.botao.pagarLote}">Registrar pagamento</span>
             </button>
-            <button class="btn btn-primary" id="btnNovaDespesa" sec:authorize="hasAuthority('PERM_DESPESAS_MANTER')"
+            <button class="btn btn-primary" id="btnNovaDespesa" sec:authorize="hasAuthority('PERM_DESPESAS_INSERIR')"
                     data-bs-toggle="modal" data-bs-target="#modalDespesa">
                 <i class="ph ph-plus" aria-hidden="true"></i>
                 <span th:text="#{despesa.lista.botao.nova}">Nova despesa</span>
@@ -49,16 +58,71 @@
 </div>
 
 <section layout:fragment="corpo">
+    <div class="row row-cards mb-3" id="cardTotalizadorDespesa" style="display: none;">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-green text-white avatar">
+                                <i class="ph ph-check-circle" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{despesa.totalizador.pago}">Pago</div>
+                            <div class="text-secondary" id="totalDespesaPago">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-yellow text-white avatar">
+                                <i class="ph ph-clock" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{despesa.totalizador.pendente}">Pendente</div>
+                            <div class="text-secondary" id="totalDespesaPendente">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar">
+                                <i class="ph ph-money" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{despesa.totalizador.total}">Total Geral</div>
+                            <div class="text-secondary fw-bold" id="totalDespesaGeral">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table" id="tabelaDespesas">
+            <table class="table table-vcenter card-table table-hover" id="tabelaDespesas">
                 <thead>
                 <tr>
                     <th class="w-1">
                         <input class="form-check-input" type="checkbox" id="chkTodos">
                     </th>
+                    <th data-col="ordem" class="sortable w-1 text-center" role="button" th:text="#{despesa.col.ordem}">Nº Ordem</th>
                     <th data-col="competencia" class="sortable" role="button" th:text="#{despesa.col.competencia}">Competência</th>
-                    <th data-col="nome" class="sortable" role="button" th:text="#{despesa.col.nome}">Nome / Descrição</th>
+                    <th data-col="nome" class="sortable" role="button" th:text="#{despesa.col.nome}">Nome</th>
                     <th data-col="categoria" class="sortable" role="button" th:text="#{despesa.col.categoria}">Categoria</th>
                     <th data-col="forma" class="sortable" role="button" th:text="#{despesa.col.forma}">Forma / Meio</th>
                     <th data-col="valor" class="sortable text-end" role="button" th:text="#{despesa.col.valor}">Valor</th>
@@ -67,7 +131,7 @@
                     <th data-col="dataPagamento" class="sortable" role="button" th:text="#{despesa.form.campo.dataPagamento.label}">Data de pagamento</th>
                     <th data-col="rateio" class="sortable text-center" role="button" th:if="${podeRatear}" th:text="#{despesa.col.rateio}">Rateio</th>
                     <th data-col="origem" class="sortable" role="button" th:text="#{despesa.col.origem}">Origem</th>
-                    <th class="w-1" th:text="#{despesa.col.acoes}">Ações</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{despesa.col.acoes}">Ações</th>
                 </tr>
                 </thead>
                 <tbody id="corpoTabelaDespesas"></tbody>
@@ -82,10 +146,16 @@
     <div th:replace="~{sistema/modulos/despesa/fragments/modal-despesa :: modal}"></div>
     <div th:replace="~{sistema/modulos/despesa/fragments/modal-pagamento :: modal}"></div>
     <div th:replace="~{sistema/modulos/despesa/fragments/modal-pagamento-lote :: modal}"></div>
+    <div th:replace="~{sistema/modulos/despesa/fragments/modal-duplicar :: modal}"></div>
+    <div th:replace="~{sistema/modulos/despesa/fragments/modal-importar-fatura :: modal}"></div>
 
     <div id="toastArea" class="position-fixed bottom-0 end-0 p-3" style="z-index:1100;"></div>
 
-    <span sec:authorize="hasAuthority('PERM_DESPESAS_MANTER')" data-perm="manter" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_DESPESAS_INSERIR')" data-perm="inserir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_DESPESAS_EDITAR')" data-perm="editar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_DESPESAS_EXCLUIR')" data-perm="excluir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_DESPESAS_PAGAR')" data-perm="pagar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_DESPESAS_IMPORTAR')" data-perm="importar" hidden></span>
     <span sec:authorize="hasAuthority('PERM_DESPESA_RATEAR_MULTIUSUARIO')" data-perm="ratear" hidden></span>
 
     <div id="dadosTelaDespesa"
@@ -94,6 +164,13 @@
          th:data-url-inserir="@{/despesas/inserir}"
          th:data-url-editar="@{/despesas/editar}"
          th:data-url-excluir="@{/despesas/excluir}"
+         th:data-url-duplicar="@{/despesas/duplicar}"
+         th:data-url-atualizar-valor="@{/despesas}"
+         th:data-url-atualizar-competencia="@{/despesas}"
+         th:data-url-atualizar-categoria="@{/despesas}"
+         th:data-url-atualizar-forma="@{/despesas}"
+         th:data-url-atualizar-nome="@{/despesas}"
+         th:data-url-importar="@{/despesas/importar-extrato}"
          th:data-url-pagamento="@{/despesas/registrar-pagamento}"
          th:data-url-pagamento-lote="@{/despesas/registrar-pagamento-lote}"
          th:data-url-rateio-acerto="@{/despesas}"

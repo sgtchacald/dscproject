@@ -1,5 +1,6 @@
 import { enviar } from '../comum/http.js';
 import { toast, abrirModal, fecharModal } from '../comum/ui.js';
+import { parseDecimal } from '../comum/mascara.js';
 import { EVENTO_ALTERADO } from './modal-form.js';
 
 const cfg = () => document.getElementById('dadosTelaConta').dataset;
@@ -46,7 +47,7 @@ export function inicializarAjusteSaldo() {
         const novoSaldoInput = document.getElementById('ajusteNovoSaldo').value || '';
         const observacao = document.getElementById('ajusteObservacao').value || '';
 
-        let novoSaldoNum = novoSaldoInput.trim().replace(/\./g, '').replace(',', '.');
+        let novoSaldoNum = parseDecimal(novoSaldoInput).toFixed(2);
 
         const body = new URLSearchParams();
         body.append('novoSaldo', novoSaldoNum);

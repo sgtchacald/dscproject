@@ -1,5 +1,6 @@
 import { getJson, enviar } from '../comum/http.js';
 import { toast, abrirModal, fecharModal } from '../comum/ui.js';
+import { parseDecimal, definirValorMoeda } from '../comum/mascara.js';
 
 export const EVENTO_ALTERADO = 'cartao:alterado';
 
@@ -71,7 +72,7 @@ export async function abrirEdicao(id) {
         document.getElementById('cartaoDescricao').value = dados.descricao || '';
         document.getElementById('cartaoBandeira').value = dados.bandeira || '';
         document.getElementById('cartaoFinalCartao').value = dados.finalCartao || '';
-        document.getElementById('cartaoLimite').value = dados.limite != null ? String(dados.limite).replace('.', ',') : '';
+        definirValorMoeda(document.getElementById('cartaoLimite'), dados.limite);
         document.getElementById('cartaoDiaFechamento').value = dados.diaFechamento != null ? dados.diaFechamento : '';
         document.getElementById('cartaoDiaVencimento').value = dados.diaVencimento != null ? dados.diaVencimento : '';
         document.getElementById('cartaoContaId').value = dados.contaId || '';
@@ -199,7 +200,7 @@ export function inicializarForm() {
         body.append('descricao', document.getElementById('cartaoDescricao').value || '');
         body.append('bandeira', document.getElementById('cartaoBandeira').value || '');
         body.append('finalCartao', document.getElementById('cartaoFinalCartao').value || '');
-        const limiteStr = (document.getElementById('cartaoLimite').value || '').replace(/\./g, '').replace(',', '.');
+        const limiteStr = parseDecimal(document.getElementById('cartaoLimite').value).toFixed(2);
         body.append('limite', limiteStr);
         body.append('diaFechamento', document.getElementById('cartaoDiaFechamento').value || '');
         body.append('diaVencimento', document.getElementById('cartaoDiaVencimento').value || '');

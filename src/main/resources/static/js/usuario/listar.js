@@ -97,7 +97,7 @@ function render() {
                 + '<td><span class="badge bg-blue-lt">' + (u.perfilNome || '') + '</span></td>'
                 + '<td>' + (u.generoDescricao || '') + '</td>'
                 + '<td>' + dataBr(u.criadoEm) + '</td><td>' + situacao + '</td>'
-                + '<td class="text-nowrap">' + acoes(u) + '</td>';
+                + '<td class="col-acoes text-start text-nowrap">' + acoes(u) + '</td>';
             corpo.appendChild(tr);
         });
     }

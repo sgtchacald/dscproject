@@ -1,15 +1,15 @@
 package br.com.diegocordeiro.dscproject.config.runner;
 
 import br.com.diegocordeiro.dscproject.enums.Genero;
-import br.com.diegocordeiro.dscproject.model.Perfil;
-import br.com.diegocordeiro.dscproject.model.PerfilPermissao;
-import br.com.diegocordeiro.dscproject.model.Permissao;
-import br.com.diegocordeiro.dscproject.model.Usuario;
-import br.com.diegocordeiro.dscproject.repository.PerfilPermissaoRepository;
-import br.com.diegocordeiro.dscproject.repository.PerfilRepository;
-import br.com.diegocordeiro.dscproject.repository.PermissaoRepository;
-import br.com.diegocordeiro.dscproject.repository.UsuarioRepository;
-import br.com.diegocordeiro.dscproject.service.PermissaoCatalogoService;
+import br.com.diegocordeiro.dscproject.model.perfil.Perfil;
+import br.com.diegocordeiro.dscproject.model.perfil.PerfilPermissao;
+import br.com.diegocordeiro.dscproject.model.perfil.Permissao;
+import br.com.diegocordeiro.dscproject.model.usuario.Usuario;
+import br.com.diegocordeiro.dscproject.repository.perfil.PerfilPermissaoRepository;
+import br.com.diegocordeiro.dscproject.repository.perfil.PerfilRepository;
+import br.com.diegocordeiro.dscproject.repository.perfil.PermissaoRepository;
+import br.com.diegocordeiro.dscproject.repository.usuario.UsuarioRepository;
+import br.com.diegocordeiro.dscproject.service.perfil.PermissaoCatalogoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -86,13 +86,13 @@ public class CargaInicialRunner implements ApplicationRunner {
 
         for (Permissao permissao : permissaoRepository.findAll()) {
             if (!permissao.isOrfa()) {
-                if (!"DESPESA_RATEAR_MULTIUSUARIO".equals(permissao.getCodigo())) {
-                    vincular(admin, permissao);
-                }
-                if ("CONTAS_LISTAR".equals(permissao.getCodigo()) || "CONTAS_MANTER".equals(permissao.getCodigo())
-                        || "CARTOES_LISTAR".equals(permissao.getCodigo()) || "CARTOES_MANTER".equals(permissao.getCodigo())
-                        || "RECEITAS_LISTAR".equals(permissao.getCodigo()) || "RECEITAS_MANTER".equals(permissao.getCodigo())
-                        || "DESPESAS_LISTAR".equals(permissao.getCodigo()) || "DESPESAS_MANTER".equals(permissao.getCodigo())) {
+                vincular(admin, permissao);
+                boolean isUserPerm = permissao.getCodigo().startsWith("CONTAS_")
+                        || permissao.getCodigo().startsWith("CARTOES_")
+                        || permissao.getCodigo().startsWith("RECEITAS_")
+                        || permissao.getCodigo().startsWith("DESPESAS_")
+                        || "DESPESA_RATEAR_MULTIUSUARIO".equals(permissao.getCodigo());
+                if (isUserPerm && !permissao.isConcedivelPorPlano()) {
                     vincular(user, permissao);
                 }
             }

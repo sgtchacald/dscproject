@@ -3,7 +3,7 @@
 
 **Gerado em:** 06/09/2026  
 **Atualizado em:** 11/09/2026  
-**Versão:** 1.5  
+**Versão:** 1.7  
 **Status:** Analisado  
 **Projeto:** `dscproject-spring-mvc` (geração 2 — monólito Spring MVC + Thymeleaf)  
 
@@ -24,15 +24,16 @@
 
 ## Histórico de Versões
 
-| Versão | Data | Analista Responsável | Descrição da Alteração |
+| Versão | Data | Analista | Descrição |
 |---|---|---|---|
-| 1.0 | 06/09/2026 | Diego dos Santos Cordeiro | Criação do documento de fundação: estrutura completa de banco (domínio financeiro consolidado da geração 1 + camada Open Finance) e mapeamento JPA correspondente |
+| 1.0 | 06/09/2026 | Diego dos Santos Cordeiro | Criação do documento. 20 tabelas (11 do domínio + 9 da camada Open Finance). DDL MySQL, mapeamento JPA completo, mapeamento de auditoria (Envers). Engenharia reversa dos repositórios `dsc-backend`, `dsc-frontend` e `dsc-spring-mvc` |
 | 1.1 | 06/09/2026 | Diego dos Santos Cordeiro | Abstração de provedor de Open Finance: novas tabelas `OPFI_PROVEDORES`, `OPFI_INSTITUICAO_PROVEDOR` e `CATEGORIAS_PROVEDOR`; colunas de id externo renomeadas de `..._PLUGGY_...` para `..._ID_EXTERNO`; `OPFI_CREDENCIAIS` passa a ser única por usuário + provedor. Total de 23 tabelas. Auditoria alinhada à `AbstractAuditoria` da geração 1 (prefixo `audit_`). Estratégia de migrations em duas fases (`ddl-auto=update` no desenvolvimento, Flyway a partir da homologação). Sem migração de dados da geração 1 |
 | 1.2 | 06/09/2026 | Diego dos Santos Cordeiro | RBAC: o enum `Perfis` vira as tabelas `PERFIS`, `PERMISSOES` e `PERFIL_PERMISSAO` (N:N). `USUARIOS.USU_PERFIL` (enum) passa a `PERF_ID` (FK). `PERMISSOES` tem a marca `PERM_FL_CONCEDIVEL_POR_PLANO` — costura para um módulo futuro de planos pagos, sem modelar as tabelas de plano agora. Total de 26 tabelas. Origem no documento `01 - manter-usuario` |
 | 1.3 | 07/09/2026 | Diego dos Santos Cordeiro | `PERMISSOES` ganha `PERM_MODULO` (agrupa o seletor de perfil) e `PERM_FL_ORFA` (permissão sem correspondente no catálogo do código). Convenção do `PERM_CODIGO` fixada como **domínio-primeiro** (`USUARIOS_LISTAR`, `PERFIS_MANTER`). Sem mudança nas três tabelas de RBAC além dessas colunas. Origem nos documentos `01 - manter-usuario` e `02 - manter-perfil-permissao` |
 | 1.4 | 08/09/2026 | Diego dos Santos Cordeiro | Duas mudanças: (a) `INSTITUICOES_FINANCEIRAS` ganha `INFI_FL_SISTEMA` (QUADRO_DESCRITIVO_4 e DDL_4) — padroniza a proteção da carga inicial com `CATE_FL_SISTEMA`; (b) nova tabela `PARAMETROS_GLOBAIS` (QUADRO_DESCRITIVO_28, prefixo `PAGL_`, tabela-raiz sem FK), semeada por um loader no código na inicialização — mesmo padrão do catálogo de permissões; `PAGL_TIPO_DADO` com domínio `STRING`/`INTEGER`/`DECIMAL`/`BOOLEAN`/`JSON` e `CHECK`. Total passa de 26 para **27 tabelas**. Origem no documento `03 - manter-parametro-global` |
 | 1.5 | 11/09/2026 | Diego dos Santos Cordeiro | Agenda de Contatos Privada e Rateio Extra-Sistema: (a) nova tabela `CONTATOS` (QUADRO_DESCRITIVO_29, prefixo `CONT_`), vinculada ao usuário dono (`USU_ID_DONO`), com tipo `EXTERNO` (pessoas fora da plataforma com dados de acerto/Pix) e `SISTEMA` (conexão com outros usuários da plataforma via convite aceito); (b) atualização de `DESPESAS_USUARIO` (QUADRO_DESCRITIVO_11), substituindo a FK para `USUARIOS (USU_ID)` pela FK para `CONTATOS (CONT_ID)`, tratando co-participantes uniformemente como contatos do dono da despesa e eliminando o vazamento de dados de usuários na busca de rateio. Total passa de 27 para **28 tabelas**. Origem nos documentos `09 - manter-despesa` e `16 - manter-contato` |
 | 1.6 | 11/09/2026 | Diego dos Santos Cordeiro | Despesas Recorrentes: suporte a despesas fixas periódicas (aluguel, condomínio, assinaturas, etc.) em `DESPESAS` (QUADRO_DESCRITIVO_10 e DDL_10) com a adição das colunas `DESP_FL_RECORRENTE` (booleano indicando recorrência) e `DESP_ID_RECORRENTE_PAI` (auto-relacionamento com a despesa-mãe da série periódica). Origem no documento `09 - manter-despesa` |
+| 1.7 | 11/09/2026 | Diego dos Santos Cordeiro | Redes Sociais do Usuário e Refinamento Granular de Permissões: (a) nova tabela associativa `USUARIOS_REDES_SOCIAIS` (QUADRO_DESCRITIVO_30, prefixo `USRS_`), vinculada a `USUARIOS (USU_ID)`, para persistência das redes sociais do usuário (LinkedIn, GitHub, Facebook, Instagram, Twitter/X, YouTube, etc.) que refletem no perfil e nos ícones da interface admin; (b) decomposição mandatória das permissões agregadas `MANTER` em permissões atômicas por operação (`LISTAR`, `INSERIR`, `EDITAR`, `EXCLUIR`, `DESATIVAR`/`ATIVAR`, `AJUSTAR_SALDO`, `PAGAR`, `IMPORTAR`). Total passa de 28 para **29 tabelas**. Origem nos documentos `01 - manter-usuario` e `02 - manter-perfil-permissao` |
 
 ---
 
@@ -48,7 +49,7 @@
 
 ## 1. Introdução
 
-Este é o **documento de fundação** (Documento 0) do `dscproject-spring-mvc`. Diferente dos documentos de tela — que descrevem uma funcionalidade específica (Manter Despesa, Importar Extrato, Dashboard, etc.) — este documento tem um objetivo único e transversal: **definir, de uma só vez, toda a estrutura de dados do sistema (27 tabelas) e o mapeamento das entidades Java correspondente.**
+Este é o **documento de fundação** (Documento 0) do `dscproject-spring-mvc`. Diferente dos documentos de tela — que descrevem uma funcionalidade específica (Manter Despesa, Importar Extrato, Dashboard, etc.) — este documento tem um objetivo único e transversal: **definir, de uma só vez, toda a estrutura de dados do sistema (29 tabelas) e o mapeamento das entidades Java correspondente.**
 
 O `dscproject` é um sistema pessoal de organização de finanças (receitas, despesas, transações bancárias, cartões, faturas, investimentos, instituições financeiras e dashboard). Existem hoje duas gerações:
 
@@ -63,11 +64,11 @@ Este documento consolida **o modelo de todo o domínio financeiro da geração 1
 
 ### Por que criar toda a estrutura num único passo
 
-As 28 tabelas têm forte interdependência por chaves estrangeiras: `CONTAS` depende de `INSTITUICOES_FINANCEIRAS` e `USUARIOS`; `DESPESAS` depende de `CONTAS`, `CARTOES_CREDITO`, `FATURAS_CARTAO` e `CATEGORIAS`; `DESPESAS_USUARIO` depende de `DESPESAS` e `CONTATOS`; as tabelas `OPFI_` encadeiam provedor → credencial → conexão → conta externa → transação. Criar a estrutura completa na ordem correta de dependência (Seção 6.4) evita migrations parciais que deixariam o schema inconsistente entre as entregas das telas.
+As 29 tabelas têm forte interdependência por chaves estrangeiras: `CONTAS` depende de `INSTITUICOES_FINANCEIRAS` e `USUARIOS`; `DESPESAS` depende de `CONTAS`, `CARTOES_CREDITO`, `FATURAS_CARTAO` e `CATEGORIAS`; `DESPESAS_USUARIO` depende de `DESPESAS` e `CONTATOS`; `USUARIOS_REDES_SOCIAIS` depende de `USUARIOS`; as tabelas `OPFI_` encadeiam provedor → credencial → conexão → conta externa → transação. Criar a estrutura completa na ordem correta de dependência (Seção 6.4) evita migrations parciais que deixariam o schema inconsistente entre as entregas das telas.
 
 ### Escopo deste documento
 
-- Estrutura completa de banco das 28 tabelas (Seção 6), com um QUADRO_DESCRITIVO e um DDL por tabela, na ordem de dependência de criação.
+- Estrutura completa de banco das 29 tabelas (Seção 6), com um QUADRO_DESCRITIVO e um DDL por tabela, na ordem de dependência de criação.
 - Mapeamento das entidades Java (Seção 7), incluindo a superclasse de auditoria, os conversores e os enums de domínio.
 
 ### Não contempla
@@ -85,7 +86,7 @@ As 28 tabelas têm forte interdependência por chaves estrangeiras: `CONTAS` dep
 | 1 | **Nomenclatura de tabelas:** MAIÚSCULAS, no plural, **sem prefixo de módulo** no domínio (`USUARIOS`, `DESPESAS`, `CONTAS`). O domínio financeiro *é* o sistema — não há outro módulo com que colidir. A **única exceção** é a camada Open Finance, com prefixo `OPFI_`, por ser um contexto separado de sincronização externa. `CATEGORIAS_PROVEDOR` fica no domínio (prefixo de coluna `CAPR_`) por ser um mapa de categoria; as demais tabelas de mapeamento e *staging* são `OPFI_`. | Padrão do schema da geração 1 |
 | 1a | **Abstração de provedor (decisão de 06/09/2026):** a camada Open Finance **não é acoplada à Pluggy**. Há um catálogo `OPFI_PROVEDORES` (`PLUGGY`, `BELVO`, uma API própria certificada, etc.), e cada provedor tem uma classe *Strategy* Java que fala com a API dele. Todas as colunas de id vindas de fora são `..._ID_EXTERNO` (não `..._PLUGGY_...`), sempre acompanhadas do provedor. Adicionar um provedor novo = uma linha em `OPFI_PROVEDORES` + uma *Strategy* + as credenciais; **zero mudança de schema**. Mesmo padrão do `ia_provedores` do módulo de I.A. | [QUADRO_DESCRITIVO_13](#quadro-descritivo-13) |
 | 2 | **Nomenclatura de colunas:** cada tabela tem um **prefixo próprio** (3 a 4 letras) para suas colunas (`USU_`, `DESP_`, `CTA_`, `OFTR_`), conforme o padrão da geração 1. FKs carregam o prefixo da tabela **de origem** (`DESPESAS.CTA_ID` referencia `CONTAS`). | Padrão do schema da geração 1 |
-| 3 | **Auditoria (melhoria A):** a classe `AbstractAuditoria` da geração 1 (`@MappedSuperclass`, `@Audited` — Hibernate Envers) é **portada preservando os nomes**: prefixo de coluna `audit_`, campos `audit_data_criacao`, `audit_criado_por`, `audit_data_alteracao`, `audit_alterado_por`. Duas mudanças pontuais: autor passa de `VARCHAR(40)` para `VARCHAR(400)`, e são acrescentados 2 campos de *soft delete* — `audit_data_exclusao` e `audit_excluido_por`. Datas em `DATETIME(6)`. Herdada por todas as 25 tabelas de dados/infraestrutura + as 3 de RBAC (28 no total), inclusive associativas e de *staging*. | Classe `AbstractAuditoria` da geração 1 |
+| 3 | **Auditoria (melhoria A):** a classe `AbstractAuditoria` da geração 1 (`@MappedSuperclass`, `@Audited` — Hibernate Envers) é **portada preservando os nomes**: prefixo de coluna `audit_`, campos `audit_data_criacao`, `audit_criado_por`, `audit_data_alteracao`, `audit_alterado_por`. Duas mudanças pontuais: autor passa de `VARCHAR(40)` para `VARCHAR(400)`, e são acrescentados 2 campos de *soft delete* — `audit_data_exclusao` e `audit_excluido_por`. Datas em `DATETIME(6)`. Herdada por todas as 26 tabelas de dados/infraestrutura + as 3 de RBAC (29 no total), inclusive associativas e de *staging*. | Classe `AbstractAuditoria` da geração 1 |
 | 4 | **Soft delete:** exclusão lógica via `audit_data_exclusao` / `audit_excluido_por`. Nenhum `DELETE` físico no domínio. Consultas do sistema filtram `audit_data_exclusao IS NULL`. | Melhoria A |
 | 5 | **Chave primária:** `{PREFIXO}_ID` do tipo `BIGINT NOT NULL AUTO_INCREMENT`, mapeada com `@GeneratedValue(strategy = GenerationType.IDENTITY)`. | Padrão do schema da geração 1 |
 | 6 | **Banco:** MySQL 8 (InnoDB, `utf8mb4`). Tipos: `BIGINT`, `VARCHAR`, `CHAR`, `DECIMAL(15,2)` para valores monetários, `DATE` para datas de negócio, `DATETIME(6)` para carimbos de tempo, `JSON` para dados brutos do provedor, `BOOLEAN` (`TINYINT(1)`) para flags. | RNF03 |
@@ -110,6 +111,8 @@ As 28 tabelas têm forte interdependência por chaves estrangeiras: `CONTAS` dep
 | 24 | **Costura para planos pagos (sem modelar agora):** `PERMISSOES.PERM_FL_CONCEDIVEL_POR_PLANO` marca as permissões que um plano pago poderá conceder além do perfil (ex.: `OPEN_FINANCE_CONECTAR`, `DESPESA_RATEAR_MULTIUSUARIO`). O resolvedor de autoridades do usuário é desenhado como **permissão efetiva = permissões do perfil ∪ permissões do plano**. As tabelas de plano/assinatura/cota ficam num módulo futuro (`NN - planos-e-assinaturas`) — este documento só deixa o ponto de extensão. | [QUADRO_DESCRITIVO_26](#quadro-descritivo-26) |
 | 25 | **Numeração dos QUADRO_DESCRITIVO:** a partir da versão 1.2, os quadros são numerados por **ordem de inclusão no documento**, não por ordem de criação das tabelas. A ordem de criação é a da coluna "Ordem" na visão geral e a da Seção 6.4. Assim, acréscimos futuros entram no fim da Seção 6 sem renumerar os quadros já referenciados pelos documentos de tela. | Seção 6 |
 | 26 | **Agenda de Contatos Privada e Rateio Extra-Sistema (origem nos documentos `09 - manter-despesa` e `16 - manter-contato`):** o rateio de despesas passa a referenciar a tabela `CONTATOS` (`CONT_ID`) em vez de apontar diretamente para `USUARIOS`. Cada contato pertence exclusivamente a um usuário (`USU_ID_DONO`) e pode ser do tipo `EXTERNO` (não possui conta no sistema; guarda nome, telefone e chave PIX para acertos) ou `SISTEMA` (usuário da plataforma conectado via convite aceito, `USU_ID_CONECTADO`). Isso elimina a busca aberta na base global de usuários do sistema, garantindo privacidade/LGPD e permitindo dividir gastos com quem está fora da plataforma. | [QUADRO_DESCRITIVO_11](#quadro-descritivo-11), [QUADRO_DESCRITIVO_29](#quadro-descritivo-29) |
+| 27 | **Redes Sociais do Usuário (origem no documento `01 - manter-usuario`):** Criação da tabela associativa `USUARIOS_REDES_SOCIAIS` (prefixo `USRS_`), vinculada a `USUARIOS (USU_ID)`, para permitir que o usuário associe seus perfis públicos (LinkedIn, GitHub, Facebook, Instagram, Twitter/X, YouTube, etc.) à sua conta. Esses links refletem na nova aba de configurações do usuário (`/minha-conta`) e alimentam dinamicamente os ícones sociais no layout administrativo do sistema (`templates/sistema/template-admin/fragments/footer.html` e `header.html`). | [QUADRO_DESCRITIVO_30](#quadro-descritivo-30) |
+| 28 | **Decomposição Granular de Permissões MANTER (origem no documento `02 - manter-perfil-permissao`):** Proibição arquitetural do sufixo agregador genérico `_MANTER` no catálogo de permissões RBAC. Todas as permissões legadas (`PERFIS_MANTER`, `CONTAS_MANTER`, `CARTOES_MANTER`, `RECEITAS_MANTER`, `DESPESAS_MANTER`, `INSTITUICOES_MANTER`, `INSTITUICOES_PROVEDOR_MANTER`) são desmembradas em ações atômicas (`_LISTAR`, `_INSERIR`, `_EDITAR`, `_EXCLUIR`, `_DESATIVAR`/`_ATIVAR`, `_AJUSTAR_SALDO`, `_PAGAR`, `_IMPORTAR`). O catálogo Java passa a expor o método de decomposição reversa para garantir compatibilidade retroativa transitória. | [QUADRO_DESCRITIVO_26](#quadro-descritivo-26) |
 
 ---
 
@@ -122,7 +125,7 @@ As 28 tabelas têm forte interdependência por chaves estrangeiras: `CONTAS` dep
 | RNF01 | Independência do provedor | O sistema deve ser plenamente utilizável sem nenhuma conexão Open Finance. Toda entidade do domínio tem cadastro manual. | Validado ao criar receita, despesa, transação, fatura e investimento sem nenhuma credencial `OPFI_` cadastrada. |
 | RNF02 | Segurança da credencial | `OFCR_CLIENT_SECRET` deve ser persistido cifrado, com chave simétrica fora do banco, e nunca retornado em claro na leitura comum. | Validado por inspeção do valor persistido na coluna. |
 | RNF03 | Nomenclatura | O schema segue o padrão do `dscproject`: tabelas MAIÚSCULAS no plural sem prefixo de módulo (exceto `OPFI_`), colunas com prefixo próprio por tabela, PK `{PREFIXO}_ID BIGINT AUTO_INCREMENT`, 6 campos `audit_*`. | Validado por revisão do DDL contra este documento. |
-| RNF04 | Auditoria | Todas as 28 tabelas têm auditoria completa via Hibernate Envers (`@Audited`), gerando a tabela `_aud` correspondente, inclusive as associativas e as de *staging*. | Validado por inspeção das tabelas `_aud` após operações de CRUD. |
+| RNF04 | Auditoria | Todas as 29 tabelas têm auditoria completa via Hibernate Envers (`@Audited`), gerando a tabela `_aud` correspondente, inclusive as associativas e as de *staging*. | Validado por inspeção das tabelas `_aud` após operações de CRUD. |
 | RNF05 | Integridade monetária | Valores monetários em `DECIMAL(15,2)`. Nunca `DOUBLE`/`FLOAT`. | Validado por revisão do DDL. |
 | RNF06 | Integridade do JSON | As colunas `..._DADOS_BRUTOS` e `..._PARAMETROS` (`JSON`) devem ser validadas como JSON válido na camada de negócio antes de persistir. | Validado por teste de persistência com JSON válido e inválido. |
 | RNF07 | Idempotência da sincronização | Reprocessar o mesmo evento de webhook ou a mesma transação do provedor não pode duplicar registros. Garantido pelas chaves únicas dos ids externos por provedor (`OFTR_ID_EXTERNO`, `OFEV_ID_EVENTO_EXTERNO`, etc.). | Validado por reprocessamento do mesmo evento duas vezes. |
@@ -133,7 +136,7 @@ As 28 tabelas têm forte interdependência por chaves estrangeiras: `CONTAS` dep
 
 ## 6. Banco de Dados
 
-Esta seção descreve as **28 tabelas** do `dscproject-spring-mvc`, na **ordem de criação por dependência de FK** — cada tabela só referencia tabelas criadas antes dela.
+Esta seção descreve as **29 tabelas** do `dscproject-spring-mvc`, na **ordem de criação por dependência de FK** — cada tabela só referencia tabelas criadas antes dela.
 
 Todas as tabelas seguem `AbstractAuditoria` (6 campos `audit_*`, [QUADRO_DESCRITIVO_1](#quadro-descritivo-1)) e são auditadas via Hibernate Envers.
 
@@ -171,13 +174,14 @@ Todas as tabelas seguem `AbstractAuditoria` (6 campos `audit_*`, [QUADRO_DESCRIT
 | 26 | 23 | `OFEV_` | `OPFI_EVENTOS_WEBHOOK` | Open Finance | Log de eventos de webhook (idempotência e reprocessamento) |
 | 27 | 24 | `OFSI_` | `OPFI_SINCRONIZACOES` | Open Finance | Log de cada execução do job de sincronização |
 | 28 | 28 | `PAGL_` | `PARAMETROS_GLOBAIS` | Infraestrutura | Parâmetros globais de configuração (contrato lido em runtime por `buscarValorPorCodigo`); tabela-raiz sem FK, semeada por um loader no código na inicialização |
+| 29 | 30 | `USRS_` | `USUARIOS_REDES_SOCIAIS` | Domínio | Redes sociais associadas ao usuário (LinkedIn, GitHub, etc.) para exibição no perfil e ícones do layout admin |
 
 ---
 
 ### <a id="quadro-descritivo-1"></a>QUADRO_DESCRITIVO_1 — AbstractAuditoria (`@MappedSuperclass`)
 
 > **SUPERCLASSE DE AUDITORIA:** AbstractAuditoria (`@MappedSuperclass`)
-> OBSERVAÇÕES: Não é tabela. Portada da geração 1 (`br.com.dscproject.domain.AbstractAuditoria`) — mantém prefixo `audit_` e os nomes originais, e acrescenta os 2 campos de exclusão (soft delete). Os 6 campos são herdados por TODAS as 27 tabelas. Nos demais QUADROS, o bloco de auditoria é citado de forma compacta, referenciando este quadro.
+> OBSERVAÇÕES: Não é tabela. Portada da geração 1 (`br.com.dscproject.domain.AbstractAuditoria`) — mantém prefixo `audit_` e os nomes originais, e acrescenta os 2 campos de exclusão (soft delete). Os 6 campos são herdados por TODAS as 29 tabelas. Nos demais QUADROS, o bloco de auditoria é citado de forma compacta, referenciando este quadro.
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
@@ -1645,11 +1649,56 @@ CREATE INDEX idx_contatos_usuario_conectado ON CONTATOS (USU_ID_CONECTADO);
 
 ---
 
+### <a id="quadro-descritivo-30"></a>QUADRO_DESCRITIVO_30 — USUARIOS_REDES_SOCIAIS
+
+_Acréscimo da versão 1.7. Ordem de criação: **29** (após `USUARIOS`). Origem no documento `01 - manter-usuario`._
+
+> **TABELA DO BANCO DE DADOS:** USUARIOS_REDES_SOCIAIS  
+> OBSERVAÇÕES: Tabela associativa que vincula o usuário autenticado (`USU_ID`) aos seus perfis de redes sociais (LinkedIn, GitHub, Facebook, Instagram, Twitter/X, YouTube, etc.). Permite enriquecer a experiência do perfil e exibe dinamicamente os ícones sociais correspondentes no layout administrativo (`templates/sistema/template-admin/fragments/footer.html` e `header.html`). Cada usuário pode possuir no máximo um registro ativo por tipo de rede social (`UQ_USUARIOS_REDES_SOCIAIS_USU_TIPO`).
+
+| ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
+|---|---|---|---|
+| 1 | IDENTIFICADOR | Campo: USRS_ID<br>Tipo: BIGINT<br>Obrigatório: SIM<br>Chave: PK<br>Auto incremento: SIM | NOVO |
+| 2 | USUÁRIO | Campo: USU_ID<br>Tipo: BIGINT<br>Obrigatório: SIM<br>Chave: FK → USUARIOS (USU_ID) | NOVO. Usuário proprietário do perfil social. |
+| 3 | TIPO DE REDE SOCIAL | Campo: USRS_TIPO<br>Tipo: VARCHAR(30)<br>Obrigatório: SIM<br>Domínio: LINKEDIN, GITHUB, FACEBOOK, INSTAGRAM, TWITTER_X, YOUTUBE, OUTRO | NOVO. Identificador do serviço / plataforma de rede social. |
+| 4 | URL DO PERFIL | Campo: USRS_URL<br>Tipo: VARCHAR(500)<br>Obrigatório: SIM | NOVO. Link completo para a página/perfil público do usuário na respectiva rede. |
+| 5 | IDENTIFICADOR / HANDLE | Campo: USRS_IDENTIFICADOR<br>Tipo: VARCHAR(100)<br>Obrigatório: NÃO | NOVO. Nome de usuário (@usuario / handle) para exibição textual complementar. |
+| 6 | ATIVO | Campo: USRS_FL_ATIVO<br>Tipo: BOOLEAN<br>Obrigatório: SIM<br>Default: TRUE | NOVO. Controla se o ícone correspondente deve ser exibido no layout admin. |
+| 7-12 | AUDITORIA | Ver [QUADRO_DESCRITIVO_1](#quadro-descritivo-1) | NOVO |
+
+> **ALTERAÇÃO NA ESTRUTURA DO BANCO DE DADOS**
+
+```sql
+-- DDL_30
+CREATE TABLE USUARIOS_REDES_SOCIAIS (
+    USRS_ID                     BIGINT          NOT NULL AUTO_INCREMENT,
+    USU_ID                      BIGINT          NOT NULL,
+    USRS_TIPO                   VARCHAR(30)     NOT NULL,
+    USRS_URL                    VARCHAR(500)    NOT NULL,
+    USRS_IDENTIFICADOR          VARCHAR(100)    NULL,
+    USRS_FL_ATIVO               BOOLEAN         NOT NULL DEFAULT TRUE,
+    audit_data_criacao          DATETIME(6)     NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    audit_criado_por            VARCHAR(400)    NOT NULL,
+    audit_data_alteracao        DATETIME(6)     NULL,
+    audit_alterado_por          VARCHAR(400)    NULL,
+    audit_data_exclusao         DATETIME(6)     NULL,
+    audit_excluido_por          VARCHAR(400)    NULL,
+    CONSTRAINT pk_usuarios_redes_sociais        PRIMARY KEY (USRS_ID),
+    CONSTRAINT fk_usrs_usuario                  FOREIGN KEY (USU_ID) REFERENCES USUARIOS (USU_ID),
+    CONSTRAINT uq_usrs_usuario_tipo             UNIQUE (USU_ID, USRS_TIPO),
+    CONSTRAINT ck_usrs_tipo                     CHECK (USRS_TIPO IN ('LINKEDIN', 'GITHUB', 'FACEBOOK', 'INSTAGRAM', 'TWITTER_X', 'YOUTUBE', 'OUTRO'))
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE INDEX idx_usrs_usuario ON USUARIOS_REDES_SOCIAIS (USU_ID);
+```
+
+---
+
 ### 6.1 Diagrama ER
 
 ![DER — Documento 0](images/documento-0-fundacao-der.png)
 
-Fonte editável: `documento-0-fundacao-der.drawio` (28 tabelas, 46 chaves estrangeiras; domínio em azul, camada Open Finance em laranja, `PARAMETROS_GLOBAIS` isolada — sem FK). O layout automático tem cruzamentos — reorganizar no draw.io quando for para o `.docx`.
+Fonte editável: `documento-0-fundacao-der.drawio` (29 tabelas, 47 chaves estrangeiras; domínio em azul, camada Open Finance em laranja, `PARAMETROS_GLOBAIS` isolada — sem FK). O layout automático tem cruzamentos — reorganizar no draw.io quando for para o `.docx`.
 
 ### 6.1.1 Diagrama de Classes
 
@@ -1659,7 +1708,7 @@ Mapeamento 1:1 entidade ↔ tabela, com a herança de `AbstractAuditoria` e `Lan
 
 ### 6.2 Auditoria de Tabelas
 
-Todas as 28 tabelas são auditadas via Hibernate Envers (`@Audited`), gerando a tabela de histórico `{TABELA}_aud` com os campos `rev` e `revtype`.
+Todas as 29 tabelas são auditadas via Hibernate Envers (`@Audited`), gerando a tabela de histórico `{TABELA}_aud` com os campos `rev` e `revtype`.
 
 | TABELA PRINCIPAL | TABELA DE AUDITORIA |
 |---|---|
@@ -1667,6 +1716,7 @@ Todas as 28 tabelas são auditadas via Hibernate Envers (`@Audited`), gerando a 
 | PERMISSOES | PERMISSOES_aud |
 | PERFIL_PERMISSAO | PERFIL_PERMISSAO_aud |
 | USUARIOS | USUARIOS_aud |
+| USUARIOS_REDES_SOCIAIS | USUARIOS_REDES_SOCIAIS_aud |
 | CONTATOS | CONTATOS_aud |
 | CATEGORIAS | CATEGORIAS_aud |
 | INSTITUICOES_FINANCEIRAS | INSTITUICOES_FINANCEIRAS_aud |
@@ -1706,14 +1756,14 @@ Não há. Toda a lógica fica na camada de serviços. Faturas em aberto, totais 
 
 #### Fase 2 — congelamento (antes da primeira homologação)
 
-O schema estabilizado é transposto para **um** script Flyway `V1__init.sql`, gerado a partir da Seção 6 (as 28 tabelas na ordem de dependência de FK abaixo). O `ddl-auto` passa a `validate`. A partir daqui, toda mudança de estrutura é um script `V2__…`, `V3__…` versionado.
+O schema estabilizado é transposto para **um** script Flyway `V1__init.sql`, gerado a partir da Seção 6 (as 29 tabelas na ordem de dependência de FK abaixo). O `ddl-auto` passa a `validate`. A partir daqui, toda mudança de estrutura é um script `V2__…`, `V3__…` versionado.
 
 Ordem das tabelas dentro do `V1__init.sql` (cada uma só referencia tabelas criadas antes):
 
 | Grupo | Tabelas |
 |---|---|
 | 0 | `PERFIS`, `PERMISSOES`, `PERFIL_PERMISSAO` (+ carga inicial: perfis `ADMIN`/`USER`, catálogo de permissões e os vínculos perfil×permissão); `PARAMETROS_GLOBAIS` (tabela-raiz, sem FK; **carga inicial pelo sincronizador do catálogo do código na inicialização**, não pelo `V1__init.sql`) |
-| 1 | `USUARIOS` (FK para `PERFIS`) |
+| 1 | `USUARIOS` (FK para `PERFIS`), `USUARIOS_REDES_SOCIAIS` (FK para `USUARIOS`) |
 | 2 | `CATEGORIAS` (+ carga inicial das categorias equivalentes ao enum da geração 1, com `CATE_FL_SISTEMA = TRUE`) |
 | 3 | `INSTITUICOES_FINANCEIRAS`, `CONTAS` |
 | 4 | `CARTOES_CREDITO` |
@@ -1747,7 +1797,7 @@ model/
   AbstractAuditoria               (@MappedSuperclass — 6 campos audit_*)
   LancamentoFinanceiro            (@MappedSuperclass — campos comuns de Receita/Despesa/TransacaoBancaria)
   Perfil  Permissao  PerfilPermissao  ParametroGlobal
-  Usuario  Contato  Categoria  CategoriaProvedor  InstituicaoFinanceira  Conta  CartaoCredito
+  Usuario  UsuarioRedeSocial  Contato  Categoria  CategoriaProvedor  InstituicaoFinanceira  Conta  CartaoCredito
   TransacaoBancaria  FaturaCartao  Receita  Despesa  DespesaUsuario  Investimento
   opfi/
     OpfiProvedor  OpfiInstituicaoProvedor  OpfiCredencial  OpfiConexao  OpfiConsentimento
@@ -1755,7 +1805,7 @@ model/
 enums/
   Genero  TipoInstituicaoFinanceira  TipoConta  TipoLancamento  TipoParametro
   NaturezaMovimento  MeioPagamento  StatusPagamento  StatusFatura  TipoInvestimento  OrigemLancamento
-  TipoContato  StatusContato
+  TipoContato  StatusContato  TipoRedeSocial
   opfi/
     StatusConexao  StatusConsentimento  StatusConciliacao  StatusSincronizacao  TipoSincronizacao
 converter/
@@ -1810,6 +1860,7 @@ O *soft delete* é aplicado via `@SQLDelete` + `@SQLRestriction("audit_data_excl
 | `TipoParametro` | `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `JSON` | Novo (v1.4). Domínio de `PAGL_TIPO_DADO`; define a validação do valor do parâmetro global (`JSON` = *parse* sintático). |
 | `TipoContato` | `EXTERNO`, `SISTEMA` | Novo (v1.5). Domínio de `CONT_TIPO`; diferencia contato extra-sistema de conexão de usuário via convite. |
 | `StatusContato` | `ATIVO`, `PENDENTE_CONVITE`, `RECUSADO`, `BLOQUEADO` | Novo (v1.5). Domínio de `CONT_STATUS`; ciclo de vida do contato/convite. |
+| `TipoRedeSocial` | `LINKEDIN`, `GITHUB`, `FACEBOOK`, `INSTAGRAM`, `TWITTER_X`, `YOUTUBE`, `OUTRO` | Novo (v1.7). Domínio de `USRS_TIPO`; redes sociais vinculadas ao usuário. |
 
 **Enums da camada Open Finance** (`enums/opfi/`):
 
@@ -1840,6 +1891,7 @@ Aplica-se às colunas `RECE_COMPETENCIA`, `DESP_COMPETENCIA`, `TRBA_COMPETENCIA`
 | `PerfilPermissao` | `PERFIL_PERMISSAO` | `AbstractAuditoria` |
 | `ParametroGlobal` | `PARAMETROS_GLOBAIS` | `AbstractAuditoria` (`@Audited`; sem relacionamento — tabela-raiz) |
 | `Usuario` | `USUARIOS` | `AbstractAuditoria` (implementa `UserDetails`; `@ManyToOne Perfil`) |
+| `UsuarioRedeSocial` | `USUARIOS_REDES_SOCIAIS` | `AbstractAuditoria` (`@ManyToOne Usuario usuario`) |
 | `Contato` | `CONTATOS` | `AbstractAuditoria` (`@ManyToOne Usuario usuarioDono`, `@ManyToOne Usuario usuarioConectado`) |
 | `Categoria` | `CATEGORIAS` | `AbstractAuditoria` |
 | `CategoriaProvedor` | `CATEGORIAS_PROVEDOR` | `AbstractAuditoria` |

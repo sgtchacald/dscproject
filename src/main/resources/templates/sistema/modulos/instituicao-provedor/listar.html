@@ -36,7 +36,7 @@
                     <option th:each="p : ${provedores}" th:value="${p.id}" th:text="${p.nome}">Pluggy</option>
                 </select>
             </div>
-            <button class="btn btn-primary" id="btnNovoVinculo" sec:authorize="hasAuthority('PERM_INSTITUICOES_PROVEDOR_MANTER')"
+            <button class="btn btn-primary" id="btnNovoVinculo" sec:authorize="hasAuthority('PERM_INSTITUICOES_PROVEDOR_INSERIR')"
                     data-bs-toggle="modal" data-bs-target="#modalVinculo">
                 <i class="ph ph-plus" aria-hidden="true"></i>
                 <span th:text="#{instituicaoprovedor.lista.botao.novo}">Novo vínculo</span>
@@ -48,13 +48,13 @@
 <section layout:fragment="corpo">
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table" id="tabelaVinculos">
+            <table class="table table-vcenter card-table table-hover" id="tabelaVinculos">
                 <thead>
                 <tr>
                     <th data-col="provedorNome" class="sortable" role="button" th:text="#{instituicaoprovedor.col.provedor}">Provedor</th>
                     <th data-col="instituicaoNome" class="sortable" role="button" th:text="#{instituicaoprovedor.col.instituicao}">Instituição</th>
                     <th data-col="idExterno" class="sortable" role="button" th:text="#{instituicaoprovedor.col.idExterno}">Id externo</th>
-                    <th class="w-1" th:text="#{instituicaoprovedor.col.acoes}">Ações</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{instituicaoprovedor.col.acoes}">Ações</th>
                 </tr>
                 </thead>
                 <tbody id="corpoTabelaVinculos"></tbody>
@@ -69,7 +69,9 @@
 
     <div id="toastArea" class="position-fixed bottom-0 end-0 p-3" style="z-index:1100;"></div>
 
-    <span sec:authorize="hasAuthority('PERM_INSTITUICOES_PROVEDOR_MANTER')" data-perm="manter" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_INSTITUICOES_PROVEDOR_INSERIR')" data-perm="inserir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_INSTITUICOES_PROVEDOR_EDITAR')" data-perm="editar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_INSTITUICOES_PROVEDOR_EXCLUIR')" data-perm="excluir" hidden></span>
 
     <div id="dadosTelaVinculo"
          th:data-url-dados="@{/instituicoes-provedor/listar-dados}"

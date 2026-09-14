@@ -31,7 +31,7 @@
             <button class="btn" id="btnCatalogo" data-bs-toggle="modal" data-bs-target="#modalCatalogo">
                 <span th:text="#{perfil.lista.botao.catalogo}">Catálogo de permissões</span>
             </button>
-            <button class="btn btn-primary" id="btnNovoPerfil" sec:authorize="hasAuthority('PERM_PERFIS_MANTER')"
+            <button class="btn btn-primary" id="btnNovoPerfil" sec:authorize="hasAuthority('PERM_PERFIS_INSERIR')"
                     data-bs-toggle="modal" data-bs-target="#modalPerfil">
                 <span th:text="#{perfil.lista.botao.novo}">Novo perfil</span>
             </button>
@@ -43,7 +43,7 @@
 
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table" id="tabelaPerfis">
+            <table class="table table-vcenter card-table table-hover" id="tabelaPerfis">
                 <thead>
                 <tr>
                     <th data-col="codigo" class="sortable" role="button" th:text="#{perfil.col.codigo}">Código</th>
@@ -51,7 +51,7 @@
                     <th data-col="qtdPermissoes" class="sortable" role="button" th:text="#{perfil.col.qtdPermissoes}">Nº de permissões</th>
                     <th data-col="qtdUsuarios" class="sortable" role="button" th:text="#{perfil.col.qtdUsuarios}">Nº de usuários</th>
                     <th th:text="#{perfil.col.situacao}">Tipo / Situação</th>
-                    <th class="w-1" th:text="#{perfil.col.acoes}">Ações</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{perfil.col.acoes}">Ações</th>
                 </tr>
                 </thead>
                 <tbody id="corpoTabelaPerfis"></tbody>
@@ -67,7 +67,10 @@
 
     <div id="toastArea" class="position-fixed bottom-0 end-0 p-3" style="z-index:1100;"></div>
 
-    <span sec:authorize="hasAuthority('PERM_PERFIS_MANTER')" data-perm="manter" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_PERFIS_INSERIR')" data-perm="inserir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_PERFIS_EDITAR')" data-perm="editar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_PERFIS_EXCLUIR')" data-perm="excluir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_PERFIS_VINCULAR_PERMISSAO')" data-perm="vincular" hidden></span>
     <span sec:authorize="hasAuthority('PERM_PERFIS_SINCRONIZAR_CATALOGO')" data-perm="sincronizar" hidden></span>
 
     <div id="dadosTelaPerfil"

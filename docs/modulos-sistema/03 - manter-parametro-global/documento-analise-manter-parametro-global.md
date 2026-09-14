@@ -2,7 +2,7 @@
 ## Módulo Parâmetros Globais — ADMIN — Manter Parâmetro Global
 
 **Gerado em:** 08/09/2026
-**Versão:** 1.1
+**Versão:** 1.2
 **Status:** Desenvolvido
 **Projeto:** `dscproject-spring-mvc` (geração 2)
 
@@ -27,6 +27,7 @@
 |---|---|---|---|
 | 1.0 | 08/09/2026 | Diego dos Santos Cordeiro | Criação do documento. Tela **só de edição** dos parâmetros globais do sistema (`PARAMETROS_GLOBAIS`, prefixo `PAGL_`). Os parâmetros são semeados por um **loader no código** (mesmo padrão do catálogo de permissões do documento `02 - manter-perfil-permissao`): a tela não cria nem exclui, apenas edita o `valor` (com `motivo` obrigatório a cada alteração) — o `tipo` vem do catálogo e é somente-leitura. Ação "restaurar padrão" (`PAGL_VALOR_DEFAULT`) no escopo. Tipos suportados: `STRING`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `JSON`. Histórico de revisões (Hibernate Envers) no escopo. Engenharia reversa da feature `ParametroGlobal` do `portal-lgpd-api`. A estrutura da tabela é a do Documento 0 ([QUADRO_DESCRITIVO_28](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-28), acréscimo v1.4) — este documento não introduz tabela nova |
 | 1.1 | 08/09/2026 | Diego dos Santos Cordeiro | A edição do `valor` passa a ser **inline no próprio grid** — clicar na célula Valor a transforma, em tempo de execução, no editor adequado ao tipo daquela linha. Não há mais tela nem modal de "editar parâmetro": o antigo "Modal: Editar Parâmetro" ([QUADRO_DESCRITIVO_3](#quadro-descritivo-3)) foi substituído por "Modal: Confirmar Alteração", que só mostra o resumo da mudança (`valor` anterior → novo) e pede o `motivo` obrigatório. O `tipo` continua somente-leitura (badge no grid), e `JSON` / restaurar-padrão (`EDP06`) seguem como na v1.0. Reescritas as Seções 1, 2, 3, 5, 7, 8, 15, 16 e 17. |
+| 1.2 | 12/09/2026 | Diego dos Santos Cordeiro | Padronização visual do sistema: explicitação do alinhamento à esquerda para a coluna de Ações no grid de Parâmetros Globais (QUADRO_DESCRITIVO_1). |
 
 ---
 
@@ -215,7 +216,7 @@ Protótipo navegável (HTML): `prototipo/manter-parametro-global-prototipo.html`
 | <a id="qdd1-10"></a>10 | VALOR | Tipo: Coluna / **Célula editável** (campo adaptativo)<br>Ordenação: Não | Exibe [C1](#c1).valor. `BOOLEAN` renderizado como selo Sim/Não; `JSON` e textos longos truncados com tooltip. Editável só com [PERM02](#perm02): ao clicar, vira o editor do tipo da linha ([RT06](#rt06)) e executa [RT04](#rt04). |
 | <a id="qdd1-11"></a>11 | SITUAÇÃO | Tipo: Coluna (badge)<br>Ordenação: Sim | "Ativo" (verde) quando `PAGL_FL_ORFA = FALSE`; "Órfão" (âmbar) quando `PAGL_FL_ORFA = TRUE` — parâmetro sem correspondente no catálogo do código ([RN06](#rn06)). |
 | <a id="qdd1-12"></a>12 | ÚLTIMA ALTERAÇÃO | Tipo: Coluna<br>Ordenação: Sim | Exibe [C1](#c1).alteradoPor e [C1](#c1).dataAlteracao. Vazio quando o parâmetro nunca foi editado após a carga. |
-| <a id="qdd1-13"></a>13 | ÍCONES DE AÇÃO | Tipo: Ícones<br>Restaurar padrão (ícone: rotate, tooltip: Restaurar valor padrão)<br>Histórico (ícone: history, tooltip: Ver histórico) | Restaurar padrão → [RT08](#rt08); visível a quem tem [PERM02](#perm02), desabilitado quando [C1](#c1).valor = [C1](#c1).valorDefault. Histórico → [RT07](#rt07). Não há ícone Editar — a edição do valor é feita na célula [ID10](#qdd1-10). |
+| <a id="qdd1-13"></a>13 | ÍCONES DE AÇÃO | Tipo: Ícones (coluna alinhada à esquerda)<br>Restaurar padrão (ícone: rotate, tooltip: Restaurar valor padrão)<br>Histórico (ícone: history, tooltip: Ver histórico) | Restaurar padrão → [RT08](#rt08); visível a quem tem [PERM02](#perm02), desabilitado quando [C1](#c1).valor = [C1](#c1).valorDefault. Histórico → [RT07](#rt07). Não há ícone Editar — a edição do valor é feita na célula [ID10](#qdd1-10). |
 
 ### <a id="quadro-descritivo-2"></a>7.2 Modal: Filtrar Parâmetros — QUADRO_DESCRITIVO_2
 

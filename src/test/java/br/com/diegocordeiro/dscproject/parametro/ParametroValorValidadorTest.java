@@ -1,5 +1,6 @@
 package br.com.diegocordeiro.dscproject.parametro;
 
+import br.com.diegocordeiro.dscproject.config.parametro.ParametroValorValidador;
 import br.com.diegocordeiro.dscproject.enums.TipoParametro;
 import org.junit.jupiter.api.Test;
 

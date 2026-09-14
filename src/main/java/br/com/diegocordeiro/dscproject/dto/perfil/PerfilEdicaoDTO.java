@@ -1,6 +1,6 @@
 package br.com.diegocordeiro.dscproject.dto.perfil;
 
-import br.com.diegocordeiro.dscproject.model.Perfil;
+import br.com.diegocordeiro.dscproject.model.perfil.Perfil;
 import lombok.Getter;
 
 import java.util.List;

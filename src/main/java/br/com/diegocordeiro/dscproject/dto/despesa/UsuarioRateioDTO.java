@@ -1,6 +1,6 @@
 package br.com.diegocordeiro.dscproject.dto.despesa;
 
-import br.com.diegocordeiro.dscproject.model.Usuario;
+import br.com.diegocordeiro.dscproject.model.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,6 +1,6 @@
 package br.com.diegocordeiro.dscproject.dto.permissao;
 
-import br.com.diegocordeiro.dscproject.model.Permissao;
+import br.com.diegocordeiro.dscproject.model.perfil.Permissao;
 import lombok.Getter;
 
 /** Linha do catálogo de permissões (somente leitura), consumida pela tela e pelo seletor do modal de perfil. */

@@ -3,7 +3,7 @@ package br.com.diegocordeiro.dscproject.dto.despesa;
 import br.com.diegocordeiro.dscproject.enums.MeioPagamento;
 import br.com.diegocordeiro.dscproject.enums.OrigemLancamento;
 import br.com.diegocordeiro.dscproject.enums.StatusPagamento;
-import br.com.diegocordeiro.dscproject.model.Despesa;
+import br.com.diegocordeiro.dscproject.model.despesa.Despesa;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

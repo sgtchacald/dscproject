@@ -1,7 +1,8 @@
 package br.com.diegocordeiro.dscproject.dto.minhaconta;
 
+import br.com.diegocordeiro.dscproject.model.conta.Conta;
 import br.com.diegocordeiro.dscproject.enums.Genero;
-import br.com.diegocordeiro.dscproject.model.Usuario;
+import br.com.diegocordeiro.dscproject.model.usuario.Usuario;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
