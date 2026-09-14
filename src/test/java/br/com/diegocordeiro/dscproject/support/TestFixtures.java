@@ -1,10 +1,10 @@
 package br.com.diegocordeiro.dscproject.support;
 
 import br.com.diegocordeiro.dscproject.enums.Genero;
-import br.com.diegocordeiro.dscproject.model.Perfil;
-import br.com.diegocordeiro.dscproject.model.PerfilPermissao;
-import br.com.diegocordeiro.dscproject.model.Permissao;
-import br.com.diegocordeiro.dscproject.model.Usuario;
+import br.com.diegocordeiro.dscproject.model.perfil.Perfil;
+import br.com.diegocordeiro.dscproject.model.perfil.PerfilPermissao;
+import br.com.diegocordeiro.dscproject.model.perfil.Permissao;
+import br.com.diegocordeiro.dscproject.model.usuario.Usuario;
 
 import java.time.LocalDate;
 import java.util.HashSet;

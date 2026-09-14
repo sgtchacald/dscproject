@@ -12,7 +12,12 @@ let ordenacao = { col: 'descricao', asc: true };
 const corpo = document.getElementById('corpoTabelaContas');
 const rodape = document.getElementById('rodapeContagemContas');
 
-const podeManter = () => !!document.querySelector('[data-perm="manter"]');
+const pode = {
+    inserir: () => !!document.querySelector('[data-perm="inserir"]'),
+    editar: () => !!document.querySelector('[data-perm="editar"]'),
+    excluir: () => !!document.querySelector('[data-perm="excluir"]'),
+    ajustarSaldo: () => !!document.querySelector('[data-perm="ajustar-saldo"]')
+};
 
 async function carregar() {
     try {
@@ -151,14 +156,18 @@ function render() {
             }
 
             let acaoHtml = '';
-            if (podeManter()) {
+            if (pode.editar()) {
                 acaoHtml += `<button type="button" class="btn btn-action" data-acao="editar" data-id="${c.id}" title="Editar conta" aria-label="Editar conta">
                     <i class="ph ph-pencil-simple" aria-hidden="true"></i>
                 </button> `;
-                if (!c.excluido) {
+            }
+            if (!c.excluido) {
+                if (pode.ajustarSaldo()) {
                     acaoHtml += `<button type="button" class="btn btn-action text-warning" data-acao="ajustar-saldo" data-id="${c.id}" data-saldo="${c.saldo}" data-moeda="${c.moeda}" title="Ajustar saldo" aria-label="Ajustar saldo">
                         <i class="ph ph-currency-dollar" aria-hidden="true"></i>
                     </button> `;
+                }
+                if (pode.excluir()) {
                     acaoHtml += `<button type="button" class="btn btn-action text-danger" data-acao="excluir" data-id="${c.id}" data-descricao="${c.descricao}" title="Excluir conta" aria-label="Excluir conta">
                         <i class="ph ph-trash" aria-hidden="true"></i>
                     </button>`;
@@ -174,7 +183,7 @@ function render() {
                 <td class="text-center">${consideraSaldoHtml}</td>
                 <td class="text-end">${qtdUsoHtml}</td>
                 <td>${situacaoHtml}</td>
-                <td><div class="d-flex gap-1">${acaoHtml}</div></td>
+                <td class="col-acoes text-start"><div class="d-flex gap-1 justify-content-start">${acaoHtml}</div></td>
             `;
 
             corpo.appendChild(tr);

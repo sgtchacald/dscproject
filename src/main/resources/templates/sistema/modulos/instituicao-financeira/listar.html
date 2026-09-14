@@ -34,7 +34,7 @@
                 <i class="ph ph-funnel" aria-hidden="true"></i>
                 <span th:text="#{instituicao.lista.botao.filtrar}">Filtrar</span>
             </button>
-            <button class="btn btn-primary" id="btnNovaInstituicao" sec:authorize="hasAuthority('PERM_INSTITUICOES_MANTER')"
+            <button class="btn btn-primary" id="btnNovaInstituicao" sec:authorize="hasAuthority('PERM_INSTITUICOES_INSERIR')"
                     data-bs-toggle="modal" data-bs-target="#modalInstituicao">
                 <i class="ph ph-plus" aria-hidden="true"></i>
                 <span th:text="#{instituicao.lista.botao.novo}">Nova instituição</span>
@@ -46,7 +46,7 @@
 <section layout:fragment="corpo">
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table" id="tabelaInstituicoes">
+            <table class="table table-vcenter card-table table-hover" id="tabelaInstituicoes">
                 <thead>
                 <tr>
                     <th data-col="nome" class="sortable" role="button" th:text="#{instituicao.col.nome}">Nome</th>
@@ -55,7 +55,7 @@
                     <th data-col="qtdUso" class="sortable text-end" role="button" th:text="#{instituicao.col.qtdUso}">Nº de usos</th>
                     <th data-col="qtdProvedores" class="sortable text-end" role="button" th:text="#{instituicao.col.qtdProvedores}">Provedores mapeados</th>
                     <th data-col="situacao" class="sortable" role="button" th:text="#{instituicao.col.situacao}">Situação</th>
-                    <th class="w-1" th:text="#{instituicao.col.acoes}">Ações</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{instituicao.col.acoes}">Ações</th>
                 </tr>
                 </thead>
                 <tbody id="corpoTabelaInstituicoes"></tbody>
@@ -71,7 +71,9 @@
 
     <div id="toastArea" class="position-fixed bottom-0 end-0 p-3" style="z-index:1100;"></div>
 
-    <span sec:authorize="hasAuthority('PERM_INSTITUICOES_MANTER')" data-perm="manter" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_INSTITUICOES_INSERIR')" data-perm="inserir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_INSTITUICOES_EDITAR')" data-perm="editar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_INSTITUICOES_EXCLUIR')" data-perm="excluir" hidden></span>
 
     <div id="dadosTelaInstituicao"
          th:data-url-dados="@{/instituicoes-financeiras/listar-dados}"

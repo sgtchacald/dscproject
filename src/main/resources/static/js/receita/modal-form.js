@@ -1,5 +1,6 @@
 import { getJson, enviar } from '../comum/http.js';
 import { toast, abrirModal, fecharModal } from '../comum/ui.js';
+import { parseDecimal, definirValorMoeda } from '../comum/mascara.js';
 
 export const EVENTO_ALTERADO = 'receita:alterada';
 
@@ -111,7 +112,7 @@ export async function abrirEdicao(id) {
         document.getElementById('tituloModalReceita').textContent = cfg().labelEditar || 'Editar receita';
         document.getElementById('receitaNome').value = dados.nome || '';
         document.getElementById('receitaDescricao').value = dados.descricao || '';
-        document.getElementById('receitaValor').value = dados.valor != null ? Number(dados.valor).toFixed(2).replace('.', ',') : '';
+        definirValorMoeda(document.getElementById('receitaValor'), dados.valor);
         document.getElementById('receitaDataLancamento').value = dados.dataLancamento || '';
         document.getElementById('receitaCompetencia').value = dados.competencia || '';
         competenciaEditadaManualmente = true; // não reajustar a competência já gravada ao reabrir em edição
@@ -170,7 +171,7 @@ function corpoFormulario() {
     if (id) body.append('id', id);
     body.append('nome', document.getElementById('receitaNome').value || '');
     body.append('descricao', document.getElementById('receitaDescricao').value || '');
-    let valorStr = (document.getElementById('receitaValor').value || '').replace(/\./g, '').replace(',', '.');
+    let valorStr = parseDecimal(document.getElementById('receitaValor').value).toFixed(2);
     body.append('valor', valorStr);
     body.append('dataLancamento', document.getElementById('receitaDataLancamento').value || '');
     body.append('competencia', document.getElementById('receitaCompetencia').value || '');

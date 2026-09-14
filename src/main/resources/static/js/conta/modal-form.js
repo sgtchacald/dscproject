@@ -1,5 +1,6 @@
 import { getJson, enviar } from '../comum/http.js';
 import { toast, abrirModal, fecharModal } from '../comum/ui.js';
+import { parseDecimal } from '../comum/mascara.js';
 
 export const EVENTO_ALTERADO = 'conta:alterada';
 
@@ -201,7 +202,7 @@ export function inicializarForm() {
         body.append('consideraSaldo', document.getElementById('contaConsideraSaldo').checked);
 
         if (!ehEdicao) {
-            let saldoInicialStr = (document.getElementById('contaSaldoInicial').value || '0,00').replace(/\./g, '').replace(',', '.');
+            let saldoInicialStr = parseDecimal(document.getElementById('contaSaldoInicial').value).toFixed(2);
             body.append('saldoInicial', saldoInicialStr);
         } else {
             const chk = document.getElementById('contaAtiva');

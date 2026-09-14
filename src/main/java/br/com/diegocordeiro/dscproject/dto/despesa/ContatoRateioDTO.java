@@ -1,7 +1,7 @@
 package br.com.diegocordeiro.dscproject.dto.despesa;
 
 import br.com.diegocordeiro.dscproject.enums.TipoContato;
-import br.com.diegocordeiro.dscproject.model.Contato;
+import br.com.diegocordeiro.dscproject.model.contato.Contato;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

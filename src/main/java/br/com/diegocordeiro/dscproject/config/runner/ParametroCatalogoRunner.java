@@ -1,9 +1,9 @@
 package br.com.diegocordeiro.dscproject.config.runner;
 
 import br.com.diegocordeiro.dscproject.dto.catalogo.SincronizacaoCatalogoDTO;
-import br.com.diegocordeiro.dscproject.parametro.ParametrosGlobaisCatalogo;
-import br.com.diegocordeiro.dscproject.repository.ParametroGlobalRepository;
-import br.com.diegocordeiro.dscproject.service.ParametroCatalogoService;
+import br.com.diegocordeiro.dscproject.config.parametro.ParametrosGlobaisCatalogo;
+import br.com.diegocordeiro.dscproject.repository.parametro.ParametroGlobalRepository;
+import br.com.diegocordeiro.dscproject.service.parametro.ParametroCatalogoService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;

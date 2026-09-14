@@ -34,7 +34,7 @@
                 <i class="ph ph-funnel" aria-hidden="true"></i>
                 <span th:text="#{cartao.lista.botao.filtrar}">Filtrar</span>
             </button>
-            <button class="btn btn-primary" id="btnNovoCartao" sec:authorize="hasAuthority('PERM_CARTOES_MANTER')"
+            <button class="btn btn-primary" id="btnNovoCartao" sec:authorize="hasAuthority('PERM_CARTOES_INSERIR')"
                     data-bs-toggle="modal" data-bs-target="#modalCartao">
                 <i class="ph ph-plus" aria-hidden="true"></i>
                 <span th:text="#{cartao.lista.botao.novo}">Novo cartão</span>
@@ -46,7 +46,7 @@
 <section layout:fragment="corpo">
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table" id="tabelaCartoes">
+            <table class="table table-vcenter card-table table-hover" id="tabelaCartoes">
                 <thead>
                 <tr>
                     <th data-col="descricao" class="sortable" role="button" th:text="#{cartao.col.descricao}">Descrição</th>
@@ -56,7 +56,7 @@
                     <th data-col="fechamentoVencimento" th:text="#{cartao.col.fechamentoVencimento}">Fechamento / Vencimento</th>
                     <th data-col="contaDebito" class="sortable" role="button" th:text="#{cartao.col.contaDebito}">Conta de Débito</th>
                     <th data-col="situacao" class="sortable" role="button" th:text="#{cartao.col.situacao}">Situação</th>
-                    <th class="w-1" th:text="#{cartao.col.acoes}">Ações</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{cartao.col.acoes}">Ações</th>
                 </tr>
                 </thead>
                 <tbody id="corpoTabelaCartoes"></tbody>
@@ -72,7 +72,9 @@
 
     <div id="toastArea" class="position-fixed bottom-0 end-0 p-3" style="z-index:1100;"></div>
 
-    <span sec:authorize="hasAuthority('PERM_CARTOES_MANTER')" data-perm="manter" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_CARTOES_INSERIR')" data-perm="inserir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_CARTOES_EDITAR')" data-perm="editar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_CARTOES_EXCLUIR')" data-perm="excluir" hidden></span>
 
     <div id="dadosTelaCartao"
          th:data-url-dados="@{/cartoes/listar-dados}"

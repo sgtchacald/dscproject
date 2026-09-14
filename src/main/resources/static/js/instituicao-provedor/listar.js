@@ -10,7 +10,11 @@ const corpo = document.getElementById('corpoTabelaVinculos');
 const rodape = document.getElementById('rodapeContagemVinculos');
 const filtroProvedor = document.getElementById('filtroProvedor');
 
-const podeManter = () => !!document.querySelector('[data-perm="manter"]');
+const pode = {
+    inserir: () => !!document.querySelector('[data-perm="inserir"]'),
+    editar: () => !!document.querySelector('[data-perm="editar"]'),
+    excluir: () => !!document.querySelector('[data-perm="excluir"]')
+};
 
 async function carregar() {
     try {
@@ -60,11 +64,15 @@ function render() {
             const tr = document.createElement('tr');
 
             let acaoHtml = '';
-            if (podeManter()) {
-                acaoHtml = `
+            if (pode.editar()) {
+                acaoHtml += `
                     <button type="button" class="btn btn-action" data-acao="editar" data-id="${v.id}" title="Editar vínculo">
                         <i class="ph ph-pencil-simple" aria-hidden="true"></i>
                     </button>
+                `;
+            }
+            if (pode.excluir()) {
+                acaoHtml += `
                     <button type="button" class="btn btn-action text-danger" data-acao="excluir" data-id="${v.id}" data-inst="${v.instituicaoNome}" data-prov="${v.provedorNome}" title="Excluir vínculo">
                         <i class="ph ph-trash" aria-hidden="true"></i>
                     </button>
@@ -75,7 +83,7 @@ function render() {
                 <td><strong>${v.provedorNome}</strong></td>
                 <td>${v.instituicaoNome}</td>
                 <td><code>${v.idExterno}</code></td>
-                <td><div class="d-flex gap-1">${acaoHtml}</div></td>
+                <td class="col-acoes text-start"><div class="d-flex gap-1 justify-content-start">${acaoHtml}</div></td>
             `;
 
             corpo.appendChild(tr);

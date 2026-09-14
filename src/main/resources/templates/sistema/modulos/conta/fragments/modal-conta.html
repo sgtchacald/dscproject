@@ -85,7 +85,7 @@
                         </div>
                         <div class="col-md-6 mb-3" id="grupoSaldoInicial">
                             <label class="form-label" for="contaSaldoInicial" th:text="#{conta.form.campo.saldoInicial.label}">Saldo Inicial (R$)</label>
-                            <input type="text" class="form-control" id="contaSaldoInicial" name="saldoInicial"
+                            <input type="text" class="form-control mascara-moeda" id="contaSaldoInicial" name="saldoInicial" data-mascara="moeda"
                                    th:placeholder="#{conta.form.campo.saldoInicial.placeholder}" value="0,00">
                             <small class="form-hint" th:text="#{conta.form.campo.saldoInicial.hint}">Definido apenas na criação da conta. Para correções posteriores, use o Ajuste de Saldo.</small>
                             <div class="invalid-feedback" id="erroSaldoInicial"></div>

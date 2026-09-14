@@ -11,7 +11,11 @@
     cursor: pointer;
 }
 
-td.celula-valor.cursor-pointer:hover {
+td.celula-valor.cursor-pointer:hover,
+td.celula-competencia.cursor-pointer:hover,
+td.celula-categoria.cursor-pointer:hover,
+td.celula-forma.cursor-pointer:hover,
+td.celula-nome.cursor-pointer:hover {
     background-color: rgba(var(--tblr-primary-rgb, 32, 107, 196), 0.05);
 }
 
@@ -61,6 +65,11 @@ td.celula-valor.cursor-pointer:hover {
     --sidebar-width: 15rem;
 }
 
+.navbar-vertical,
+.navbar-vertical .navbar-collapse {
+    overflow-x: hidden;
+}
+
 @media (min-width: 992px) {
     .navbar-vertical.navbar-expand-lg {
         width: var(--sidebar-width);
@@ -68,6 +77,7 @@ td.celula-valor.cursor-pointer:hover {
            conteúdo pra rolar) — troca pra auto, e a barra só aparece quando
            o menu realmente não cabe na altura da tela. */
         overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .navbar-expand-lg.navbar-vertical ~ .navbar,
@@ -92,4 +102,65 @@ td.celula-valor.cursor-pointer:hover {
 .sidebar-resize-handle.resizando {
     background: rgba(var(--tblr-primary-rgb, 32, 107, 196), 0.5);
     outline: none;
+}
+
+/* Padronização do sistema: colunas de Ações sempre alinhadas à esquerda */
+th.col-acoes,
+td.col-acoes {
+    text-align: left !important;
+}
+
+td.col-acoes .d-flex,
+td.col-acoes .btn-list {
+    justify-content: flex-start !important;
+}
+
+/* Destaque visual ao posicionar o mouse sobre qualquer linha de tabela do sistema */
+.table tbody tr {
+    transition: background-color 0.15s ease-in-out;
+}
+
+.table tbody tr:hover,
+.table-hover tbody tr:hover {
+    background-color: rgba(var(--tblr-primary-rgb, 32, 107, 196), 0.08) !important;
+    cursor: pointer;
+}
+
+.table tbody tr.table-active,
+.table tbody tr.linha-selecionada {
+    background-color: rgba(var(--tblr-primary-rgb, 32, 107, 196), 0.12) !important;
+}
+
+/* Drag and Drop para reordenação de linhas de grid */
+.cursor-grab {
+    cursor: grab !important;
+}
+
+.cursor-grabbing {
+    cursor: grabbing !important;
+}
+
+.drag-handle {
+    cursor: grab;
+    color: var(--tblr-muted, #6c757d);
+    user-select: none;
+    font-size: 1.1rem;
+    vertical-align: middle;
+}
+
+.drag-handle:hover {
+    color: var(--tblr-primary, #206bc4);
+}
+
+tr.dragging {
+    opacity: 0.45;
+    background-color: rgba(var(--tblr-primary-rgb, 32, 107, 196), 0.15) !important;
+}
+
+tr.drag-over-top {
+    border-top: 2px solid var(--tblr-primary, #206bc4) !important;
+}
+
+tr.drag-over-bottom {
+    border-bottom: 2px solid var(--tblr-primary, #206bc4) !important;
 }

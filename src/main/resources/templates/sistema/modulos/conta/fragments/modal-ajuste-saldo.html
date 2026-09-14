@@ -26,7 +26,7 @@
 
                     <div class="mb-3">
                         <label class="form-label required" for="ajusteNovoSaldo" th:text="#{conta.ajuste.campo.novoSaldo.label}">Novo Saldo (R$)</label>
-                        <input type="text" class="form-control" id="ajusteNovoSaldo" name="novoSaldo"
+                        <input type="text" class="form-control mascara-moeda" id="ajusteNovoSaldo" name="novoSaldo" data-mascara="moeda"
                                th:placeholder="#{conta.ajuste.campo.novoSaldo.placeholder}" required>
                         <div class="invalid-feedback" id="erroAjusteNovoSaldo"></div>
                     </div>

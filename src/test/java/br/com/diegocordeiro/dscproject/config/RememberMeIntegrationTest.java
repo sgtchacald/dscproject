@@ -1,10 +1,10 @@
 package br.com.diegocordeiro.dscproject.config;
 
 import br.com.diegocordeiro.dscproject.enums.Genero;
-import br.com.diegocordeiro.dscproject.model.Perfil;
-import br.com.diegocordeiro.dscproject.model.Usuario;
-import br.com.diegocordeiro.dscproject.repository.PerfilRepository;
-import br.com.diegocordeiro.dscproject.repository.UsuarioRepository;
+import br.com.diegocordeiro.dscproject.model.perfil.Perfil;
+import br.com.diegocordeiro.dscproject.model.usuario.Usuario;
+import br.com.diegocordeiro.dscproject.repository.perfil.PerfilRepository;
+import br.com.diegocordeiro.dscproject.repository.usuario.UsuarioRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalImportarFatura" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ph ph-upload-simple me-1" aria-hidden="true"></i>
+                    <span th:text="#{despesa.importar.titulo}">Importar fatura de cartão de crédito</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formImportarFatura" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label required" for="importarCartaoId" th:text="#{despesa.importar.campo.cartao.label}">Cartão de crédito</label>
+                        <select class="form-select" id="importarCartaoId" name="cartaoId" required>
+                            <option value="" th:text="#{despesa.importar.campo.cartao.selecione}">Selecione o cartão...</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required" for="importarCompetencia" th:text="#{despesa.importar.campo.competencia.label}">Competência</label>
+                            <input type="month" class="form-control" id="importarCompetencia" name="competencia" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="importarVencimento" th:text="#{despesa.importar.campo.vencimento.label}">Vencimento da fatura</label>
+                            <input type="date" class="form-control" id="importarVencimento" name="dtVencimento">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required" for="importarFormato" th:text="#{despesa.importar.campo.formato.label}">Instituição / Formato</label>
+                        <select class="form-select" id="importarFormato" name="formato" required>
+                            <option value="" th:text="#{despesa.importar.campo.formato.selecione}">Selecione o formato...</option>
+                            <option value="ITAU" th:text="#{despesa.importar.formato.itau}">Itaú (Excel .xls / .xlsx)</option>
+                            <option value="BRADESCO" th:text="#{despesa.importar.formato.bradesco}">Bradesco (Excel .xls / .xlsx)</option>
+                            <option value="C6BANK" th:text="#{despesa.importar.formato.c6}">C6 Bank (Excel / CSV)</option>
+                            <option value="OFX" th:text="#{despesa.importar.formato.ofx}">Extrato OFX / QFX</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="importarCategoriaId" th:text="#{despesa.importar.campo.categoriaPadrao.label}">Categoria padrão (opcional)</label>
+                        <select class="form-select" id="importarCategoriaId" name="categoriaId">
+                            <option value="" th:text="#{despesa.importar.campo.categoriaPadrao.semCategoria}">Sem categoria</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required" for="importarArquivo" th:text="#{despesa.importar.campo.arquivo.label}">Arquivo da fatura</label>
+                        <input type="file" class="form-control" id="importarArquivo" name="arquivo" accept=".xls,.xlsx,.csv,.ofx,.qfx" required>
+                        <small class="form-hint" th:text="#{despesa.importar.campo.arquivo.ajuda}">Formatos suportados: Excel (.xls, .xlsx), CSV ou OFX.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-bs-dismiss="modal" th:text="#{despesa.importar.botao.cancelar}">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnExecutarImportacao">
+                        <i class="ph ph-upload-simple" aria-hidden="true"></i>
+                        <span th:text="#{despesa.importar.botao.importar}">Importar fatura</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

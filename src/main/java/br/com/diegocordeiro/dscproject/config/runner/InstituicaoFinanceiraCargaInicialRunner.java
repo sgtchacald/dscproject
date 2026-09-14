@@ -1,8 +1,8 @@
 package br.com.diegocordeiro.dscproject.config.runner;
 
 import br.com.diegocordeiro.dscproject.enums.TipoInstituicaoFinanceira;
-import br.com.diegocordeiro.dscproject.model.InstituicaoFinanceira;
-import br.com.diegocordeiro.dscproject.repository.InstituicaoFinanceiraRepository;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.InstituicaoFinanceira;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.InstituicaoFinanceiraRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;

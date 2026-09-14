@@ -3,7 +3,7 @@ package br.com.diegocordeiro.dscproject.dto.despesa;
 import br.com.diegocordeiro.dscproject.enums.MeioPagamento;
 import br.com.diegocordeiro.dscproject.enums.OrigemLancamento;
 import br.com.diegocordeiro.dscproject.enums.StatusPagamento;
-import br.com.diegocordeiro.dscproject.model.Despesa;
+import br.com.diegocordeiro.dscproject.model.despesa.Despesa;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -34,6 +34,7 @@ public class DespesaGridDTO {
     private LocalDate dataVencimento;
     private LocalDate dataPagamento;
     private OrigemLancamento origem;
+    private String formaPagamento;
     private Long contaId;
     private String contaDescricao;
     private Long cartaoId;
@@ -63,13 +64,20 @@ public class DespesaGridDTO {
         this.dataVencimento = d.getDataVencimento();
         this.dataPagamento = d.getDataPagamento();
         this.origem = d.getOrigem();
-        if (d.getConta() != null) {
-            this.contaId = d.getConta().getId();
-            this.contaDescricao = d.getConta().getDescricao();
-        }
         if (d.getCartao() != null) {
+            this.formaPagamento = "CARTAO";
             this.cartaoId = d.getCartao().getId();
             this.cartaoDescricao = d.getCartao().getDescricao();
+        } else if (d.getMeioPagamento() == MeioPagamento.DINHEIRO) {
+            this.formaPagamento = "DINHEIRO";
+            if (d.getConta() != null) {
+                this.contaId = d.getConta().getId();
+                this.contaDescricao = d.getConta().getDescricao();
+            }
+        } else if (d.getConta() != null) {
+            this.formaPagamento = "CONTA";
+            this.contaId = d.getConta().getId();
+            this.contaDescricao = d.getConta().getDescricao();
         }
         if (d.getCategoria() != null) {
             this.categoriaId = d.getCategoria().getId();

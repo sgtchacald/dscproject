@@ -97,13 +97,13 @@
             </div>
         </div>
         <div class="table-responsive">
-            <table class="table table-vcenter card-table table-striped" id="tabelaVinculos">
+            <table class="table table-vcenter card-table table-striped table-hover" id="tabelaVinculos">
                 <thead>
                 <tr>
                     <th class="sortable" role="button" data-col="provedor" th:text="#{categoriaprovedor.col.provedor}">Provedor</th>
                     <th class="sortable" role="button" data-col="rotulo" th:text="#{categoriaprovedor.col.rotulo}">Rótulo externo</th>
                     <th class="sortable" role="button" data-col="categoria" th:text="#{categoriaprovedor.col.categoria}">Categoria do sistema</th>
-                    <th class="w-1 text-center" th:text="#{categoriaprovedor.col.acoes}">Ações</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{categoriaprovedor.col.acoes}">Ações</th>
                 </tr>
                 </thead>
                 <tbody id="corpoTabelaVinculos">
@@ -122,7 +122,7 @@
                     <td>
                         <span class="badge bg-blue-lt" th:text="${v.categoriaNome}">Alimentação</span>
                     </td>
-                    <td class="text-center text-nowrap">
+                    <td class="col-acoes text-start text-nowrap">
                         <button type="button" class="btn btn-action btnEditarVinculo"
                                 sec:authorize="hasAuthority('PERM_CATEGORIAS_PROVEDOR_EDITAR')"
                                 th:title="#{categoriaprovedor.acao.editar}" aria-label="Editar vínculo">

@@ -1,6 +1,6 @@
 package br.com.diegocordeiro.dscproject.dto.usuario;
 
-import br.com.diegocordeiro.dscproject.model.Usuario;
+import br.com.diegocordeiro.dscproject.model.usuario.Usuario;
 import lombok.Getter;
 import org.springframework.data.history.Revision;
 import org.springframework.data.history.RevisionMetadata;

@@ -90,7 +90,7 @@
             </div>
         </div>
         <div class="table-responsive">
-            <table class="table table-vcenter card-table table-striped" id="tabelaCategorias">
+            <table class="table table-vcenter card-table table-striped table-hover" id="tabelaCategorias">
                 <thead>
                 <tr>
                     <th class="sortable" role="button" data-col="codigo" th:text="#{categoria.col.codigo}">Código</th>
@@ -99,7 +99,7 @@
                     <th class="sortable text-end" role="button" data-col="qtdUso" th:text="#{categoria.col.qtdLancamentos}">Nº de lançamentos</th>
                     <th class="sortable" role="button" data-col="sistema" th:text="#{categoria.col.tipo}">Tipo</th>
                     <th class="sortable" role="button" data-col="situacao" th:text="#{categoria.col.situacao}">Situação</th>
-                    <th class="w-1 text-center" th:text="#{categoria.col.acoes}">Ações</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{categoria.col.acoes}">Ações</th>
                 </tr>
                 </thead>
                 <tbody id="corpoTabelaCategorias">
@@ -140,7 +140,7 @@
                         <span th:if="${!cat.excluido and cat.ativo}" class="badge bg-success-lt" th:text="#{categoria.situacao.ativa}">Ativa</span>
                         <span th:if="${!cat.excluido and !cat.ativo}" class="badge bg-secondary-lt" th:text="#{categoria.situacao.inativa}">Inativa</span>
                     </td>
-                    <td class="text-center text-nowrap">
+                    <td class="col-acoes text-start text-nowrap">
                         <button type="button" class="btn btn-action btnEditarCategoria"
                                 sec:authorize="hasAuthority('PERM_CATEGORIAS_EDITAR')"
                                 th:title="#{categoria.acao.editar}" aria-label="Editar categoria">

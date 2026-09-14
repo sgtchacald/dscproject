@@ -1,5 +1,6 @@
 package br.com.diegocordeiro.dscproject.enums;
 
+import br.com.diegocordeiro.dscproject.model.contato.Contato;
 import lombok.Getter;
 
 @Getter

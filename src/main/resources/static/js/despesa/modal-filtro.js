@@ -3,12 +3,21 @@ import { abrirModal, fecharModal } from '../comum/ui.js';
 
 const cfg = () => document.getElementById('dadosTelaDespesa').dataset;
 
+function obterMesAnteriorIso() {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+}
+
+const mesPadrao = obterMesAnteriorIso();
 let categoriasCarregadas = false;
 
 const filtro = {
     busca: '',
-    competenciaInicio: '',
-    competenciaFim: '',
+    competenciaInicio: mesPadrao,
+    competenciaFim: mesPadrao,
     status: '',
     forma: '',
     categoriaId: '',
@@ -22,6 +31,10 @@ export function obterFiltroAtual() {
 
 export function abrirModalFiltro() {
     carregarCategoriasFiltro();
+    const elCompIni = document.getElementById('filtroCompetenciaInicio');
+    const elCompFim = document.getElementById('filtroCompetenciaFim');
+    if (elCompIni && !elCompIni.value) elCompIni.value = filtro.competenciaInicio;
+    if (elCompFim && !elCompFim.value) elCompFim.value = filtro.competenciaFim;
     abrirModal('modalFiltroDespesa');
 }
 
@@ -66,6 +79,7 @@ export function inicializarFiltro(onAplicar) {
 
     if (btnLimpar) {
         btnLimpar.addEventListener('click', () => {
+            const padrao = obterMesAnteriorIso();
             const elBusca = document.getElementById('filtroBusca');
             const elCompIni = document.getElementById('filtroCompetenciaInicio');
             const elCompFim = document.getElementById('filtroCompetenciaFim');
@@ -76,8 +90,8 @@ export function inicializarFiltro(onAplicar) {
             const elRec = document.getElementById('filtroRecorrente');
 
             if (elBusca) elBusca.value = '';
-            if (elCompIni) elCompIni.value = '';
-            if (elCompFim) elCompFim.value = '';
+            if (elCompIni) elCompIni.value = padrao;
+            if (elCompFim) elCompFim.value = padrao;
             if (elStatus) elStatus.value = '';
             if (elForma) elForma.value = '';
             if (elCat) elCat.value = '';
@@ -85,8 +99,8 @@ export function inicializarFiltro(onAplicar) {
             if (elRec) elRec.value = '';
 
             filtro.busca = '';
-            filtro.competenciaInicio = '';
-            filtro.competenciaFim = '';
+            filtro.competenciaInicio = padrao;
+            filtro.competenciaFim = padrao;
             filtro.status = '';
             filtro.forma = '';
             filtro.categoriaId = '';

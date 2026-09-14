@@ -46,7 +46,7 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="form-label" for="cartaoLimite" th:text="#{cartao.form.campo.limite.label}">Limite (R$)</label>
-                            <input type="text" class="form-control" id="cartaoLimite" name="limite"
+                            <input type="text" class="form-control mascara-moeda" id="cartaoLimite" name="limite" data-mascara="moeda"
                                    th:placeholder="#{cartao.form.campo.limite.placeholder}">
                             <div class="invalid-feedback" id="erroLimite"></div>
                         </div>

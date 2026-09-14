@@ -1,6 +1,7 @@
 package br.com.diegocordeiro.dscproject.config;
 
-import br.com.diegocordeiro.dscproject.service.UsuarioService;
+import br.com.diegocordeiro.dscproject.model.conta.Conta;
+import br.com.diegocordeiro.dscproject.service.usuario.UsuarioService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -113,7 +114,7 @@ class SecurityConfigTest {
     }
 
     @Test
-    @WithMockUser(authorities = "PERM_PERFIS_MANTER")
+    @WithMockUser(authorities = "PERM_PERFIS_EDITAR")
     void sincronizarCatalogo_semPermissaoSincronizar_403() throws Exception {
         mockMvc.perform(post("/permissoes/sincronizar-catalogo").with(csrf()))
             .andExpect(status().isForbidden());

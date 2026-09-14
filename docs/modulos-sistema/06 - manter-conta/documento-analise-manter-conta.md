@@ -2,7 +2,7 @@
 ## Módulo Contas — USER / ADMIN — Manter Conta
 
 **Gerado em:** 08/09/2026
-**Versão:** 1.0
+**Versão:** 1.2
 **Status:** Desenvolvido
 **Projeto:** `dscproject-spring-mvc` (geração 2)
 
@@ -26,6 +26,8 @@
 | Versão | Data | Analista Responsável | Descrição da Alteração |
 |---|---|---|---|
 | 1.0 | 08/09/2026 | Diego dos Santos Cordeiro | Criação do documento. CRUD das **contas do usuário** (bancárias, poupança, investimento e carteira) para a geração 2 — sucessor do CRUD de `InstituicaoFinanceiraUsuario` da geração 1, agora sobre a tabela `CONTAS` ([QUADRO_DESCRITIVO_5 do Documento 0](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-5)). Introduz o enum `TipoConta`, o tipo de conta, moeda, saldo manual com ajuste dedicado, e o escopo *row-level* por `USU_ID`. Este documento **referencia** o QUADRO_DESCRITIVO do Documento 0 e **não introduz tabela nova** |
+| 1.1 | 11/09/2026 | Diego dos Santos Cordeiro | Desmembramento de `CONTAS_MANTER` em `CONTAS_INSERIR`, `CONTAS_EDITAR`, `CONTAS_EXCLUIR`, `CONTAS_DESATIVAR` e `CONTAS_AJUSTAR_SALDO`, em conformidade com as diretrizes de governança RBAC granular e Observação 28 do Documento 0. Reforço de diretriz de máscara monetária client-side em tempo real (`pt-BR`). |
+| 1.2 | 12/09/2026 | Diego dos Santos Cordeiro | Padronização visual do sistema: explicitação do alinhamento à esquerda para a coluna de Ações no grid de Contas (QUADRO_DESCRITIVO_1). |
 
 ---
 
@@ -62,7 +64,7 @@ Este documento cobre:
 - **Exclusão lógica** de conta, com a trava "conta em uso" (transações, receitas, despesas, investimentos ou cartão vinculados) — nesse caso, apenas a desativação.
 - **Desativação / reativação** de conta (`CTA_FL_ATIVO`).
 - **Fornecimento das contas ativas do usuário** para os comboboxes das telas de lançamento.
-- Definição das permissões `CONTAS_LISTAR` e `CONTAS_MANTER` e da regra de escopo por usuário.
+- Definição das permissões atômicas `CONTAS_LISTAR`, `CONTAS_INSERIR`, `CONTAS_EDITAR`, `CONTAS_EXCLUIR`, `CONTAS_DESATIVAR` e `CONTAS_AJUSTAR_SALDO` e da regra de escopo por usuário.
 
 **Não contempla:**
 - CRUD de Receita, Despesa, Transação Bancária, Cartão de Crédito e Investimento, que **consomem** a conta — documentos `07` a `12`.
@@ -87,7 +89,7 @@ Este documento cobre:
 | 7 | **Exclusão em uso.** Excluir uma conta referenciada por qualquer transação bancária, receita, despesa, investimento ou cartão de crédito (não excluído) é **bloqueado** ([RN07](#rn07)); a alternativa é **desativar**. Mesma regra do "categoria em uso" do documento `04` (RN06). `TRANSACOES_BANCARIAS.CTA_ID` é `NOT NULL` — uma conta com transação **nunca** é excluível, independentemente do parâmetro [Seção 12](#12-parâmetros-de-sistema). | [RN07](#rn07) |
 | 8 | **Desativação ≠ exclusão.** Uma conta inativa (`CTA_FL_ATIVO = FALSE`) some dos comboboxes de **novos** lançamentos ([EDP07](#edp07)), mas continua válida nos lançamentos que já a usam e nos relatórios. Reativar é apenas voltar `CTA_FL_ATIVO = TRUE`. | [RN08](#rn08) |
 | 9 | **`CTA_FL_CONSIDERA_SALDO`** controla se o `CTA_SALDO` da conta entra no "saldo geral consolidado" do Dashboard (documento `13`). Default `TRUE`. Aqui só se mantém o flag; o efeito no painel é do documento `13`. | [RN09](#rn09) |
-| 10 | **Instituição vem do documento `05`.** O combobox de instituição é alimentado pelo endpoint de opções de `INSTITUICOES_FINANCEIRAS` do documento `05 - manter-instituicao-financeira` (a escrever) — análogo ao [EDP07 do documento `04`](../04%20-%20manter-categoria/documento-analise-manter-categoria.md#edp07). Contrato assumido: `GET /instituicoes-financeiras/opcoes`, devolvendo id, nome, tipo e situação. | [SB02](#sb02) |
+| 10 | **Instituição vem do documento `05`.** O combobox de instituição é alimentado pelo endpoint de opções de `INSTITUICOES_FINANCEIRAS` do documento `05 - manter-instituicao-financeira` — análogo ao [EDP07 do documento `04`](../04%20-%20manter-categoria/documento-analise-manter-categoria.md#edp07). Contrato assumido: `GET /instituicoes-financeiras/opcoes`, devolvendo id, nome, tipo e situação. | [SB02](#sb02) |
 | 11 | **Grid client-side.** A tela carrega a lista completa das contas do usuário uma vez e pagina/ordena/filtra no navegador (DataTables). Um usuário tem poucas contas; paginação server-side seria complexidade sem ganho. | [RNF05](#rnf05) |
 | 12 | **Auditoria.** `CONTAS` é auditada via Hibernate Envers (`@Audited`), conforme o Documento 0. Criação, edição, ajuste de saldo, desativação e exclusão lógica ficam registrados (quem, quando, o quê). | [RNF03](#rnf03) |
 | 13 | **Sem carga inicial.** `CONTAS` nasce vazia. As contas surgem do uso — cadastro manual nesta tela ou *backfill* do Open Finance (documentos `14`/`15`). | Documento 0, Seção 6.4 |
@@ -117,12 +119,12 @@ Este documento cobre:
 
 | ID | CATEGORIA | DESCRIÇÃO | CRITÉRIO DE ACEITAÇÃO |
 |---|---|---|---|
-| <a id="rnf01"></a>RNF01 | Segurança | Cada endpoint desta tela exige a autoridade da sua operação (`PERM_CONTAS_LISTAR` ou `PERM_CONTAS_MANTER` — ver Seção 13 e [RN01](#rn01)). O `USU_ID` usado no filtro e nas travas vem sempre do contexto de segurança, nunca da requisição. | Teste de acesso com ADMIN, com USER e com um perfil sem nenhuma das permissões. |
+| <a id="rnf01"></a>RNF01 | Segurança | Cada endpoint desta tela exige a autoridade da sua operação (`PERM_CONTAS_LISTAR`, `PERM_CONTAS_INSERIR`, `PERM_CONTAS_EDITAR`, `PERM_CONTAS_EXCLUIR`, `PERM_CONTAS_DESATIVAR`, `PERM_CONTAS_AJUSTAR_SALDO` — ver Seção 13 e [RN01](#rn01)). O `USU_ID` usado no filtro e nas travas vem sempre do contexto de segurança, nunca da requisição. | Teste de acesso com ADMIN, com USER e com um perfil sem nenhuma das permissões. |
 | <a id="rnf02"></a>RNF02 | Isolamento | Nenhum endpoint que recebe `{id}` retorna, edita, ajusta o saldo ou exclui a conta de outro usuário — a resposta é "não encontrada" ([MSG05](#msg05)), sem revelar a existência do registro. | Teste chamando `buscar/{id}`, `editar/{id}`, `ajustar-saldo/{id}` e `excluir/{id}` com o id de uma conta de outro usuário. |
 | <a id="rnf03"></a>RNF03 | Auditoria | `CONTAS` tem auditoria completa via Hibernate Envers. Criação, edição, ajuste de saldo, desativação e exclusão lógica são registrados. | Inspeção da tabela `CONTAS_aud` após operações de CRUD e de ajuste de saldo. |
 | <a id="rnf04"></a>RNF04 | Integridade | A descrição única por usuário ([RN03](#rn03)) e as travas de exclusão ([RN07](#rn07)) são validadas no serviço, não só na tela. | Teste chamando os endpoints diretamente. |
 | <a id="rnf05"></a>RNF05 | Desempenho | A listagem ([EDP02](#edp02)) responde em menos de 1 s carregando a lista completa uma vez. O combobox de contas ([EDP07](#edp07)) pode ser cacheado por usuário e invalidado nas gravações desta tela. | Medição em homologação. |
-| <a id="rnf06"></a>RNF06 | Usabilidade | A interface segue o padrão do projeto (Thymeleaf + Tabler + DataTables + AJAX) e é responsiva. O campo de saldo usa máscara monetária. | Revisão visual do protótipo. |
+| <a id="rnf06"></a>RNF06 | Usabilidade | A interface segue o padrão do projeto (Thymeleaf + Tabler + DataTables + AJAX) e é responsiva. Os campos monetários (saldo inicial e ajuste de saldo) possuem máscara de moeda client-side em tempo real no padrão `pt-BR` (`R$ 0,00`). | Revisão visual e teste de digitação nos inputs monetários. |
 
 ---
 
@@ -229,8 +231,8 @@ Protótipo navegável: `prototipo/manter-conta-prototipo.html`. Wireframes edit�
 | <a id="qdd1-12"></a>12 | CONSIDERA NO SALDO GERAL | Tipo: Coluna (badge)<br>Ordenação: Sim | "Sim" / "Não", de [C1](#c1).consideraSaldo. |
 | <a id="qdd1-13"></a>13 | Nº DE LANÇAMENTOS | Tipo: Coluna (número)<br>Ordenação: Sim | Exibe [C1](#c1).qtdUso — soma de transações, receitas, despesas, investimentos e cartões não excluídos que usam a conta. |
 | <a id="qdd1-14"></a>14 | SITUAÇÃO | Tipo: Coluna (badge)<br>Ordenação: Sim | "Ativa" (verde) quando `CTA_FL_ATIVO` e sem `audit_data_exclusao`; "Inativa" (cinza) quando `CTA_FL_ATIVO = FALSE`; "Excluída" quando há `audit_data_exclusao`. |
-| <a id="qdd1-15"></a>15 | AÇÃO | Tipo: Coluna | Visível a quem tem [PERM02](#perm02). Ícones [ID16](#qdd1-16). |
-| <a id="qdd1-16"></a>16 | ÍCONES DE AÇÃO | Tipo: Ícones<br>Editar (ícone: edit, tooltip: Editar conta)<br>Ajustar saldo (ícone: adjustments-dollar, tooltip: Ajustar saldo)<br>Excluir (ícone: trash, tooltip: Excluir conta) | Editar → [RT05](#rt05). Ajustar saldo → [RT08](#rt08). Excluir → [RT07](#rt07); ambos ocultos quando a conta já está excluída. |
+| <a id="qdd1-15"></a>15 | AÇÃO | Tipo: Coluna (alinhada à esquerda) | Visível a quem tem [PERM03](#perm03), [PERM04](#perm04) ou [PERM06](#perm06). Ícones [ID16](#qdd1-16). |
+| <a id="qdd1-16"></a>16 | ÍCONES DE AÇÃO | Tipo: Ícones<br>Editar (ícone: edit, tooltip: Editar conta)<br>Ajustar saldo (ícone: adjustments-dollar, tooltip: Ajustar saldo)<br>Excluir (ícone: trash, tooltip: Excluir conta) | Editar (com [PERM03](#perm03)) → [RT05](#rt05). Ajustar saldo (com [PERM06](#perm06)) → [RT08](#rt08). Excluir (com [PERM04](#perm04)) → [RT07](#rt07); ambos ocultos quando a conta já está excluída. |
 
 ### <a id="quadro-descritivo-2"></a>7.2 Modal: Filtrar Contas — QUADRO_DESCRITIVO_2
 
@@ -254,7 +256,7 @@ Protótipo navegável: `prototipo/manter-conta-prototipo.html`. Wireframes edit�
 
 A imagem mostra o **modo edição** de uma conta em uso — com o toggle Ativa ([ID12](#qdd3-12)) e o aviso de conta em uso ([ID13](#qdd3-13)) visíveis. No modo criação, o campo Saldo inicial ([ID8](#qdd3-8)) aparece no lugar desses dois.
 
-> OBSERVAÇÕES: Modal único de cadastro e edição, restrito a [PERM02](#perm02). No modo edição, os campos Instituição ([RN06](#rn06)) e Saldo inicial ([RN10](#rn10)) ficam desabilitados, e aparecem os campos Ativa ([ID12](#qdd3-12)) e o aviso de conta em uso ([ID13](#qdd3-13)). O saldo só é alterado pela ação "Ajustar saldo" ([QUADRO_DESCRITIVO_4](#quadro-descritivo-4)).
+> OBSERVAÇÕES: Modal único de cadastro (exige [PERM02](#perm02)) e edição (exige [PERM03](#perm03) e [PERM05](#perm05)). No modo edição, os campos Instituição ([RN06](#rn06)) e Saldo inicial ([RN10](#rn10)) ficam desabilitados, e aparecem os campos Ativa ([ID12](#qdd3-12)) e o aviso de conta em uso ([ID13](#qdd3-13)). O saldo só é alterado pela ação "Ajustar saldo" ([QUADRO_DESCRITIVO_4](#quadro-descritivo-4)).
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
@@ -265,11 +267,11 @@ A imagem mostra o **modo edição** de uma conta em uso — com o toggle Ativa (
 | <a id="qdd3-5"></a>5 | CAMPO – AGÊNCIA | Tipo: Input Text<br>Tamanho: 30<br>Obrigatório: Não | Grava `CTA_AGENCIA`. |
 | <a id="qdd3-6"></a>6 | CAMPO – NÚMERO | Tipo: Input Text<br>Tamanho: 30<br>Obrigatório: Não | Grava `CTA_NUMERO`. |
 | <a id="qdd3-7"></a>7 | CAMPO – MOEDA | Tipo: Combobox<br>Obrigatório: Sim<br>Valor default: BRL | Grava `CTA_MOEDA` (ISO 4217). Ver [SB03](#sb03) e [RN05](#rn05). |
-| <a id="qdd3-8"></a>8 | CAMPO – SALDO INICIAL | Tipo: Input monetário<br>Obrigatório: Sim<br>Valor default: 0,00<br>Exibição: só no modo criação | Grava `CTA_SALDO` na criação. No modo edição não aparece — usar "Ajustar saldo" ([RT08](#rt08)). Ver [RN10](#rn10). |
+| <a id="qdd3-8"></a>8 | CAMPO – SALDO INICIAL | Tipo: Input monetário<br>Obrigatório: Sim<br>Valor default: 0,00<br>Exibição: só no modo criação | Grava `CTA_SALDO` na criação. Máscara monetária em tempo real `pt-BR` (`R$ 0,00`). No modo edição não aparece — usar "Ajustar saldo" ([RT08](#rt08)). Ver [RN10](#rn10). |
 | <a id="qdd3-9"></a>9 | CAMPO – NOME DO GERENTE | Tipo: Input Text<br>Tamanho: 100<br>Obrigatório: Não | Grava `CTA_NOME_GERENTE`. |
 | <a id="qdd3-10"></a>10 | CAMPO – TELEFONE DO GERENTE | Tipo: Input Text<br>Tamanho: 20<br>Obrigatório: Não | Grava `CTA_TEL_GERENTE`. |
 | <a id="qdd3-11"></a>11 | CAMPO – CONSIDERA NO SALDO GERAL | Tipo: Toggle (Sim/Não)<br>Valor default: Sim | Grava `CTA_FL_CONSIDERA_SALDO`. Ver [RN09](#rn09). |
-| <a id="qdd3-12"></a>12 | CAMPO – ATIVA | Tipo: Toggle (Sim/Não)<br>Valor default: Sim<br>Exibição: só no modo edição | Grava `CTA_FL_ATIVO`. Ver [RN08](#rn08). |
+| <a id="qdd3-12"></a>12 | CAMPO – ATIVA | Tipo: Toggle (Sim/Não)<br>Valor default: Sim<br>Exibição: só no modo edição | Grava `CTA_FL_ATIVO`. Exige [PERM05](#perm05) para alteração. Ver [RN08](#rn08). |
 | <a id="qdd3-13"></a>13 | AVISO – CONTA EM USO | Tipo: Texto informativo | Exibido no modo edição quando [C1](#c1).qtdUso > 0: "Esta conta é usada por {n} lançamento(s). Ela não pode ser excluída; você pode desativá-la." |
 | <a id="qdd3-14"></a>14 | BOTÃO SALVAR | Tipo: Botão (primário)<br>Texto: Salvar<br>Endpoint: [EDP04](#edp04) (criação) ou [EDP05](#edp05) (edição) | Ao clicar, executar [RT06](#rt06). |
 | <a id="qdd3-15"></a>15 | BOTÃO CANCELAR | Tipo: Botão<br>Texto: Cancelar | Fecha sem salvar. |
@@ -278,13 +280,13 @@ A imagem mostra o **modo edição** de uma conta em uso — com o toggle Ativa (
 
 ![Modal Ajustar Saldo](images/mc-tela-4.png)
 
-> OBSERVAÇÕES: Acionado pelo ícone "Ajustar saldo" do grid ([ID16](#qdd1-16)), restrito a [PERM02](#perm02). Substitui o `CTA_SALDO` da conta pelo valor informado; o Hibernate Envers registra o antes e o depois. Não altera `CTA_SALDO_SINCRONIZADO_EM` (o saldo permanece manual).
+> OBSERVAÇÕES: Acionado pelo ícone "Ajustar saldo" do grid ([ID16](#qdd1-16)), restrito a [PERM06](#perm06). Substitui o `CTA_SALDO` da conta pelo valor informado; o Hibernate Envers registra o antes e o depois. Não altera `CTA_SALDO_SINCRONIZADO_EM` (o saldo permanece manual).
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
 | <a id="qdd4-1"></a>1 | TÍTULO DO MODAL | Tipo: Texto<br>Texto: Ajustar saldo — {descrição da conta} | — |
 | <a id="qdd4-2"></a>2 | SALDO ATUAL | Tipo: Texto (somente leitura) | Exibe [C1](#c1).saldo formatado com a moeda da conta. |
-| <a id="qdd4-3"></a>3 | CAMPO – NOVO SALDO | Tipo: Input monetário<br>Obrigatório: Sim | Grava `CTA_SALDO`. Aceita valor negativo. |
+| <a id="qdd4-3"></a>3 | CAMPO – NOVO SALDO | Tipo: Input monetário<br>Obrigatório: Sim | Grava `CTA_SALDO`. Aceita valor negativo. Máscara monetária em tempo real `pt-BR` (`R$ 0,00`). |
 | <a id="qdd4-4"></a>4 | CAMPO – OBSERVAÇÃO | Tipo: Textarea<br>Tamanho: 255<br>Obrigatório: Não | Nota livre do ajuste, gravada no comentário da revisão do Envers (ver Seção 17 sobre histórico dedicado). |
 | <a id="qdd4-5"></a>5 | BOTÃO SALVAR | Tipo: Botão (primário)<br>Texto: Salvar ajuste<br>Endpoint: [EDP08](#edp08) | Ao clicar, executar [RT09](#rt09). |
 | <a id="qdd4-6"></a>6 | BOTÃO CANCELAR | Tipo: Botão<br>Texto: Cancelar | Fecha sem salvar. |
@@ -308,13 +310,13 @@ A imagem mostra o **modo edição** de uma conta em uso — com o toggle Ativa (
 | <a id="rt02"></a>RT02 | Ao clicar em "Aplicar" ([ID6](#qdd2-6)), filtrar **em memória** a lista já carregada: busca parcial e sem acento sobre descrição/agência/número, e correspondência exata de tipo, instituição e situação. Fechar o modal. Se nada restar, exibir [MSG09](#msg09) na área do grid. |
 | <a id="rt03"></a>RT03 | Ao clicar em "Limpar" ([ID7](#qdd2-7)), voltar Busca, Tipo e Instituição para vazio, Situação para "Ativa", e reaplicar conforme [RT02](#rt02). |
 | <a id="rt04"></a>RT04 | Ao clicar em "Nova conta" ([ID5](#qdd1-5)) — visível só com [PERM02](#perm02) —, abrir o modal ([QUADRO_DESCRITIVO_3](#quadro-descritivo-3)) em modo criação: campos vazios, Moeda em "BRL", Considera no saldo geral em "Sim", Saldo inicial "0,00", sem os campos Ativa e aviso de uso. Carregar o combobox Instituição conforme [RT10](#rt10). |
-| <a id="rt05"></a>RT05 | Ao clicar no ícone Editar ([ID16](#qdd1-16)) — visível só com [PERM02](#perm02) —, chamar [EDP03](#edp03) com o id e abrir o modal em modo edição, com os campos preenchidos. Instituição e Saldo inicial ficam desabilitados ([RN06](#rn06), [RN10](#rn10)). Se [C1](#c1).qtdUso > 0, exibir o aviso [ID13](#qdd3-13). |
-| <a id="rt06"></a>RT06 | Ao clicar em "Salvar" ([ID14](#qdd3-14)): validar Descrição, Tipo, Instituição e Moeda obrigatórios ([MSG02](#msg02)); na criação, validar Saldo inicial preenchido. Em criação, chamar [EDP04](#edp04); em edição, [EDP05](#edp05). Em sucesso, exibir [MSG01](#msg01) (criação) ou [MSG04](#msg04) (edição), fechar o modal e recarregar o grid via [EDP02](#edp02). Descrição já usada pelo usuário → [MSG03](#msg03). Tentativa de trocar a instituição na edição ([RN06](#rn06)) → [MSG11](#msg11). |
-| <a id="rt07"></a>RT07 | Ao clicar no ícone Excluir ([ID16](#qdd1-16)) — visível só com [PERM02](#perm02) —, exibir a confirmação [MSG07](#msg07). Ao confirmar, chamar [EDP06](#edp06). Conta em uso → [MSG06](#msg06), com a oferta de desativar (ao aceitar, chamar [EDP05](#edp05) apenas com `CTA_FL_ATIVO = FALSE`). Em sucesso da exclusão, exibir [MSG08](#msg08) e recarregar o grid. |
-| <a id="rt08"></a>RT08 | Ao clicar no ícone Ajustar saldo ([ID16](#qdd1-16)) — visível só com [PERM02](#perm02) —, abrir o modal ([QUADRO_DESCRITIVO_4](#quadro-descritivo-4)) com o Saldo atual ([ID2](#qdd4-2)) preenchido de [C1](#c1).saldo e o campo Novo saldo iniciado com esse mesmo valor. |
-| <a id="rt09"></a>RT09 | Ao clicar em "Salvar ajuste" ([ID5](#qdd4-5)): validar Novo saldo preenchido ([MSG02](#msg02)) e chamar [EDP08](#edp08) com o novo valor e a observação. Em sucesso, exibir [MSG10](#msg10), fechar o modal e recarregar o grid via [EDP02](#edp02). |
+| <a id="rt05"></a>RT05 | Ao clicar no ícone Editar ([ID16](#qdd1-16)) — visível só com [PERM03](#perm03) —, chamar [EDP03](#edp03) com o id e abrir o modal em modo edição, com os campos preenchidos. Instituição e Saldo inicial ficam desabilitados ([RN06](#rn06), [RN10](#rn10)). Se [C1](#c1).qtdUso > 0, exibir o aviso [ID13](#qdd3-13). |
+| <a id="rt06"></a>RT06 | Ao clicar em "Salvar" ([ID14](#qdd3-14)): validar Descrição, Tipo, Instituição e Moeda obrigatórios ([MSG02](#msg02)); na criação, validar Saldo inicial preenchido. Em criação (exige [PERM02](#perm02)), chamar [EDP04](#edp04); em edição (exige [PERM03](#perm03)), chamar [EDP05](#edp05). Em sucesso, exibir [MSG01](#msg01) (criação) ou [MSG04](#msg04) (edição), fechar o modal e recarregar o grid via [EDP02](#edp02). Descrição já usada pelo usuário → [MSG03](#msg03). Tentativa de trocar a instituição na edição ([RN06](#rn06)) → [MSG11](#msg11). |
+| <a id="rt07"></a>RT07 | Ao clicar no ícone Excluir ([ID16](#qdd1-16)) — visível só com [PERM04](#perm04) —, exibir a confirmação [MSG07](#msg07). Ao confirmar, chamar [EDP06](#edp06). Conta em uso → [MSG06](#msg06), com a oferta de desativar (ao aceitar com [PERM05](#perm05), chamar [EDP05](#edp05) apenas com `CTA_FL_ATIVO = FALSE`). Em sucesso da exclusão, exibir [MSG08](#msg08) e recarregar o grid. |
+| <a id="rt08"></a>RT08 | Ao clicar no ícone Ajustar saldo ([ID16](#qdd1-16)) — visível só com [PERM06](#perm06) —, abrir o modal ([QUADRO_DESCRITIVO_4](#quadro-descritivo-4)) com o Saldo atual ([ID2](#qdd4-2)) preenchido de [C1](#c1).saldo e o campo Novo saldo iniciado com esse mesmo valor. |
+| <a id="rt09"></a>RT09 | Ao clicar em "Salvar ajuste" ([ID5](#qdd4-5)) — visível só com [PERM06](#perm06) —: validar Novo saldo preenchido ([MSG02](#msg02)) e chamar [EDP08](#edp08) com o novo valor e a observação. Em sucesso, exibir [MSG10](#msg10), fechar o modal e recarregar o grid via [EDP02](#edp02). |
 | <a id="rt10"></a>RT10 | Ao abrir o modal de conta ([QUADRO_DESCRITIVO_3](#quadro-descritivo-3)), carregar o combobox Instituição pelo endpoint de opções do documento `05` ([SB02](#sb02)) e o combobox Moeda pela lista curada do front ([SB03](#sb03)). Nunca renderizar `<option>` fixo no HTML. |
-| <a id="rt11"></a>RT11 | Aplicar máscara monetária aos campos de saldo ([ID8](#qdd3-8), [ID3](#qdd4-3)) conforme a moeda selecionada, aceitando valores negativos, e formatar a coluna Saldo do grid ([ID11](#qdd1-11)) da mesma forma, com valores negativos em vermelho. |
+| <a id="rt11"></a>RT11 | Aplicar máscara monetária client-side em tempo real (`pt-BR`, `R$ 0,00`) aos campos de saldo ([ID8](#qdd3-8), [ID3](#qdd4-3)) conforme a moeda selecionada, aceitando valores negativos, e formatar a coluna Saldo do grid ([ID11](#qdd1-11)) da mesma forma, com valores negativos em vermelho. |
 
 ---
 
@@ -326,17 +328,17 @@ A imagem mostra o **modo edição** de uma conta em uso — com o toggle Ativa (
 | Retorna a página da listagem de contas (Thymeleaf). O grid é carregado por [EDP02](#edp02). | | | | |
 | <a id="edp02"></a>EDP02 | GET | [PERM01](#perm01) | /contas/listar-dados | N |
 | Lista das contas do usuário autenticado para o grid, em JSON. Executa [C1](#c1) com `USU_ID` do contexto de segurança ([RN02](#rn02)). Campos: id, descricao, tipo, instituicaoId, instituicaoNome, agencia, numero, moeda, saldo, saldoSincronizadoEm, consideraSaldo (boolean), qtdUso, ativo (boolean), excluido (boolean). Sem paginação (client-side). | | | | |
-| <a id="edp03"></a>EDP03 | GET | [PERM02](#perm02) | /contas/buscar/{id} | N |
+| <a id="edp03"></a>EDP03 | GET | [PERM03](#perm03) | /contas/buscar/{id} | N |
 | Retorna uma conta do usuário autenticado para edição. Executa [RN02](#rn02) — se a conta não for do usuário, responde 404 ([MSG05](#msg05)). Campos: id, descricao, tipo, instituicaoId, agencia, numero, moeda, saldo, consideraSaldo, ativo, qtdUso. | | | | |
 | <a id="edp04"></a>EDP04 | POST | [PERM02](#perm02) | /contas/inserir | N |
 | Cria uma conta para o usuário autenticado. Executa [RN02](#rn02) (fixa `USU_ID` do contexto), [RN03](#rn03) (descrição única por usuário, via [C2](#c2)), [RN04](#rn04), [RN05](#rn05), [RN06](#rn06) (instituição ativa). Dados: descricao, tipo, instituicaoId, agencia, numero, moeda, saldoInicial, nomeGerente, telefoneGerente, consideraSaldo. `CTA_FL_ATIVO = TRUE` e `CTA_SALDO_SINCRONIZADO_EM = NULL` fixos; `CTA_SALDO` recebe `saldoInicial`. Invalida o cache do combobox de contas ([RNF05](#rnf05)). Retorno: 200 ([MSG01](#msg01)) ou 422 ([MSG02](#msg02)/[MSG03](#msg03)). | | | | |
-| <a id="edp05"></a>EDP05 | PUT | [PERM02](#perm02) | /contas/editar/{id} | N |
-| Edita uma conta do usuário autenticado. Executa [RN02](#rn02) (404 se não for do usuário), [RN03](#rn03), [RN06](#rn06) (ignora qualquer mudança de `INFI_ID`; se a intenção explícita for trocar a instituição → [MSG11](#msg11)), [RN08](#rn08) (desativação), [RN10](#rn10) (ignora qualquer `CTA_SALDO` no corpo). Dados: descricao, tipo, agencia, numero, moeda, nomeGerente, telefoneGerente, consideraSaldo, ativo. Invalida o cache do combobox de contas. Retorno: 200 ([MSG04](#msg04)) ou 422 ([MSG02](#msg02)/[MSG03](#msg03)/[MSG11](#msg11)). | | | | |
-| <a id="edp06"></a>EDP06 | DELETE | [PERM02](#perm02) | /contas/excluir/{id} | N |
+| <a id="edp05"></a>EDP05 | PUT | [PERM03](#perm03) / [PERM05](#perm05) | /contas/editar/{id} | N |
+| Edita uma conta do usuário autenticado. Executa [RN02](#rn02) (404 se não for do usuário), [RN03](#rn03), [RN06](#rn06) (ignora qualquer mudança de `INFI_ID`; se a intenção explícita for trocar a instituição → [MSG11](#msg11)), [RN08](#rn08) (desativação), [RN10](#rn10) (ignora qualquer `CTA_SALDO` no corpo). Dados: descricao, tipo, agencia, numero, moeda, nomeGerente, telefoneGerente, consideraSaldo, ativo. Exige [PERM03](#perm03) para dados cadastrais e [PERM05](#perm05) para alteração de situação (ativo). Invalida o cache do combobox de contas. Retorno: 200 ([MSG04](#msg04)) ou 422 ([MSG02](#msg02)/[MSG03](#msg03)/[MSG11](#msg11)). | | | | |
+| <a id="edp06"></a>EDP06 | DELETE | [PERM04](#perm04) | /contas/excluir/{id} | N |
 | Exclusão lógica da conta do usuário autenticado. Executa [RN02](#rn02) (404 se não for do usuário) e [RN07](#rn07) (recusa se em uso, via [C4](#c4) → [MSG06](#msg06)). Preenche `audit_data_exclusao` / `audit_excluido_por`. Invalida o cache do combobox de contas. Retorno: 200 ([MSG08](#msg08)) ou 422. | | | | |
 | <a id="edp07"></a>EDP07 | GET | [PERM01](#perm01) | /contas/opcoes | N |
 | Retorna as contas **ativas** do usuário autenticado para o combobox das telas de lançamento. Executa [C3](#c3). Campos: id, descricao, tipo, moeda, instituicaoNome. Consumido pelas telas de Receita, Despesa, Transação Bancária e Cartão de Crédito. Pode ser cacheado por usuário e é invalidado por [EDP04](#edp04)/[EDP05](#edp05)/[EDP06](#edp06)/[EDP08](#edp08). | | | | |
-| <a id="edp08"></a>EDP08 | PUT | [PERM02](#perm02) | /contas/ajustar-saldo/{id} | N |
+| <a id="edp08"></a>EDP08 | PUT | [PERM06](#perm06) | /contas/ajustar-saldo/{id} | N |
 | Ajusta o saldo de uma conta do usuário autenticado. Executa [RN02](#rn02) (404 se não for do usuário) e [RN10](#rn10). Dados: novoSaldo, observacao. Grava `CTA_SALDO = novoSaldo`; **não** altera `CTA_SALDO_SINCRONIZADO_EM`. O Hibernate Envers registra a revisão (saldo anterior e novo); `observacao` vai no comentário da revisão. Invalida o cache do combobox de contas. Retorno: 200 ([MSG10](#msg10)) ou 422 ([MSG02](#msg02)). | | | | |
 
 > O combobox de instituição do modal de conta e do filtro é alimentado pelo endpoint de opções de `INSTITUICOES_FINANCEIRAS` definido no documento `05 - manter-instituicao-financeira` (contrato assumido: `GET /instituicoes-financeiras/opcoes`) — este documento não define esse endpoint.
@@ -347,7 +349,7 @@ A imagem mostra o **modo edição** de uma conta em uso — com o toggle Ativa (
 
 | ID | DESCRIÇÃO |
 |---|---|
-| <a id="rn01"></a>RN01 | Cada endpoint exige a autoridade da sua operação: [EDP01](#edp01)/[EDP02](#edp02)/[EDP07](#edp07) → `PERM_CONTAS_LISTAR`; [EDP03](#edp03)/[EDP04](#edp04)/[EDP05](#edp05)/[EDP06](#edp06)/[EDP08](#edp08) → `PERM_CONTAS_MANTER`. As autoridades são resolvidas pelo `getAuthorities()` do `Usuario` a partir do perfil e das permissões vinculadas em `PERFIL_PERMISSAO`. `CONTAS_MANTER` pressupõe `CONTAS_LISTAR` (sem listar não há tela). A permissão **habilita a tela**; o recorte por dono é a [RN02](#rn02). |
+| <a id="rn01"></a>RN01 | Cada endpoint exige a autoridade da sua operação: [EDP01](#edp01)/[EDP02](#edp02)/[EDP07](#edp07) → `PERM_CONTAS_LISTAR`; [EDP04](#edp04) → `PERM_CONTAS_INSERIR`; [EDP03](#edp03)/[EDP05](#edp05) → `PERM_CONTAS_EDITAR` (a alteração da situação ativa/inativa em [EDP05](#edp05) exige `PERM_CONTAS_DESATIVAR`); [EDP06](#edp06) → `PERM_CONTAS_EXCLUIR`; [EDP08](#edp08) → `PERM_CONTAS_AJUSTAR_SALDO`. As autoridades são resolvidas pelo `getAuthorities()` do `Usuario` a partir do perfil e das permissões vinculadas em `PERFIL_PERMISSAO`. É expressamente proibida a criação de permissões genéricas com sufixo `MANTER`. A permissão **habilita a tela**; o recorte por dono é a [RN02](#rn02). |
 | <a id="rn02"></a>RN02 | **Escopo por usuário (*row-level*).** Toda consulta e todo comando de `CONTAS` são restritos às contas cujo `USU_ID` é o do usuário autenticado, obtido do contexto de segurança — nunca de um parâmetro da requisição. Na criação ([EDP04](#edp04)), o serviço **fixa** `USU_ID` do contexto e ignora qualquer valor recebido. Em [EDP03](#edp03), [EDP05](#edp05), [EDP06](#edp06) e [EDP08](#edp08), se a conta do `{id}` não pertencer ao usuário autenticado, o serviço responde **404** com [MSG05](#msg05), sem distinguir "não existe" de "é de outro usuário". Espelha o `buscarTodosPorUsuario()` da geração 1. |
 | <a id="rn03"></a>RN03 | `CTA_DESCRICAO` é obrigatória e única entre as contas **não excluídas do mesmo usuário** (comparação sem diferenciar maiúsculas/minúsculas). Ao criar ([EDP04](#edp04)) ou editar ([EDP05](#edp05)), se a descrição já pertencer a **outra** conta do usuário, impedir e retornar [MSG03](#msg03). Executa [C2](#c2). Contas de usuários diferentes podem ter a mesma descrição. |
 | <a id="rn04"></a>RN04 | `CTA_TIPO` é obrigatório e deve ser `CORRENTE`, `POUPANCA`, `INVESTIMENTO` ou `CARTEIRA` (enum `TipoConta`). |
@@ -405,23 +407,31 @@ A imagem mostra o **modo edição** de uma conta em uso — com o toggle Ativa (
 
 ## 13. Permissões
 
-Duas permissões do módulo **Contas** (`PERM_MODULO = 'Contas'`). Fazem parte do catálogo do código e da carga inicial (Documento 0, [QUADRO_DESCRITIVO_26](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-26)). Convenção domínio-primeiro; cada uma vira a autoridade `PERM_{CÓDIGO}`.
+Seis permissões atômicas do módulo **Contas** (`PERM_MODULO = 'Contas'`). Fazem parte do catálogo do código e da carga inicial (Documento 0, [QUADRO_DESCRITIVO_26](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-26)). Convenção domínio-primeiro; cada uma vira a autoridade `PERM_{CÓDIGO}`.
 
 | CÓDIGO | DESCRIÇÃO | PERFIS COM ACESSO |
 |---|---|---|
 | <a id="perm01"></a>PERM01 | `CONTAS_LISTAR` — abrir a tela Minhas Contas, listar e filtrar as próprias contas, e obter a lista de contas ativas para os comboboxes de lançamento. Controla a visibilidade do menu 'Minhas Contas'. | [PERF01](#perf01), [PERF02](#perf02) |
-| <a id="perm02"></a>PERM02 | `CONTAS_MANTER` — cadastrar, editar, ajustar saldo, desativar/reativar e excluir as próprias contas. | [PERF01](#perf01), [PERF02](#perf02) |
+| <a id="perm02"></a>PERM02 | `CONTAS_INSERIR` — cadastrar nova conta do próprio usuário. | [PERF01](#perf01), [PERF02](#perf02) |
+| <a id="perm03"></a>PERM03 | `CONTAS_EDITAR` — editar dados cadastrais das próprias contas. | [PERF01](#perf01), [PERF02](#perf02) |
+| <a id="perm04"></a>PERM04 | `CONTAS_EXCLUIR` — realizar exclusão lógica de conta própria sem movimentações impeditivas. | [PERF01](#perf01), [PERF02](#perf02) |
+| <a id="perm05"></a>PERM05 | `CONTAS_DESATIVAR` — desativar ou reativar conta própria (`CTA_FL_ATIVO`). | [PERF01](#perf01), [PERF02](#perf02) |
+| <a id="perm06"></a>PERM06 | `CONTAS_AJUSTAR_SALDO` — realizar ajuste manual de saldo da própria conta. | [PERF01](#perf01), [PERF02](#perf02) |
 
-> `CONTAS_MANTER` pressupõe `CONTAS_LISTAR`. Estas permissões e seus vínculos vêm de carga inicial e são concedidas a **ADMIN e USER** — a tela é do próprio usuário. O que cada usuário enxerga e altera é limitado às suas contas pela [RN02](#rn02), não pela permissão.
+> Estas permissões e seus vínculos vêm de carga inicial e são concedidas a **ADMIN e USER** — a tela é do próprio usuário. O que cada usuário enxerga e altera é limitado às suas contas pela [RN02](#rn02), não pela permissão. É expressamente proibida a criação de permissões genéricas com sufixo `MANTER`.
 
 ### 13.1 Matriz Perfil × Permissão
 
 | PERMISSÃO | ADMIN | USER |
 |---|:-:|:-:|
 | `CONTAS_LISTAR` | ✓ | ✓ |
-| `CONTAS_MANTER` | ✓ | ✓ |
+| `CONTAS_INSERIR` | ✓ | ✓ |
+| `CONTAS_EDITAR` | ✓ | ✓ |
+| `CONTAS_EXCLUIR` | ✓ | ✓ |
+| `CONTAS_DESATIVAR` | ✓ | ✓ |
+| `CONTAS_AJUSTAR_SALDO` | ✓ | ✓ |
 
-Tanto `ADMIN` quanto `USER` recebem as duas permissões na carga inicial: cada usuário gerencia as suas próprias contas. O `ADMIN` **não** tem visão administrativa das contas de outros usuários — dado financeiro é privado do dono, e o escopo por `USU_ID` da [RN02](#rn02) vale igual para os dois perfis.
+Tanto `ADMIN` quanto `USER` recebem as 6 permissões atômicas na carga inicial: cada usuário gerencia as suas próprias contas. O `ADMIN` **não** tem visão administrativa das contas de outros usuários — dado financeiro é privado do dono, e o escopo por `USU_ID` da [RN02](#rn02) vale igual para os dois perfis.
 
 ---
 
@@ -429,8 +439,8 @@ Tanto `ADMIN` quanto `USER` recebem as duas permissões na carga inicial: cada u
 
 | CÓDIGO | NOME | DESCRIÇÃO |
 |---|---|---|
-| <a id="perf01"></a>PERF01 | ADMIN | Administrador do sistema. `PERF_FL_SISTEMA = TRUE`. Recebe todas as permissões na carga inicial, inclusive `CONTAS_LISTAR` e `CONTAS_MANTER` (Seção 13.1). Opera apenas sobre as próprias contas ([RN02](#rn02)). Corresponde a `ROLE_ADMIN`. |
-| <a id="perf02"></a>PERF02 | USER | Usuário comum. `PERF_FL_SISTEMA = TRUE`. Recebe `CONTAS_LISTAR` e `CONTAS_MANTER` na carga inicial e gerencia as próprias contas. Corresponde a `ROLE_USER`. |
+| <a id="perf01"></a>PERF01 | ADMIN | Administrador do sistema. `PERF_FL_SISTEMA = TRUE`. Recebe todas as permissões na carga inicial, inclusive as 6 deste módulo (Seção 13.1). Opera apenas sobre as próprias contas ([RN02](#rn02)). Corresponde a `ROLE_ADMIN`. |
+| <a id="perf02"></a>PERF02 | USER | Usuário comum. `PERF_FL_SISTEMA = TRUE`. Recebe as 6 permissões deste módulo na carga inicial e gerencia as próprias contas. Corresponde a `ROLE_USER`. |
 
 ---
 
@@ -556,7 +566,7 @@ Então deve aparecer "Nubank", e não "Conta Antiga" nem "Itaú".
 
 ### 16.13 Ajustar saldo
 
-Dado que a minha conta "Nubank" está com saldo 1.500,00.
+Dado que tenho a permissão [PERM06](#perm06) e a minha conta "Nubank" está com saldo 1.500,00.
 Quando eu abrir "Ajustar saldo", informar o novo saldo "1.234,56" e a observação "Conferência do extrato" e salvar.
 Então o sistema deve gravar o saldo 1.234,56, manter `CTA_SALDO_SINCRONIZADO_EM` nulo, exibir [MSG10](#msg10) e recarregar o grid.
 
@@ -592,12 +602,12 @@ Descrição: Levantamento a partir do Documento 0 (Observação 11; [QUADRO_DESC
 **Decisões tomadas:**
 - `CONTAS` é dado do próprio usuário (tem `USU_ID`). A tela vive em "Finanças > Minhas Contas" e é acessível a `ADMIN` e `USER`; cada um opera só sobre as próprias contas ([RN02](#rn02)).
 - O escopo por usuário (*row-level*) é resolvido no serviço, a partir do contexto de segurança — nunca de um parâmetro. Acesso cruzado por `{id}` responde 404 ([MSG05](#msg05)), sem revelar a existência do registro.
-- Permissões `CONTAS_LISTAR` / `CONTAS_MANTER` concedidas a `ADMIN` e `USER` na carga inicial — a permissão habilita a tela; o recorte por dono é a regra de negócio.
+- Permissões atômicas por operação (`CONTAS_LISTAR`, `CONTAS_INSERIR`, `CONTAS_EDITAR`, `CONTAS_EXCLUIR`, `CONTAS_DESATIVAR`, `CONTAS_AJUSTAR_SALDO`), eliminando permissões genéricas com sufixo `MANTER` conforme diretrizes de governança RBAC granular e Observação 28 do Documento 0. Concedidas a `ADMIN` e `USER` na carga inicial — a permissão habilita a tela/operação; o recorte por dono é a regra de negócio.
 - **O `ADMIN` não tem visão administrativa de dados financeiros de outros usuários — nem nesta versão nem no roadmap.** Dado financeiro é privado do dono; o `ADMIN` opera exatamente como um `USER`, sobre as próprias contas, e usa os próprios dados financeiros para os próprios lançamentos. Não haverá permissão do tipo `CONTAS_ADMINISTRAR_TODAS`.
 - `TipoConta` é enum novo: `CORRENTE`, `POUPANCA`, `INVESTIMENTO`, `CARTEIRA`.
-- Saldo: `CTA_SALDO` é definido no cadastro ("Saldo inicial") e alterado depois só pela ação dedicada "Ajustar saldo" ([EDP08](#edp08)) — a edição cadastral não mexe no saldo.
+- Saldo: `CTA_SALDO` é definido no cadastro ("Saldo inicial") e alterado depois só pela ação dedicada "Ajustar saldo" ([EDP08](#edp08)) — a edição cadastral não mexe no saldo. Inputs monetários de saldo possuem obrigatoriamente máscara em tempo real no padrão `pt-BR` (`R$ 0,00`).
 - Instituição imutável após a criação da conta ([RN06](#rn06)).
-- O combobox de instituição é alimentado pelo endpoint de opções do documento `05 - manter-instituicao-financeira`; este documento não define esse endpoint.
+- O combobox de instituição é alimentado pelo endpoint de opções do documento `05 - manter-instituicao-financeira`.
 - Exclusão lógica; trava "conta em uso" espelha a RN06 do documento `04`, parametrizável por `CONTA_EXCLUSAO_BLOQUEIA_EM_USO`. Conta com transação bancária nunca é excluível (FK `NOT NULL`).
 - Grid client-side; sem carga inicial (a tabela nasce vazia).
 

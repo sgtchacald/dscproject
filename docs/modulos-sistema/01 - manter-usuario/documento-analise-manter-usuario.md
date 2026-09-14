@@ -1,10 +1,11 @@
 # dscproject — Análise de Sistemas
 ## Módulo Usuário — ADMIN — Manter Usuário
 
-**Gerado em:** 06/09/2026
-**Versão:** 1.3.1
-**Status:** Homologado
-**Projeto:** `dscproject-spring-mvc` (geração 2)
+**Gerado em:** 06/09/2026  
+**Atualizado em:** 11/09/2026  
+**Versão:** 1.5  
+**Status:** Homologado  
+**Projeto:** `dscproject-spring-mvc` (geração 2)  
 
 ---
 
@@ -30,6 +31,8 @@
 | 1.2 | 07/09/2026 | Diego dos Santos Cordeiro | A permissão única `ADMINISTRAR_USUARIOS` vira cinco, granulares por operação: `USUARIOS_LISTAR`, `USUARIOS_INSERIR`, `USUARIOS_EDITAR`, `USUARIOS_EXCLUIR`, `USUARIOS_VER_HISTORICO` (convenção domínio-primeiro). Nova Seção 13.1 com a matriz Perfil × Permissão. Cada EDP passa a exigir a permissão da sua operação ([RN01](#rn01)) |
 | 1.3 | 07/09/2026 | Diego dos Santos Cordeiro | Separa a troca de senha da edição cadastral: [EDP05](#edp05) não altera mais senha; nova ação dedicada no grid ([RT13](#rt13) / [EDP12](#edp12) / [QUADRO_DESCRITIVO_7](#quadro-descritivo-7)). Nova tela **Configurações da Conta** (self-service) — [QUADRO_DESCRITIVO_8](#quadro-descritivo-8), [EDP13](#edp13)/[EDP14](#edp14), [RN18](#rn18)/[RN19](#rn19), [RT14](#rt14) —, em que o usuário edita os próprios dados e a própria senha sem alterar o perfil. Novas [MSG21](#msg21) e [MSG22](#msg22); novos [RF12](#rf12)/[RF13](#rf13), [CAUS09](#caus09)/[CAUS10](#caus10). A Seção 6 (Banco de Dados) permanece inalterada |
 | 1.3.1 | 07/09/2026 | Diego dos Santos Cordeiro | Ajustes de revisão: o combobox de PERFIL ([SB01](#sb01), [QUADRO_DESCRITIVO_3](#quadro-descritivo-3) e [_4](#quadro-descritivo-4)) passa a carregar os registros da tabela `PERFIS`, não uma lista fixa. A tela Configurações da Conta ([QUADRO_DESCRITIVO_8](#quadro-descritivo-8)) é acessada ao **clicar no nome do usuário na sidebar**, não por item de menu próprio |
+| 1.4 | 11/09/2026 | Diego dos Santos Cordeiro | Redes Sociais do Usuário e Refinamentos de Layout: (a) nova aba "Redes Sociais" na tela Configurações da Conta (`/minha-conta`), com gerenciamento (CRUD) das redes sociais do próprio usuário (LinkedIn, GitHub, Facebook, Instagram, Twitter/X, YouTube, Outro); (b) exibição dinâmica dos ícones de redes sociais no footer e header do layout administrativo a partir das redes ativas do usuário logado; (c) criação da tabela associativa `USUARIOS_REDES_SOCIAIS` (QUADRO_DESCRITIVO_30 do Documento 0); (d) novos endpoints [EDP15](#edp15) a [EDP19](#edp19); novas regras de tela [RT15](#rt15) a [RT17](#rt17); novas regras de negócio [RN20](#rn20) a [RN23](#rn23); novas mensagens [MSG23](#msg23) a [MSG28](#msg28); novos [RF14](#rf14) a [RF16](#rf16) e [CAUS11](#caus11). |
+| 1.5 | 12/09/2026 | Diego dos Santos Cordeiro | Padronização visual do sistema: explicitação do alinhamento à esquerda para a coluna de Ações nos grids de Usuários (QUADRO_DESCRITIVO_2) e Redes Sociais (QUADRO_DESCRITIVO_8). |
 
 ---
 
@@ -59,6 +62,7 @@ Este documento **mescla as duas gerações** e define, para a geração 2, o CRU
 - **Cadastro e edição** de usuário via modal único (perfil ADMIN). Senha só no cadastro.
 - **Alteração de senha de usuário pelo ADMIN** — ação dedicada no grid, separada da edição cadastral.
 - **Configurações da Conta** (self-service) — o próprio usuário autenticado, de qualquer perfil, edita seus dados e troca a própria senha.
+- **Redes Sociais do Usuário** — gerenciamento de redes sociais (LinkedIn, GitHub, Facebook, Instagram, Twitter/X, YouTube, Outro) em aba dedicada em Configurações da Conta (`/minha-conta`), refletindo dinamicamente nos ícones sociais do rodapé e cabeçalho do layout administrativo.
 - **Exclusão lógica** (soft delete) de usuário, com as travas de negócio.
 - **Histórico** de alterações do usuário (Hibernate Envers).
 - **Auto-cadastro pelo site** (público) — a tela que a geração 2 já tem, revisada.
@@ -90,10 +94,11 @@ Este documento **mescla as duas gerações** e define, para a geração 2, o CRU
 | 10 | **`existe-usuario` é público** e funciona como oráculo de enumeração de login/e-mail. Mantido (a geração 1 e 2 dependem dele no cadastro), com ciência do risco. Alternativa futura: mover a checagem para dentro do submit. | [EDP07](#edp07) |
 | 11 | **Gênero** continua enum de 1 caractere (`Genero` — F/M/O), gravado direto na coluna `USU_GENERO CHAR(1)`, conforme o Documento 0. | Documento 0, Seção 7.3 |
 | 12 | O grid é **client-side** (carrega a lista completa uma vez e pagina/ordena no navegador com DataTables). O sistema é pessoal, com poucos usuários; paginação server-side seria complexidade sem ganho. | [EDP02](#edp02) / [RNF03](#rnf03) |
-| 13 | **Auditoria.** `USUARIOS`, `PERFIS`, `PERMISSOES`, `PERFIL_PERMISSAO` e `USUARIOS_RECUPERACAO_SENHA` são auditadas via Hibernate Envers (`@Audited`), conforme o Documento 0. | [RNF04](#rnf04) |
+| 13 | **Auditoria.** `USUARIOS`, `PERFIS`, `PERMISSOES`, `PERFIL_PERMISSAO`, `USUARIOS_REDES_SOCIAIS` e `USUARIOS_RECUPERACAO_SENHA` são auditadas via Hibernate Envers (`@Audited`), conforme o Documento 0. | [RNF04](#rnf04) |
 | 14 | **Campos residuais no front da geração 1.** `usuario.model.ts` carrega `valorDividido`, `statusPagamento` e `logado` — resquício do rateio de despesa. Não fazem parte do usuário; são ignorados neste documento. | — |
 | 15 | **Troca de senha fora da edição cadastral.** A edição administrativa ([EDP05](#edp05)) deixa de aceitar senha. A troca da senha de outro usuário passa a ser uma ação dedicada no grid ([RT13](#rt13)); a troca da própria senha fica em Configurações da Conta ([EDP14](#edp14)). Decisão de estrutura: mantém-se um único [QUADRO_DESCRITIVO_4](#quadro-descritivo-4), com Senha e Confirmação exibidos **apenas no modo criação** — mais enxuto que dois quadros. | [RN07](#rn07), [RN18](#rn18) |
 | 16 | **Configurações da Conta (self-service).** Nova tela para o próprio usuário autenticado editar seus dados e senha, cobrindo o que a Seção 1 listava como "Tela Meu Perfil — documento futuro". O id é sempre do contexto de segurança, nunca da requisição; o perfil é imutável na tela; não há permissão específica. | [RN19](#rn19) |
+| 17 | **Redes Sociais e Layout Administrativo.** Cada usuário pode associar seus perfis de redes sociais (tabela associativa `USUARIOS_REDES_SOCIAIS`, QUADRO_DESCRITIVO_30 do Documento 0). Uma nova aba "Redes Sociais" é disponibilizada na tela Configurações da Conta (`/minha-conta`). As redes ativas cadastradas alimentam dinamicamente os ícones sociais do rodapé (`templates/sistema/template-admin/fragments/footer.html`) e cabeçalho, personalizando o painel de acordo com o usuário autenticado. | [RN20](#rn20)–[RN23](#rn23), [RT15](#rt15)–[RT17](#rt17) |
 
 ---
 
@@ -116,6 +121,9 @@ Este documento **mescla as duas gerações** e define, para a geração 2, o CRU
 | <a id="rf11"></a>RF11 | O sistema deve armazenar a senha com hash BCrypt e nunca devolvê-la (nem o hash) em resposta de listagem, edição ou histórico. | Alta | Em análise |
 | <a id="rf12"></a>RF12 | O sistema deve permitir ao ADMIN alterar a senha de um usuário por uma ação dedicada no grid, separada da edição cadastral, exigindo a confirmação da nova senha e sem alterar nenhum outro dado do usuário. | Alta | Em análise |
 | <a id="rf13"></a>RF13 | O sistema deve disponibilizar a qualquer usuário autenticado a tela Configurações da Conta, onde ele edita os próprios dados (Nome, Gênero, Data de nascimento, E-mail, Login) e, opcionalmente, troca a própria senha, sem poder alterar o próprio perfil. | Alta | Em análise |
+| <a id="rf14"></a>RF14 | O sistema deve disponibilizar na tela Configurações da Conta uma aba "Redes Sociais" onde o usuário autenticado pode cadastrar, visualizar, editar e excluir suas redes sociais (LinkedIn, GitHub, Facebook, Instagram, Twitter/X, YouTube, Outro), informando a URL e o identificador opcional (@handle). | Alta | Em análise |
+| <a id="rf15"></a>RF15 | O sistema deve validar a integridade da URL das redes sociais (iniciando por http:// ou https://) e impedir que o mesmo usuário cadastre mais de um registro ativo para o mesmo tipo de rede social. | Alta | Em análise |
+| <a id="rf16"></a>RF16 | O sistema deve renderizar dinamicamente os ícones de redes sociais no rodapé (footer) e cabeçalho do layout administrativo, apontando para as URLs configuradas pelo usuário logado. | Alta | Em análise |
 
 ### 3.2 Requisitos Não Funcionais
 
@@ -124,7 +132,7 @@ Este documento **mescla as duas gerações** e define, para a geração 2, o CRU
 | <a id="rnf01"></a>RNF01 | Segurança | Cada endpoint do CRUD administrativo deve exigir a autoridade da sua operação (`PERM_USUARIOS_*`, conforme a Seção 13 e [RN01](#rn01)). Nenhum usuário sem a permissão correspondente obtém resposta de sucesso. | Teste de acesso com ADMIN, com USER e com um perfil que tenha só parte das permissões. |
 | <a id="rnf02"></a>RNF02 | Segurança | A senha (e o hash) nunca aparece em resposta de [EDP02](#edp02), [EDP03](#edp03) ou [EDP08](#edp08), nem em log. | Inspeção das respostas e dos logs após operações de CRUD. |
 | <a id="rnf03"></a>RNF03 | Desempenho | A listagem ([EDP02](#edp02)) responde em menos de 1 s para a base esperada (dezenas de usuários), carregando a lista completa uma vez. | Medição em ambiente de homologação. |
-| <a id="rnf04"></a>RNF04 | Auditoria | `USUARIOS`, `PERFIS`, `PERMISSOES`, `PERFIL_PERMISSAO` e `USUARIOS_RECUPERACAO_SENHA` têm auditoria completa via Hibernate Envers. | Inspeção das tabelas `_aud` após CRUD. |
+| <a id="rnf04"></a>RNF04 | Auditoria | `USUARIOS`, `PERFIS`, `PERMISSOES`, `PERFIL_PERMISSAO`, `USUARIOS_REDES_SOCIAIS` e `USUARIOS_RECUPERACAO_SENHA` têm auditoria completa via Hibernate Envers. | Inspeção das tabelas `_aud` após CRUD. |
 | <a id="rnf05"></a>RNF05 | Segurança | O token de recuperação de senha é gravado apenas como hash, com validade de 30 minutos e no máximo 5 tentativas de uso. | Teste do fluxo com token válido, inválido, expirado e acima do limite. |
 | <a id="rnf06"></a>RNF06 | Usabilidade | A interface segue o padrão do projeto (Thymeleaf + Tabler + DataTables + AJAX) e é responsiva. | Revisão visual. |
 | <a id="rnf07"></a>RNF07 | Segurança | O fluxo de recuperação de senha responde a mesma mensagem quer o e-mail exista ou não ([MSG15](#msg15)), para não confirmar a existência de contas. | Teste com e-mail existente e inexistente. |
@@ -147,6 +155,7 @@ Este documento **mescla as duas gerações** e define, para a geração 2, o CRU
 | <a id="caus08"></a>CAUS08 | Recuperar Senha | Visitante | Visitante informa o e-mail, recebe o link com token e define nova senha. ([RF09](#rf09)) |
 | <a id="caus09"></a>CAUS09 | Alterar Senha de Usuário | [PERF01](#perf01) | ADMIN altera a senha de um usuário pela ação dedicada do grid, sem passar pela edição cadastral. ([RF12](#rf12)) |
 | <a id="caus10"></a>CAUS10 | Gerir a Própria Conta | [PERF01](#perf01), [PERF02](#perf02) | Usuário autenticado edita os próprios dados e, opcionalmente, troca a própria senha em Configurações da Conta. ([RF13](#rf13)) |
+| <a id="caus11"></a>CAUS11 | Gerenciar Redes Sociais | [PERF01](#perf01), [PERF02](#perf02) | Usuário autenticado cadastra, visualiza, edita, ativa/desativa e exclui suas redes sociais em Configurações da Conta. ([RF14](#rf14)–[RF16](#rf16)) |
 
 ---
 
@@ -163,6 +172,8 @@ Este documento **mescla as duas gerações** e define, para a geração 2, o CRU
 - O cadastro e a edição são feitos num modal único; Senha e Confirmação só aparecem no modo criação.
 - A troca de senha de um usuário é uma ação dedicada do grid, que não altera nenhum outro dado.
 - Em Configurações da Conta o usuário altera apenas o próprio registro e não vê o campo Perfil.
+- Na tela Configurações da Conta, a aba "Redes Sociais" permite ao usuário gerenciar seus links de redes sociais.
+- Os ícones de redes sociais no rodapé e cabeçalho do layout administrativo refletem dinamicamente as redes ativas cadastradas pelo usuário logado.
 - Não é permitido cadastrar dois usuários com o mesmo login ou e-mail.
 - Não é permitido excluir a si mesmo nem o último ADMIN ativo.
 - A senha nunca é exibida (nem o hash) na listagem, edição ou histórico.
@@ -173,11 +184,12 @@ Este documento **mescla as duas gerações** e define, para a geração 2, o CRU
 
 ## 6. Banco de Dados
 
-Toda a estrutura de `USUARIOS` e do RBAC está no **Documento 0** (`00 - analise-geral`):
+Toda a estrutura de `USUARIOS`, `USUARIOS_REDES_SOCIAIS` e do RBAC está no **Documento 0** (`00 - analise-geral`):
 
 | Tabela | Onde | Observação |
 |---|---|---|
 | `USUARIOS` | Documento 0 — [QUADRO_DESCRITIVO_2](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-2) | `USU_PERFIL` (enum) já virou `PERF_ID` (FK) na v1.2 do Documento 0 |
+| `USUARIOS_REDES_SOCIAIS` | Documento 0 — [QUADRO_DESCRITIVO_30](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-30) | Tabela associativa das redes sociais vinculadas ao usuário |
 | `PERFIS` | Documento 0 — [QUADRO_DESCRITIVO_25](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-25) | Carga inicial: `ADMIN`, `USER` |
 | `PERMISSOES` | Documento 0 — [QUADRO_DESCRITIVO_26](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-26) | Carga inicial: as 5 permissões do módulo Usuários (Seção 13), módulo `Usuários` |
 | `PERFIL_PERMISSAO` | Documento 0 — [QUADRO_DESCRITIVO_27](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-27) | Carga inicial: `ADMIN` recebe as 5; `USER`, nenhuma (Seção 13.1) |
@@ -271,7 +283,7 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 | <a id="qdd2-11"></a>11 | GÊNERO | Tipo: Coluna<br>Ordenação: Não | Exibe a descrição do gênero (Feminino/Masculino/Outro). |
 | <a id="qdd2-12"></a>12 | CRIADO EM | Tipo: Coluna (data)<br>Ordenação: Sim | Exibe [C1](#c1).criadoEm formatado dd/MM/yyyy. |
 | <a id="qdd2-13"></a>13 | SITUAÇÃO | Tipo: Coluna (badge)<br>Ordenação: Sim | Ativo (verde) quando `audit_data_exclusao` é nulo; Excluído (cinza) caso contrário. |
-| <a id="qdd2-14"></a>14 | AÇÃO | Tipo: Coluna | Ícones [ID15](#qdd2-15), [ID16](#qdd2-16), [ID17](#qdd2-17), [ID18](#qdd2-18). |
+| <a id="qdd2-14"></a>14 | AÇÃO | Tipo: Coluna (alinhada à esquerda) | Ícones [ID15](#qdd2-15), [ID16](#qdd2-16), [ID17](#qdd2-17), [ID18](#qdd2-18). |
 | <a id="qdd2-15"></a>15 | ÍCONE EDITAR | Tipo: Ícone<br>Ícone: edit<br>Tooltip: Editar usuário | Visível a quem tem [PERM03](#perm03). Ao clicar, executar [RT05](#rt05). Oculto para usuários excluídos. |
 | <a id="qdd2-16"></a>16 | ÍCONE EXCLUIR | Tipo: Ícone<br>Ícone: trash<br>Tooltip: Excluir usuário | Visível a quem tem [PERM04](#perm04). Ao clicar, executar [RT09](#rt09). Oculto para o próprio usuário logado e para usuários já excluídos. |
 | <a id="qdd2-17"></a>17 | ÍCONE HISTÓRICO | Tipo: Ícone<br>Ícone: history<br>Tooltip: Ver histórico | Visível a quem tem [PERM05](#perm05). Ao clicar, executar [RT10](#rt10). |
@@ -353,7 +365,7 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 
 ### <a id="quadro-descritivo-8"></a>7.7 Tela: Configurações da Conta (self-service) — QUADRO_DESCRITIVO_8
 
-> OBSERVAÇÕES: Tela acessada ao clicar no nome do usuário na sidebar, disponível a qualquer perfil autenticado. Layout: um `card` com navegação vertical (list-group) à esquerda e o conteúdo à direita, **sem foto/avatar**. Um único botão "Salvar" ([ID13](#qdd8-13)) abrange as duas abas. O usuário edita **somente o próprio registro** — o id vem do contexto de segurança ([RN19](#rn19)). Não há campo Perfil.
+> OBSERVAÇÕES: Tela acessada ao clicar no nome do usuário na sidebar, disponível a qualquer perfil autenticado. Layout: um `card` com navegação vertical (list-group) à esquerda e o conteúdo à direita, **sem foto/avatar**. As abas "Minha Conta" e "Alterar Senha" compartilham o botão "Salvar" ([ID13](#qdd8-13)). A aba "Redes Sociais" possui gestão própria de registros via lista dinâmica e modal. O usuário edita **somente o próprio registro** — o id vem do contexto de segurança ([RN19](#rn19), [RN20](#rn20)). Não há campo Perfil.
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
@@ -361,6 +373,7 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 | <a id="qdd8-1"></a>1 | TÍTULO DA PÁGINA | Tipo: Texto<br>Texto: Configurações da Conta | Aba do navegador e `h2` do cabeçalho. |
 | <a id="qdd8-2"></a>2 | NAVEGAÇÃO – ABA "MINHA CONTA" | Tipo: Item de list-group<br>Texto: Minha Conta | Exibe os campos [ID6](#qdd8-6)–[ID10](#qdd8-10). |
 | <a id="qdd8-3"></a>3 | NAVEGAÇÃO – ABA "ALTERAR SENHA" | Tipo: Item de list-group<br>Texto: Alterar Senha | Exibe os campos [ID11](#qdd8-11)–[ID12](#qdd8-12). |
+| <a id="qdd8-3a"></a>3a | NAVEGAÇÃO – ABA "REDES SOCIAIS" | Tipo: Item de list-group<br>Texto: Redes Sociais | Exibe a gestão de redes sociais do usuário ([ID14](#qdd8-14)–[ID17](#qdd8-17)). |
 | <a id="qdd8-4"></a>4 | CABEÇALHO DO CARD DE CONTEÚDO | Tipo: Texto<br>Texto: Meus Dados | — |
 | <a id="qdd8-5"></a>5 | CARREGAMENTO | Endpoint: [EDP13](#edp13) | A página vem preenchida com os dados do usuário autenticado. Sem senha. |
 | <a id="qdd8-6"></a>6 | CAMPO – NOME | Tipo: Input Text<br>Tamanho: 100<br>Obrigatório: Sim | Grava em `USU_NOME`. |
@@ -370,7 +383,11 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 | <a id="qdd8-10"></a>10 | CAMPO – LOGIN | Tipo: Input Text<br>Tamanho: 40<br>Mín.: 4<br>Obrigatório: Sim | Grava em `USU_LOGIN`. Único ([RN04](#rn04)). Executar [RT06](#rt06). |
 | <a id="qdd8-11"></a>11 | CAMPO – NOVA SENHA | Tipo: Input Password<br>Mín.: 6<br>Obrigatório: Não | Vazio mantém a senha atual ([RN19](#rn19)). |
 | <a id="qdd8-12"></a>12 | CAMPO – CONFIRMAÇÃO DE NOVA SENHA | Tipo: Input Password<br>Obrigatório: quando Nova senha preenchida | Executar [RT14](#rt14). Não persiste. |
-| <a id="qdd8-13"></a>13 | BOTÃO SALVAR | Tipo: Botão<br>Texto: Salvar<br>Endpoint: [EDP14](#edp14) | Botão único das duas abas. Ao clicar, executar [RT14](#rt14). |
+| <a id="qdd8-13"></a>13 | BOTÃO SALVAR | Tipo: Botão<br>Texto: Salvar<br>Endpoint: [EDP14](#edp14) | Botão único das abas de dados e senha. Ao clicar, executar [RT14](#rt14). |
+| <a id="qdd8-14"></a>14 | LISTA / TABELA DE REDES SOCIAIS | Tipo: Grid / Tabela<br>Endpoint: [EDP15](#edp15) | Lista as redes cadastradas (colunas: Rede Social, URL, @Identificador, Ativo, Ações [Editar, Excluir, alinhada à esquerda]). |
+| <a id="qdd8-15"></a>15 | BOTÃO ADICIONAR REDE SOCIAL | Tipo: Botão<br>Texto: Nova Rede Social | Abre o modal de cadastro de rede social. |
+| <a id="qdd8-16"></a>16 | MODAL FORMULÁRIO DE REDE SOCIAL | Tipo: Modal | Contém: Tipo de Rede Social (Combobox: LinkedIn, GitHub, Facebook, Instagram, Twitter/X, YouTube, Outro), URL do Perfil (Input Text, obrigatório), Identificador/Handle (Input Text, opcional), Ativo (Switch/Checkbox, default true). |
+| <a id="qdd8-17"></a>17 | BOTÕES DO MODAL DE REDE SOCIAL | Tipo: Botões<br>Salvar / Cancelar | Ao salvar, executa [RT16](#rt16) e chama [EDP16](#edp16) (criação) ou [EDP17](#edp17) (edição). |
 
 ### 7.8 Suggestion Boxes
 
@@ -378,6 +395,7 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 |---|---|---|
 | <a id="sb01"></a>SB01 | PERFIL | Itens carregados da tabela `PERFIS` (Documento 0, [QUADRO_DESCRITIVO_25](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-25)) — via atributo de modelo na renderização da página/modal, ordenados por nome. No filtro ([QUADRO_DESCRITIVO_3](#quadro-descritivo-3)), a opção "Todos" é adicional. Nunca `<option>` fixo no HTML. |
 | <a id="sb02"></a>SB02 | SITUAÇÃO | Domínio fixo do próprio filtro (não é entidade): Ativo, Excluído, Todos. |
+| <a id="sb03"></a>SB03 | TIPO DE REDE SOCIAL | Domínio do enum `TipoRedeSocial`: LinkedIn, GitHub, Facebook, Instagram, Twitter/X, YouTube, Outro. |
 
 ### 7.9 Regras de Tela
 
@@ -396,7 +414,10 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 | <a id="rt11"></a>RT11 | Na etapa 1 de recuperar senha, ao clicar em "Enviar link" ([ID2](#qdd6-2)): validar o e-mail ([MSG02](#msg02)) e chamar [EDP10](#edp10). Sempre exibir [MSG15](#msg15), independentemente do retorno. |
 | <a id="rt12"></a>RT12 | Na etapa 2, ao clicar em "Definir nova senha" ([ID5](#qdd6-5)): validar senha (mín. 6) e confirmação igual ([MSG07](#msg07)), e chamar [EDP11](#edp11) com o token da URL. Em sucesso, exibir [MSG14](#msg14) e redirecionar para o login. Token inválido → [MSG17](#msg17); expirado → [MSG18](#msg18); acima do limite → [MSG19](#msg19). |
 | <a id="rt13"></a>RT13 | Ao clicar no ícone Alterar senha ([ID18](#qdd2-18)) — visível só com [PERM03](#perm03) —, abrir o modal ([QUADRO_DESCRITIVO_7](#quadro-descritivo-7)) com o nome do usuário-alvo no título. Ao clicar em "Salvar": validar os obrigatórios ([MSG02](#msg02)) e a Confirmação igual à Nova senha ([MSG07](#msg07)), e chamar [EDP12](#edp12). Em sucesso, exibir [MSG21](#msg21) e fechar o modal; o grid não é recarregado. |
-| <a id="rt14"></a>RT14 | Na tela Configurações da Conta, ao clicar em "Salvar" ([ID13](#qdd8-13)): validar os obrigatórios das duas abas ([MSG02](#msg02)), executar [RT07](#rt07); se a Nova senha estiver preenchida, exigir a Confirmação igual ([MSG07](#msg07)). Chamar [EDP14](#edp14). Em sucesso, exibir [MSG22](#msg22). Login/e-mail já usado por outro → [MSG03](#msg03)/[MSG04](#msg04). |
+| <a id="rt14"></a>RT14 | Na tela Configurações da Conta, ao clicar em "Salvar" ([ID13](#qdd8-13)): validar os obrigatórios das abas de dados e senha ([MSG02](#msg02)), executar [RT07](#rt07); se a Nova senha estiver preenchida, exigir a Confirmação igual ([MSG07](#msg07)). Chamar [EDP14](#edp14). Em sucesso, exibir [MSG22](#msg22). Login/e-mail já usado por outro → [MSG03](#msg03)/[MSG04](#msg04). |
+| <a id="rt15"></a>RT15 | Na tela Configurações da Conta, ao selecionar a aba "Redes Sociais", invocar [EDP15](#edp15) para carregar e renderizar na tabela ([ID14](#qdd8-14)) todas as redes cadastradas do usuário. |
+| <a id="rt16"></a>RT16 | No modal de Rede Social ([ID16](#qdd8-16)), ao clicar em "Salvar": validar preenchimento obrigatório de Tipo e URL ([MSG02](#msg02)), validar formato da URL ([MSG28](#msg28)) e verificar duplicidade de tipo ([MSG27](#msg27)). Se inclusão, chamar [EDP16](#edp16); se edição, chamar [EDP17](#edp17). Em sucesso, exibir [MSG23](#msg23) ou [MSG24](#msg24), fechar o modal e recarregar a lista via [EDP15](#edp15). |
+| <a id="rt17"></a>RT17 | Ao clicar no ícone Excluir em uma linha da tabela de Redes Sociais, exibir confirmação [MSG25](#msg25). Ao confirmar, chamar [EDP18](#edp18). Em sucesso, exibir [MSG26](#msg26) e recarregar a lista via [EDP15](#edp15). |
 
 ---
 
@@ -432,6 +453,16 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 | Retorna a página Configurações da Conta (Thymeleaf) já preenchida com os dados do usuário autenticado. O id vem do contexto de segurança ([RN19](#rn19)). **Nunca** inclui a senha. | | | | |
 | <a id="edp14"></a>EDP14 | PUT | Autenticado | /minha-conta | N |
 | Salva os dados da própria conta e, opcionalmente, a senha. Executa [RN19](#rn19). Dados: nome, genero, nascimento, email, login, senha, confirmacaoSenha. Não recebe id nem perfil. Retorno: 200 ([MSG22](#msg22)) ou 422 ([MSG02](#msg02)/[MSG03](#msg03)/[MSG04](#msg04)/[MSG06](#msg06)/[MSG07](#msg07)). | | | | |
+| <a id="edp15"></a>EDP15 | GET | Autenticado | /minha-conta/redes-sociais | N |
+| Retorna a lista de redes sociais cadastradas do usuário autenticado em JSON ([RN20](#rn20)). Campos: id, tipo, tipoDescricao, url, identificador, ativo. | | | | |
+| <a id="edp16"></a>EDP16 | POST | Autenticado | /minha-conta/redes-sociais | N |
+| Cadastra nova rede social para o usuário autenticado. Executa [RN20](#rn20), [RN21](#rn21), [RN22](#rn22). Dados: tipo, url, identificador, ativo. Retorno: 200 `{sucesso: true}` ([MSG23](#msg23)) ou 422 ([MSG02](#msg02)/[MSG27](#msg27)/[MSG28](#msg28)). | | | | |
+| <a id="edp17"></a>EDP17 | PUT | Autenticado | /minha-conta/redes-sociais/{id} | N |
+| Atualiza rede social do usuário autenticado. Valida propriedade do registro ([RN20](#rn20)), [RN21](#rn21), [RN22](#rn22). Dados: tipo, url, identificador, ativo. Retorno: 200 ([MSG24](#msg24)) ou 422 ([MSG02](#msg02)/[MSG27](#msg27)/[MSG28](#msg28)). | | | | |
+| <a id="edp18"></a>EDP18 | DELETE | Autenticado | /minha-conta/redes-sociais/{id} | N |
+| Exclusão lógica da rede social do usuário autenticado. Valida propriedade do registro ([RN20](#rn20)). Retorno: 200 ([MSG26](#msg26)) ou 422. | | | | |
+| <a id="edp19"></a>EDP19 | GET | Autenticado | /minha-conta/redes-sociais/ativas | N |
+| Retorna a lista de redes sociais ativas (`flAtivo = true`) do usuário autenticado para alimentar os ícones do cabeçalho e rodapé do layout administrativo ([RN23](#rn23)). Executa [C5](#c5). | | | | |
 
 ---
 
@@ -439,7 +470,7 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 
 | ID | DESCRIÇÃO |
 |---|---|
-| <a id="rn01"></a>RN01 | Cada endpoint do CRUD administrativo exige a autoridade da sua operação: [EDP01](#edp01)/[EDP02](#edp02) → `PERM_USUARIOS_LISTAR`; [EDP04](#edp04) → `PERM_USUARIOS_INSERIR`; [EDP03](#edp03)/[EDP05](#edp05) → `PERM_USUARIOS_EDITAR`; [EDP06](#edp06) → `PERM_USUARIOS_EXCLUIR`; [EDP08](#edp08) → `PERM_USUARIOS_VER_HISTORICO`. [EDP12](#edp12) → `PERM_USUARIOS_EDITAR`. As autoridades são resolvidas pelo `getAuthorities()` do `Usuario` a partir do perfil e das permissões vinculadas em `PERFIL_PERMISSAO`. [EDP07](#edp07), [EDP09](#edp09), [EDP10](#edp10) e [EDP11](#edp11) são públicos. [EDP13](#edp13) e [EDP14](#edp14) exigem apenas usuário autenticado (self-service, sem permissão específica). |
+| <a id="rn01"></a>RN01 | Cada endpoint do CRUD administrativo exige a autoridade da sua operação: [EDP01](#edp01)/[EDP02](#edp02) → `PERM_USUARIOS_LISTAR`; [EDP04](#edp04) → `PERM_USUARIOS_INSERIR`; [EDP03](#edp03)/[EDP05](#edp05) → `PERM_USUARIOS_EDITAR`; [EDP06](#edp06) → `PERM_USUARIOS_EXCLUIR`; [EDP08](#edp08) → `PERM_USUARIOS_VER_HISTORICO`. [EDP12](#edp12) → `PERM_USUARIOS_EDITAR`. As autoridades são resolvidas pelo `getAuthorities()` do `Usuario` a partir do perfil e das permissões vinculadas em `PERFIL_PERMISSAO`. [EDP07](#edp07), [EDP09](#edp09), [EDP10](#edp10) e [EDP11](#edp11) são públicos. [EDP13](#edp13) a [EDP19](#edp19) exigem apenas usuário autenticado (self-service, sem permissão específica). |
 | <a id="rn02"></a>RN02 | A senha é cifrada com BCrypt no serviço antes de persistir. Tamanho mínimo de 6 caracteres. Nunca trafega nem é gravada em claro. |
 | <a id="rn03"></a>RN03 | A senha (e o hash) nunca é incluída no retorno de [EDP02](#edp02), [EDP03](#edp03) ou [EDP08](#edp08), nem escrita em log. |
 | <a id="rn04"></a>RN04 | `USU_LOGIN` e `USU_EMAIL` são únicos entre usuários não excluídos. Ao cadastrar ([EDP04](#edp04)/[EDP09](#edp09)) ou editar ([EDP05](#edp05)), se o login ou o e-mail já pertencer a **outro** usuário, impedir e retornar [MSG03](#msg03) (login) ou [MSG04](#msg04) (e-mail). Executa [C2](#c2). |
@@ -458,6 +489,10 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 | <a id="rn17"></a>RN17 | Na v1, a verificação de e-mail **não é aplicada**: o auto-cadastro ([EDP09](#edp09)) cria o usuário ativo, apto a autenticar. O parâmetro `USU_VERIFICACAO_EMAIL_ATIVA` fica reservado (`false`) para um incremento futuro que, quando ativado, criará o usuário em estado "não verificado" e enviará um link de confirmação. |
 | <a id="rn18"></a>RN18 | A alteração de senha de um usuário pelo ADMIN ([EDP12](#edp12)) exige [PERM03](#perm03), aplica [RN02](#rn02) sobre a nova senha e exige a Confirmação igual ([MSG07](#msg07)). Não altera nenhum outro campo do usuário. Registra em auditoria (Envers). Retornar [MSG21](#msg21). |
 | <a id="rn19"></a>RN19 | Na tela Configurações da Conta ([EDP13](#edp13)/[EDP14](#edp14)), o usuário altera **apenas o próprio registro**: o id é obtido do contexto de segurança, nunca da requisição. [EDP14](#edp14) sempre persiste nome, gênero, nascimento, e-mail e login, aplicando [RN04](#rn04) (unicidade entre não excluídos, ignorando o próprio), [RN05](#rn05) e [RN06](#rn06). O perfil é imutável nesta tela — qualquer perfil enviado na requisição é ignorado. Se Nova senha e Confirmação vierem **vazias**, a senha atual é mantida; se preenchidas, exige a Confirmação igual ([MSG07](#msg07)) e aplica [RN02](#rn02). Retornar [MSG22](#msg22). |
+| <a id="rn20"></a>RN20 | Todo gerenciamento de redes sociais ([EDP15](#edp15) a [EDP18](#edp18)) opera exclusivamente sobre o usuário autenticado, com o `USU_ID` obtido do contexto de segurança do Spring Security. O usuário jamais pode visualizar, alterar ou excluir registros pertencentes a outro usuário. |
+| <a id="rn21"></a>RN21 | Unicidade por tipo de rede social: cada usuário pode possuir no máximo um registro ativo para cada tipo de rede social (`USRS_TIPO`). Ao tentar cadastrar duplicado, retornar [MSG27](#msg27). |
+| <a id="rn22"></a>RN22 | A URL da rede social é obrigatória e deve ser uma URL válida e absoluta com esquema `http://` ou `https://`. Inválida → [MSG28](#msg28). |
+| <a id="rn23"></a>RN23 | O layout administrativo do sistema (`templates/sistema/template-admin/fragments/footer.html` e `header.html`) deve renderizar dinamicamente os links e ícones das redes sociais a partir dos registros ativos (`USRS_FL_ATIVO = TRUE`) do usuário autenticado, consumindo [C5](#c5) ou dados injetados via `GlobalModelAdvice`. Se o usuário não possuir redes sociais ativas cadastradas, a seção de ícones sociais oculta os links não configurados. |
 
 ---
 
@@ -487,6 +522,12 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 | <a id="msg20"></a>MSG20 | Template de e-mail (recuperação de senha):<br>Assunto: Redefinição de senha — dscproject<br><br>Olá {nome},<br><br>Recebemos um pedido para redefinir a sua senha. Clique no link abaixo (válido por 30 minutos):<br>{link}<br><br>Se não foi você, ignore este e-mail.<br><br>dscproject — Notificação automática. |
 | <a id="msg21"></a>MSG21 | Senha do usuário alterada com sucesso. |
 | <a id="msg22"></a>MSG22 | Dados atualizados com sucesso. |
+| <a id="msg23"></a>MSG23 | Rede social adicionada com sucesso. |
+| <a id="msg24"></a>MSG24 | Rede social atualizada com sucesso. |
+| <a id="msg25"></a>MSG25 | Confirma a exclusão da rede social "{tipo}"? |
+| <a id="msg26"></a>MSG26 | Rede social excluída com sucesso. |
+| <a id="msg27"></a>MSG27 | Já existe uma rede social cadastrada para este serviço. |
+| <a id="msg28"></a>MSG28 | A URL informada para a rede social é inválida. Informe uma URL com http:// ou https://. |
 
 ---
 
@@ -498,6 +539,7 @@ Protótipo navegável (HTML): `prototipo/manter-usuario-prototipo.html`. Wirefra
 | <a id="c2"></a>C2 | Verifica se login ou e-mail já pertence a outro usuário (RN04).<br>`SELECT COUNT(*) FROM USUARIOS u`<br>`WHERE u.audit_data_exclusao IS NULL`<br>`  AND (u.USU_LOGIN = :valor OR u.USU_EMAIL = :valor)`<br>`  AND (:idAtual IS NULL OR u.USU_ID <> :idAtual);` |
 | <a id="c3"></a>C3 | Busca o registro de recuperação pelo hash do token (RN14). O serviço aplica o mesmo algoritmo de hash sobre o token recebido na URL e consulta por igualdade.<br>`SELECT r.URSE_ID, r.URSE_TENTATIVAS, r.URSE_EXPIRA_EM, r.URSE_FL_UTILIZADO, r.USU_ID`<br>`FROM USUARIOS_RECUPERACAO_SENHA r`<br>`WHERE r.URSE_TOKEN_HASH = :tokenHash`<br>`  AND r.audit_data_exclusao IS NULL;`<br>-- não encontrado → MSG17; URSE_FL_UTILIZADO = TRUE → MSG17;<br>-- URSE_EXPIRA_EM < agora → MSG18; URSE_TENTATIVAS >= 5 → MSG19 |
 | <a id="c4"></a>C4 | Conta os usuários ADMIN ativos (RN11).<br>`SELECT COUNT(*) FROM USUARIOS u`<br>`JOIN PERFIS p ON p.PERF_ID = u.PERF_ID`<br>`WHERE p.PERF_CODIGO = 'ADMIN'`<br>`  AND u.audit_data_exclusao IS NULL;` |
+| <a id="c5"></a>C5 | Busca redes sociais ativas do usuário para renderização do layout administrativo (RN23).<br>`SELECT r.USRS_ID, r.USRS_TIPO, r.USRS_URL, r.USRS_IDENTIFICADOR`<br>`FROM USUARIOS_REDES_SOCIAIS r`<br>`WHERE r.USU_ID = :usuarioId`<br>`  AND r.USRS_FL_ATIVO = TRUE`<br>`  AND r.audit_data_exclusao IS NULL`<br>`ORDER BY r.USRS_TIPO ASC;` |
 
 ---
 
@@ -609,6 +651,22 @@ A ação **Alterar senha** do grid ([EDP12](#edp12)) usa a permissão existente 
         ├─ Nova senha vazia (RN19)                 → mantém a senha atual.
         └─ OK → persiste os dados; se veio nova senha, cifra BCrypt;
                  audita, retorna MSG22.
+```
+
+**Gerenciamento de Redes Sociais do Usuário:**
+
+```
+1. Usuário clica na aba "Redes Sociais" em Configurações da Conta.
+2. Sistema chama EDP15 e exibe as redes cadastradas na tabela.
+3. Usuário clica em "Nova Rede Social" ou no ícone "Editar":
+   a. Preenche Tipo, URL, Identificador e Ativo no modal.
+   b. Clica em "Salvar" → chama EDP16 (inclusão) ou EDP17 (edição).
+   c. Sistema valida tipo único (RN21) e URL válida (RN22).
+   d. Em sucesso, exibe MSG23/MSG24, fecha modal e recarrega a tabela.
+4. Usuário clica em "Excluir" em uma linha da tabela de redes sociais:
+   a. Sistema exibe confirmação MSG25.
+   b. Usuário confirma → chama EDP18 (soft delete), exibe MSG26 e atualiza a tabela.
+5. Os ícones sociais no layout administrativo (footer/header) refletem automaticamente as redes ativas do usuário logado (EDP19 / C5).
 ```
 
 ---
@@ -744,6 +802,25 @@ E o perfil do meu usuário deve permanecer USER.
 Dado que existe outro usuário com o e-mail "ana@x.com".
 Quando eu, em "Configurações da Conta", tentar salvar com o e-mail "ana@x.com".
 Então o sistema deve impedir e exibir [MSG04](#msg04).
+
+### 16.20 Adicionar rede social
+
+Dado que estou em "Configurações da Conta", aba "Redes Sociais".
+E que clico em "Nova Rede Social".
+Quando eu informar o Tipo "LINKEDIN", a URL "https://www.linkedin.com/in/usuario", o Identificador "@usuario" e clicar em "Salvar".
+Então o sistema deve persistir o vínculo, exibir [MSG23](#msg23) e exibir o LinkedIn na tabela de redes sociais.
+
+### 16.21 Impedir tipo de rede social duplicado
+
+Dado que já possuo uma rede social do tipo "GITHUB" cadastrada.
+Quando eu tentar cadastrar outra rede social do tipo "GITHUB".
+Então o sistema deve impedir o salvamento e exibir [MSG27](#msg27).
+
+### 16.22 Exibição dinâmica de redes sociais no rodapé do layout admin
+
+Dado que estou autenticado e possuo redes ativas configuradas em Minha Conta.
+Quando eu acessar qualquer tela com o layout administrativo.
+Então o rodapé da página deve exibir os ícones correspondentes às minhas redes sociais ativas apontando para as URLs configuradas.
 
 ---
 

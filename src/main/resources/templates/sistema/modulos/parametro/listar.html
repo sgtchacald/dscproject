@@ -39,7 +39,7 @@
 
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-vcenter card-table" id="tabelaParametros">
+            <table class="table table-vcenter card-table table-hover" id="tabelaParametros">
                 <thead>
                 <tr>
                     <th data-col="modulo" class="sortable" role="button" th:text="#{parametro.col.modulo}">Módulo</th>
@@ -49,7 +49,7 @@
                     <th th:text="#{parametro.col.valor}">Valor</th>
                     <th data-col="orfa" class="sortable" role="button" th:text="#{parametro.col.situacao}">Situação</th>
                     <th data-col="dataAlteracao" class="sortable" role="button" th:text="#{parametro.col.ultimaAlteracao}">Última alteração</th>
-                    <th class="w-1" th:text="#{parametro.col.acoes}">Ações</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{parametro.col.acoes}">Ações</th>
                 </tr>
                 </thead>
                 <tbody id="corpoTabelaParametros"></tbody>

@@ -23,9 +23,13 @@ export function fecharModal(id) {
 
 export function toast(texto, erro) {
     const div = document.createElement('div');
-    div.className = 'toast align-items-center text-bg-' + (erro ? 'danger' : 'success') + ' border-0 show mb-2';
+    const isErro = typeof erro === 'boolean' ? erro : (erro === 'danger' || erro === 'error' || erro === 'erro');
+    div.className = 'toast align-items-center text-bg-' + (isErro ? 'danger' : 'success') + ' border-0 show mb-2';
     div.innerHTML = '<div class="d-flex"><div class="toast-body">' + texto + '</div>'
         + '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
-    document.getElementById('toastArea').appendChild(div);
+    const area = document.getElementById('toastArea') || document.body;
+    area.appendChild(div);
     setTimeout(() => div.remove(), 5000);
 }
+
+export const exibirToast = (texto, tipo) => toast(texto, tipo);
