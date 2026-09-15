@@ -146,6 +146,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label" th:text="#{despesa.form.campo.valorParcela.label}">Valor estimado da parcela</label>
                                 <div class="form-control-plaintext fw-bold text-primary" id="despesaValorParcelaCalculada">R$ 0,00</div>
+                                <div class="small text-muted mt-1" id="despesaDetalheParcelaRateio" style="display:none;"></div>
                             </div>
                         </div>
                         <div class="row" id="grupoCamposRecorrencia" style="display:none;">
@@ -162,7 +163,14 @@
                     <div class="border-top pt-3 mt-3" id="secaoRateio" th:if="${podeRatear}">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="m-0 fw-bold" th:text="#{despesa.rateio.titulo}">Divisão da despesa (Rateio)</h6>
-                            <span class="badge bg-blue-lt" th:text="#{despesa.rateio.badge.plano}">Recurso do Plano</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnDividirIgualmenteRateio"
+                                        th:title="#{despesa.rateio.dividirIgualmente.tooltip}">
+                                    <i class="ph ph-equals me-1" aria-hidden="true"></i>
+                                    <span th:text="#{despesa.rateio.dividirIgualmente}">Dividir igualmente</span>
+                                </button>
+                                <span class="badge bg-blue-lt" th:text="#{despesa.rateio.badge.plano}">Recurso do Plano</span>
+                            </div>
                         </div>
                         <div class="table-responsive mb-2">
                             <table class="table table-sm table-vcenter table-hover" id="tabelaRateio">
@@ -170,8 +178,8 @@
                                 <tr>
                                     <th th:text="#{despesa.rateio.col.usuario}">Co-participante</th>
                                     <th style="width: 140px;" th:text="#{despesa.rateio.col.valor}">Fatia (R$)</th>
-                                    <th style="width: 120px;" th:text="#{despesa.rateio.col.acerto}">Acerto</th>
-                                    <th class="w-1"></th>
+                                    <th style="width: 110px;" th:text="#{despesa.rateio.col.acerto}">Acerto</th>
+                                    <th style="width: 80px;" class="text-end" th:text="#{despesa.rateio.col.acoes}">Ações</th>
                                 </tr>
                                 </thead>
                                 <tbody id="corpoTabelaRateio"></tbody>
@@ -232,9 +240,36 @@
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between text-muted small p-2 bg-light rounded">
-                            <span>Minha cota (o que sobra do rateio):</span>
-                            <strong id="minhaCotaRateio">R$ 0,00</strong>
+                        <!-- Painel Interativo de Minha Cota (Você - Titular) -->
+                        <div class="card bg-light border p-2 mb-2">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="avatar avatar-xs bg-primary-lt rounded-circle">
+                                        <i class="ph ph-user"></i>
+                                    </span>
+                                    <div>
+                                        <div class="fw-bold small" th:text="#{despesa.rateio.minhaCota.label}">Minha cota (Você - Titular)</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;" id="infoStatusRateio" th:text="#{despesa.rateio.minhaCota.ajuda}">Parte da despesa sob sua responsabilidade</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width: 130px;">
+                                        <input type="text" class="form-control form-control-sm mascara-moeda text-end"
+                                               id="despesaMinhaCota" placeholder="R$ 0,00" title="Digite sua cota ou zere para transferir o total ao contato">
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnZerarMinhaCota"
+                                            th:title="#{despesa.rateio.minhaCota.zerar.tooltip}">
+                                        <i class="ph ph-arrow-counter-clockwise me-1" aria-hidden="true"></i>
+                                        <span th:text="#{despesa.rateio.minhaCota.zerar}">Zerar (R$ 0,00)</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top small" id="barraResumoRateio">
+                                <span class="text-muted">Total despesa: <strong id="resumoTotalDespesa">R$ 0,00</strong> | Fatias contatos: <strong id="resumoFatiasContatos">R$ 0,00</strong></span>
+                                <span id="badgeCotaZerada" class="badge bg-green-lt" style="display:none;">
+                                    <i class="ph ph-check me-1"></i><span th:text="#{despesa.rateio.minhaCota.zerada.badge}">100% repassado aos contatos (sua cota: R$ 0,00)</span>
+                                </span>
+                            </div>
                         </div>
                         <div class="invalid-feedback d-block" id="erroRateio"></div>
                     </div>

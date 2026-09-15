@@ -4,6 +4,7 @@ import br.com.diegocordeiro.dscproject.enums.MeioPagamento;
 import br.com.diegocordeiro.dscproject.enums.OrigemLancamento;
 import br.com.diegocordeiro.dscproject.enums.StatusPagamento;
 import br.com.diegocordeiro.dscproject.model.despesa.Despesa;
+import br.com.diegocordeiro.dscproject.model.despesa.DespesaUsuario;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,6 +23,8 @@ public class DespesaGridDTO {
     private String descricao;
     private BigDecimal valor;
     private BigDecimal valorTotalCompra;
+    private BigDecimal valorUsuario;
+    private BigDecimal valorRateado;
     private boolean parcelada;
     private Integer nroParcela;
     private Integer qtdParcelas;
@@ -83,10 +86,27 @@ public class DespesaGridDTO {
             this.categoriaId = d.getCategoria().getId();
             this.categoriaNome = d.getCategoria().getNome();
         }
-        this.qtdCoParticipantes = d.getRateios() != null
-                ? (int) d.getRateios().stream().filter(r -> r.getDataExclusao() == null).count()
-                : 0;
+        BigDecimal somaFatias = BigDecimal.ZERO;
+        int coPartCount = 0;
+        if (d.getRateios() != null) {
+            for (DespesaUsuario du : d.getRateios()) {
+                if (du.getDataExclusao() == null) {
+                    coPartCount++;
+                    if (du.getValor() != null) {
+                        somaFatias = somaFatias.add(du.getValor());
+                    }
+                }
+            }
+        }
+        this.qtdCoParticipantes = coPartCount;
         this.temRateio = this.qtdCoParticipantes > 0;
+        this.valorRateado = somaFatias;
+        if (this.temRateio && d.getValor() != null) {
+            BigDecimal cota = d.getValor().subtract(somaFatias);
+            this.valorUsuario = cota.compareTo(BigDecimal.ZERO) <= 0 ? new BigDecimal("0.00") : cota;
+        } else {
+            this.valorUsuario = d.getValor();
+        }
         this.excluido = d.getDataExclusao() != null;
     }
 }

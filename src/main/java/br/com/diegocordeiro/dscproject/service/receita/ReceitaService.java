@@ -16,6 +16,7 @@ import br.com.diegocordeiro.dscproject.service.exceptions.RegraNegocioException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
@@ -198,4 +199,10 @@ public class ReceitaService {
             .excluido(r.isExcluido())
             .build();
     }
+
+    @Transactional(readOnly = true)
+    public BigDecimal somarPorCompetencia(YearMonth competencia, Long usuarioId) {
+        return receitaRepository.somarPorCompetenciaEUsuario(competencia, usuarioId);
+    }
 }
+
