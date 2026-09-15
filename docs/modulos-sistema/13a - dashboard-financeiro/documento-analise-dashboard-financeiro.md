@@ -215,8 +215,9 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
-| <a id="qdd3-1"></a>1 | MINI-TABELA – SALDO POR CONTA | Tipo: Lista/mini-tabela<br>Colunas: Conta, Tipo, Saldo (BRL) | Uma linha por conta ativa e não excluída do usuário, ordenada por descrição ([RN09](#rn09), [C2](#c2)). |
-| <a id="qdd3-2"></a>2 | ESTADO VAZIO | Tipo: Texto informativo<br>Exibição: condicional | Exibido quando o usuário não tem nenhuma conta ativa ([MSG02](#msg02)). |
+| <a id="qdd3-1"></a>1 | MINI-TABELA – SALDO POR CONTA | Tipo: Lista/mini-tabela<br>Colunas: Conta, Tipo, Saldo (BRL), Badge | Uma linha por conta ativa e não excluída do usuário, ordenada por descrição ([RN09](#rn09), [C2](#c2)). Lista **todas** as contas ativas, independentemente de `CTA_FL_CONSIDERA_SALDO`. |
+| <a id="qdd3-2"></a>2 | BADGE – NÃO ENTRA NO SALDO GERAL | Tipo: Badge<br>Exibição: condicional | Exibido na linha da conta cujo `CTA_FL_CONSIDERA_SALDO = FALSE`, para não confundir com o total do [Card 1](#quadro-descritivo-2) ([RN09](#rn09), [Observação 16](#2-observações)). |
+| <a id="qdd3-3"></a>3 | ESTADO VAZIO | Tipo: Texto informativo<br>Exibição: condicional | Exibido quando o usuário não tem nenhuma conta ativa ([MSG02](#msg02)). |
 
 ### <a id="quadro-descritivo-4"></a>7.4 Card: Receitas × Despesas do Mês — QUADRO_DESCRITIVO_4
 
@@ -224,7 +225,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
-| <a id="qdd4-1"></a>1 | GRÁFICO – RECEITAS × DESPESAS | Tipo: Gráfico de barras (ApexCharts)<br>Séries: Receitas, Despesas | Soma de `RECE_VALOR` e soma de `DESP_VALOR` do usuário na competência filtrada ([RN04](#rn04), [C3](#c3)). Valores brutos, sem dedução de rateio ([Observação 6](#2-observações)). |
+| <a id="qdd4-1"></a>1 | GRÁFICO – RECEITAS × DESPESAS | Tipo: Gráfico de barras (ApexCharts)<br>Séries: Receitas, Despesas | Soma de `RECE_VALOR` e soma da **cota líquida** de `DESP_VALOR` (descontado o rateio a contatos) do usuário na competência filtrada ([RN04](#rn04), [C3](#c3), [Observação 6](#2-observações)). |
 | <a id="qdd4-2"></a>2 | ESTADO VAZIO | Tipo: Texto informativo<br>Exibição: condicional | Exibido quando não há receita nem despesa do usuário na competência filtrada ([MSG01](#msg01)). |
 
 ### <a id="quadro-descritivo-5"></a>7.5 Card: Despesas por Categoria — QUADRO_DESCRITIVO_5
@@ -288,7 +289,8 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 |---|---|
 | <a id="rt01"></a>RT01 | Ao alterar o filtro de competência global ([ID1](#qdd1-1)), recarregar a página inteira via GET com a nova competência, mantendo o filtro de anos do Card 8 já aplicado, se houver. |
 | <a id="rt02"></a>RT02 | Ao alterar o ano inicial ou o ano final do Card 8 ([ID1](#qdd9-1)/[ID2](#qdd9-2)), recarregar a página inteira via GET com os novos anos, mantendo a competência global já aplicada. Se `anoInicio > anoFim` for submetido, o serviço troca os dois valores antes de calcular ([RN13](#rn13)). |
-| <a id="rt03"></a>RT03 | Em qualquer card sem dado no período filtrado, exibir o texto do estado vazio correspondente ([ID2](#qdd2-2), [ID2](#qdd3-2), [ID2](#qdd4-2), [ID2](#qdd5-2), [ID2](#qdd6-2), [ID2](#qdd7-2), [ID3](#qdd8-3), [ID5](#qdd9-5)) em vez de um gráfico ou valor vazio. |
+| <a id="rt03"></a>RT03 | Em qualquer card sem dado no período filtrado, exibir o texto do estado vazio correspondente ([ID2](#qdd2-2), [ID3](#qdd3-3), [ID2](#qdd4-2), [ID2](#qdd5-2), [ID2](#qdd6-2), [ID2](#qdd7-2), [ID3](#qdd8-3), [ID5](#qdd9-5)) em vez de um gráfico ou valor vazio. |
+| <a id="rt04"></a>RT04 | No Card 6, quando houver 5 ou mais contatos com rateio na competência filtrada ([ID1](#qdd7-1)), paginar a lista exibindo os primeiros itens diretamente e os demais em páginas subsequentes ([RN07](#rn07), [Observação 17](#2-observações)). |
 
 ---
 
