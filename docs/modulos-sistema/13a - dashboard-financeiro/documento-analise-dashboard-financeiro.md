@@ -239,7 +239,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 ### <a id="quadro-descritivo-6"></a>7.6 Card: Pagas × Pendentes no Mês — QUADRO_DESCRITIVO_6
 
-> OBSERVAÇÕES: Card 5. Fonte: `DESPESAS` do usuário autenticado na competência filtrada, agrupadas por `DESP_IND_STATUS_PAGAMENTO`. Consulta: [C5](#c5).
+> OBSERVAÇÕES: Card 5. Fonte: `DESPESAS` (cota líquida do titular, descontado o rateio) do usuário autenticado na competência filtrada, agrupadas por `DESP_IND_STATUS_PAGAMENTO`. Consulta: [C5](#c5).
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
@@ -257,7 +257,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 ### <a id="quadro-descritivo-8"></a>7.8 Card: Limite Usado × Disponível por Cartão — QUADRO_DESCRITIVO_8
 
-> OBSERVAÇÕES: Card 7. Fonte: `CARTOES_CREDITO` ativos do usuário autenticado e `DESPESAS` pendentes vinculadas a cada cartão. Ignora a competência global e o ciclo de fechamento/vencimento (ver [Observação 9](#2-observações) e [documento 07, Observação 11](../07%20-%20manter-cartao-credito/documento-analise-manter-cartao-credito.md#2-observações)). Consulta: [C7](#c7).
+> OBSERVAÇÕES: Card 7. Fonte: `CARTOES_CREDITO` ativos do usuário autenticado e `DESPESAS` pendentes vinculadas a cada cartão. Ignora a competência global e o ciclo de fechamento/vencimento (ver [Observação 9](#2-observações) e [documento 07, Observação 11](../07%20-%20manter-cartao-credito/documento-analise-manter-cartao-credito.md#2-observações)). Barra colorida por faixa de uso, com destaque vermelho quando o limite é estourado ([Observação 15](#2-observações)). Consulta: [C7](#c7).
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
