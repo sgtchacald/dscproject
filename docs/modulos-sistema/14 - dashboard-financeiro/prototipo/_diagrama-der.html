@@ -1,0 +1,149 @@
+<title>DER — Dashboard Financeiro</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f7f9fb;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2430}
+  #diagram{width:1400px;padding:28px 32px 34px;background:#f7f9fb}
+  h1{font-size:15px;margin:0 0 2px}
+  .note{color:#69747f;font-size:11.5px;margin:0 0 18px;max-width:1200px}
+  .canvas{position:relative;height:900px}
+  .ent{position:absolute;width:270px;background:#fff;border:1px solid;border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgba(20,30,45,.06)}
+  .ent > h2{margin:0;font-size:12px;font-weight:700;text-align:center;padding:7px 6px}
+  .ent ul{margin:0;padding:0;list-style:none}
+  .ent li{padding:4px 10px;font-size:10.5px;border-top:1px solid #eef1f4;white-space:nowrap}
+  .ent li.k{font-weight:700}
+  .ent li.mut{color:#8b95a1}
+  .cta > h2{background:#eaf2fb;color:#1f3864}   .cta{border-color:#1f3864}
+  .rec > h2{background:#eaf7ef;color:#1f6b45}   .rec{border-color:#1f6b45}
+  .desp > h2{background:#fbf3e6;color:#8a5a12}  .desp{border-color:#8a5a12}
+  .depu > h2{background:#fdeaf2;color:#8a1f56}  .depu{border-color:#8a1f56}
+  .cate > h2{background:#f1eaf7;color:#5b3b86}  .cate{border-color:#5b3b86}
+  .cacr > h2{background:#e6f3fb;color:#0e5f8a}  .cacr{border-color:#0e5f8a}
+  .cont > h2{background:#eef7f1;color:#276b3f}  .cont{border-color:#276b3f}
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+  .wires path{stroke:#8b95a1;stroke-width:1.4;fill:none}
+  .wires text{fill:#69747f;font-size:9.5px}
+  .wires rect.lbl{fill:#f7f9fb}
+  .legend{position:absolute;left:0;top:820px;width:1300px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;color:#69747f;font-size:10.5px;line-height:1.55}
+</style>
+<div id="diagram">
+  <h1>DER — Dashboard Financeiro (subconjunto)</h1>
+  <p class="note">Subconjunto do DER do Documento 0 consumido pelos 8 cards da Seção 7 — QUADRO_DESCRITIVO_5, _9, _10, _11, _3, _6 e _29. Este documento é somente leitura: não cria tabela nova nem faz ALTER TABLE.</p>
+  <div class="canvas">
+    <svg class="wires" viewBox="0 0 1340 820" preserveAspectRatio="none">
+      <!-- CONTAS -> RECEITAS -->
+      <path d="M195,252 L195,320"/>
+      <rect class="lbl" x="200" y="277" width="120" height="14"/><text x="205" y="288">1 → N (Cards 3, 8)</text>
+
+      <!-- CONTAS -> DESPESAS (opcional, Card 3) -->
+      <path d="M270,220 C420,230 520,290 615,345"/>
+      <rect class="lbl" x="330" y="255" width="150" height="14"/><text x="335" y="266">1 → N (Card 3, opcional)</text>
+
+      <!-- CARTOES_CREDITO -> DESPESAS (Card 7) -->
+      <path d="M1085,220 C1000,260 920,300 875,345"/>
+      <rect class="lbl" x="930" y="255" width="120" height="14"/><text x="935" y="266">1 → N (Card 7)</text>
+
+      <!-- CATEGORIAS -> DESPESAS (nullable, Card 4) -->
+      <path d="M745,180 C745,240 745,290 745,320" stroke-dasharray="5 4"/>
+      <rect class="lbl" x="755" y="240" width="160" height="14"/><text x="760" y="251">CATE_ID nullable (Card 4)</text>
+
+      <!-- DESPESAS -> DESPESAS_USUARIO -->
+      <path d="M745,545 L745,600"/>
+      <rect class="lbl" x="755" y="565" width="110" height="14"/><text x="760" y="576">1 → N (Card 6)</text>
+
+      <!-- DESPESAS_USUARIO -> CONTATOS -->
+      <path d="M1015,650 L1085,650"/>
+      <rect class="lbl" x="1000" y="628" width="110" height="14"/><text x="1005" y="639">N → 1 (Card 6)</text>
+    </svg>
+
+    <div class="ent cta" style="left:60px;top:40px">
+      <h2>CONTAS</h2>
+      <ul>
+        <li class="k">CTA_ID (PK)</li>
+        <li>CTA_DESCRICAO</li>
+        <li>CTA_TIPO</li>
+        <li>CTA_SALDO</li>
+        <li>CTA_FL_CONSIDERA_SALDO (Cards 1, 2)</li>
+        <li>CTA_FL_ATIVO</li>
+        <li class="k">USU_ID (FK → USUARIOS)</li>
+        <li class="mut">audit_* (exclusão lógica)</li>
+      </ul>
+    </div>
+
+    <div class="ent cate" style="left:610px;top:40px">
+      <h2>CATEGORIAS</h2>
+      <ul>
+        <li class="k">CATE_ID (PK)</li>
+        <li>CATE_NOME</li>
+        <li>CATE_COR (Card 4 — cor da fatia)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent cacr" style="left:1000px;top:40px">
+      <h2>CARTOES_CREDITO</h2>
+      <ul>
+        <li class="k">CACR_ID (PK)</li>
+        <li>CACR_DESCRICAO</li>
+        <li>CACR_LIMITE (nullable — Card 7)</li>
+        <li>CACR_FL_ATIVO</li>
+        <li class="k">USU_ID (FK → USUARIOS)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent rec" style="left:60px;top:320px">
+      <h2>RECEITAS</h2>
+      <ul>
+        <li class="k">RECE_ID (PK)</li>
+        <li>RECE_VALOR (Cards 3, 8)</li>
+        <li>RECE_COMPETENCIA (yyyy-MM)</li>
+        <li class="k">CTA_ID (FK → CONTAS)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent desp" style="left:610px;top:320px">
+      <h2>DESPESAS</h2>
+      <ul>
+        <li class="k">DESP_ID (PK)</li>
+        <li>DESP_VALOR (Cards 3, 4, 5, 8)</li>
+        <li>DESP_COMPETENCIA (yyyy-MM)</li>
+        <li>DESP_IND_STATUS_PAGAMENTO (Cards 5, 7)</li>
+        <li class="k">CTA_ID (FK → CONTAS, nullable)</li>
+        <li class="k">CACR_ID (FK → CARTOES_CREDITO, nullable)</li>
+        <li class="k">CATE_ID (FK → CATEGORIAS, nullable)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent depu" style="left:610px;top:600px">
+      <h2>DESPESAS_USUARIO</h2>
+      <ul>
+        <li class="k">DEPU_ID (PK)</li>
+        <li>DEPU_VALOR (Card 6; cota líquida dos Cards 3/4/5)</li>
+        <li class="k">DESP_ID (FK → DESPESAS)</li>
+        <li class="k">CONT_ID (FK → CONTATOS)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent cont" style="left:1080px;top:600px">
+      <h2>CONTATOS</h2>
+      <ul>
+        <li class="k">CONT_ID (PK)</li>
+        <li>CONT_NOME (Card 6 — legenda)</li>
+        <li>CONT_STATUS</li>
+        <li class="k">USU_ID_DONO (FK → USUARIOS)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="legend">
+      <b style="color:#1b2430">Escopo row-level (RN01):</b> todas as consultas filtram por <code>USU_ID</code> do usuário
+      autenticado — via <code>CONTAS.USU_ID</code>/<code>CARTOES_CREDITO.USU_ID</code> (Cards 1, 2, 7) ou pela conta/cartão
+      da despesa (Cards 3–6, 8). <code>DESPESAS_USUARIO.DEPU_VALOR</code> alimenta tanto o Card 6 (rateio por pessoa) quanto
+      a <b>cota líquida do titular</b> subtraída dos Cards 3, 4 e 5.
+    </div>
+  </div>
+</div>

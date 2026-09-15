@@ -69,8 +69,8 @@ Este documento cobre:
 **Não contempla:**
 - CRUD de Receita, Despesa, Transação Bancária, Cartão de Crédito e Investimento, que **consomem** a conta — documentos `07` a `12`.
 - CRUD de **Instituição Financeira** (`INSTITUICOES_FINANCEIRAS`) — documento `05 - manter-instituicao-financeira`. Aqui, a instituição é apenas escolhida num combobox alimentado pelo endpoint daquele documento.
-- Conexão de contas via Open Finance, consentimento e sincronização de saldo/transações (que preenche `CTA_SALDO_SINCRONIZADO_EM`) — documentos `14` e `15`.
-- Cálculo do **saldo geral consolidado** e o efeito de `CTA_FL_CONSIDERA_SALDO` no painel — documento `13 - dashboard`.
+- Conexão de contas via Open Finance, consentimento e sincronização de saldo/transações (que preenche `CTA_SALDO_SINCRONIZADO_EM`) — documentos `15` e `16`.
+- Cálculo do **saldo geral consolidado** e o efeito de `CTA_FL_CONSIDERA_SALDO` no painel — documento `14 - dashboard-financeiro`.
 
 **Perfis com acesso:** [PERF01](#perf01) (ADMIN) e [PERF02](#perf02) (USER). A tela é do **próprio usuário** — cada um opera somente sobre as suas contas ([RN02](#rn02)). Dado financeiro é privado do dono: o ADMIN opera como um USER comum, sem qualquer visão administrativa das contas de terceiros.
 
@@ -84,17 +84,17 @@ Este documento cobre:
 | 2 | **Renomeação da geração 1.** `INSTITUICOES_FINANCEIRAS_USUARIO` → `CONTAS` (Documento 0, Observação 11). `INFU_AGENCIA` → `CTA_AGENCIA`, `INFU_CONTA` → `CTA_NUMERO`, `INFU_NOM_GERENTE` → `CTA_NOME_GERENTE`, `INFU_TEL_GERENTE` → `CTA_TEL_GERENTE`. Novos: `CTA_DESCRICAO`, `CTA_TIPO`, `CTA_MOEDA`, `CTA_SALDO`, `CTA_SALDO_SINCRONIZADO_EM`, `CTA_FL_ATIVO`, `CTA_FL_CONSIDERA_SALDO`. **[Requer código]** | Documento 0, [QUADRO_DESCRITIVO_5](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-5) |
 | 3 | **Escopo por usuário (*row-level*).** Toda consulta e todo comando de `CONTAS` filtram por `USU_ID` do usuário autenticado, resolvido do contexto de segurança — nunca de um parâmetro. Espelha o `buscarTodosPorUsuario()` da geração 1. Um endpoint com `{id}` de conta de outro usuário responde como "não encontrada" ([MSG05](#msg05)). | [RN02](#rn02), [RNF01](#rnf01), [RNF02](#rnf02) |
 | 4 | **`TipoConta` é enum novo.** Não existe na geração 1. Domínio: `CORRENTE`, `POUPANCA`, `INVESTIMENTO`, `CARTEIRA` (`CARTEIRA` = dinheiro em espécie, sem instituição bancária real — ver Seção 17 sobre a obrigatoriedade da instituição nesse caso). **[Requer código]** | [RN04](#rn04) |
-| 5 | **O saldo é manual nesta tela.** `CTA_SALDO` é informado no cadastro (campo "Saldo inicial") e alterado depois por uma **ação dedicada "Ajustar saldo"** ([RT08](#rt08) / [EDP08](#edp08)), não pela edição cadastral. A sincronização via Open Finance, que preenche `CTA_SALDO_SINCRONIZADO_EM`, é dos documentos `14`/`15`. | [RN10](#rn10) |
+| 5 | **O saldo é manual nesta tela.** `CTA_SALDO` é informado no cadastro (campo "Saldo inicial") e alterado depois por uma **ação dedicada "Ajustar saldo"** ([RT08](#rt08) / [EDP08](#edp08)), não pela edição cadastral. A sincronização via Open Finance, que preenche `CTA_SALDO_SINCRONIZADO_EM`, é dos documentos `15`/`16`. | [RN10](#rn10) |
 | 6 | **Instituição imutável após a criação** (decisão da v1.0). O campo Instituição fica desabilitado no modo edição, porque as transações, receitas e despesas já vinculadas à conta carregam a instituição de forma implícita — trocá-la deixaria o histórico incoerente. Ver a decisão em aberto na Seção 17. | [RN06](#rn06) |
 | 7 | **Exclusão em uso.** Excluir uma conta referenciada por qualquer transação bancária, receita, despesa, investimento ou cartão de crédito (não excluído) é **bloqueado** ([RN07](#rn07)); a alternativa é **desativar**. Mesma regra do "categoria em uso" do documento `04` (RN06). `TRANSACOES_BANCARIAS.CTA_ID` é `NOT NULL` — uma conta com transação **nunca** é excluível, independentemente do parâmetro [Seção 12](#12-parâmetros-de-sistema). | [RN07](#rn07) |
 | 8 | **Desativação ≠ exclusão.** Uma conta inativa (`CTA_FL_ATIVO = FALSE`) some dos comboboxes de **novos** lançamentos ([EDP07](#edp07)), mas continua válida nos lançamentos que já a usam e nos relatórios. Reativar é apenas voltar `CTA_FL_ATIVO = TRUE`. | [RN08](#rn08) |
-| 9 | **`CTA_FL_CONSIDERA_SALDO`** controla se o `CTA_SALDO` da conta entra no "saldo geral consolidado" do Dashboard (documento `13`). Default `TRUE`. Aqui só se mantém o flag; o efeito no painel é do documento `13`. | [RN09](#rn09) |
+| 9 | **`CTA_FL_CONSIDERA_SALDO`** controla se o `CTA_SALDO` da conta entra no "saldo geral consolidado" do Dashboard (documento `14`). Default `TRUE`. Aqui só se mantém o flag; o efeito no painel é do documento `14`. | [RN09](#rn09) |
 | 10 | **Instituição vem do documento `05`.** O combobox de instituição é alimentado pelo endpoint de opções de `INSTITUICOES_FINANCEIRAS` do documento `05 - manter-instituicao-financeira` — análogo ao [EDP07 do documento `04`](../04%20-%20manter-categoria/documento-analise-manter-categoria.md#edp07). Contrato assumido: `GET /instituicoes-financeiras/opcoes`, devolvendo id, nome, tipo e situação. | [SB02](#sb02) |
 | 11 | **Grid client-side.** A tela carrega a lista completa das contas do usuário uma vez e pagina/ordena/filtra no navegador (DataTables). Um usuário tem poucas contas; paginação server-side seria complexidade sem ganho. | [RNF05](#rnf05) |
 | 12 | **Auditoria.** `CONTAS` é auditada via Hibernate Envers (`@Audited`), conforme o Documento 0. Criação, edição, ajuste de saldo, desativação e exclusão lógica ficam registrados (quem, quando, o quê). | [RNF03](#rnf03) |
-| 13 | **Sem carga inicial.** `CONTAS` nasce vazia. As contas surgem do uso — cadastro manual nesta tela ou *backfill* do Open Finance (documentos `14`/`15`). | Documento 0, Seção 6.4 |
-| 14 | **Moeda diferente de BRL.** A v1.0 apenas armazena `CTA_MOEDA` (ISO 4217, default `BRL`). Não há conversão; o tratamento de contas não-BRL no saldo consolidado é decisão do documento `13` (ver Seção 17). | [RN05](#rn05) |
-| 15 | **Contas conectadas ao Open Finance** (`CTA_SALDO_SINCRONIZADO_EM` não nulo) aparecem nesta tela, mas a gestão do vínculo e a sincronização são dos documentos `14`/`15`. Se esta tela deve tratar essas contas como somente-leitura é ponto em aberto na Seção 17. | [RN11](#rn11) |
+| 13 | **Sem carga inicial.** `CONTAS` nasce vazia. As contas surgem do uso — cadastro manual nesta tela ou *backfill* do Open Finance (documentos `15`/`16`). | Documento 0, Seção 6.4 |
+| 14 | **Moeda diferente de BRL.** A v1.0 apenas armazena `CTA_MOEDA` (ISO 4217, default `BRL`). Não há conversão; o tratamento de contas não-BRL no saldo consolidado é decisão do documento `14` (ver Seção 17). | [RN05](#rn05) |
+| 15 | **Contas conectadas ao Open Finance** (`CTA_SALDO_SINCRONIZADO_EM` não nulo) aparecem nesta tela, mas a gestão do vínculo e a sincronização são dos documentos `15`/`16`. Se esta tela deve tratar essas contas como somente-leitura é ponto em aberto na Seção 17. | [RN11](#rn11) |
 
 ---
 
@@ -200,7 +200,7 @@ Nenhuma. A validação de escopo por usuário, a checagem de descrição duplica
 
 ### 6.4 Carga Inicial
 
-Nenhuma. `CONTAS` nasce vazia (Documento 0, Seção 6.4 — grupo 3, sem *seed*). As contas surgem do cadastro manual nesta tela ou do *backfill* do Open Finance (documentos `14`/`15`).
+Nenhuma. `CONTAS` nasce vazia (Documento 0, Seção 6.4 — grupo 3, sem *seed*). As contas surgem do cadastro manual nesta tela ou do *backfill* do Open Finance (documentos `15`/`16`).
 
 ---
 
@@ -353,13 +353,13 @@ A imagem mostra o **modo edição** de uma conta em uso — com o toggle Ativa (
 | <a id="rn02"></a>RN02 | **Escopo por usuário (*row-level*).** Toda consulta e todo comando de `CONTAS` são restritos às contas cujo `USU_ID` é o do usuário autenticado, obtido do contexto de segurança — nunca de um parâmetro da requisição. Na criação ([EDP04](#edp04)), o serviço **fixa** `USU_ID` do contexto e ignora qualquer valor recebido. Em [EDP03](#edp03), [EDP05](#edp05), [EDP06](#edp06) e [EDP08](#edp08), se a conta do `{id}` não pertencer ao usuário autenticado, o serviço responde **404** com [MSG05](#msg05), sem distinguir "não existe" de "é de outro usuário". Espelha o `buscarTodosPorUsuario()` da geração 1. |
 | <a id="rn03"></a>RN03 | `CTA_DESCRICAO` é obrigatória e única entre as contas **não excluídas do mesmo usuário** (comparação sem diferenciar maiúsculas/minúsculas). Ao criar ([EDP04](#edp04)) ou editar ([EDP05](#edp05)), se a descrição já pertencer a **outra** conta do usuário, impedir e retornar [MSG03](#msg03). Executa [C2](#c2). Contas de usuários diferentes podem ter a mesma descrição. |
 | <a id="rn04"></a>RN04 | `CTA_TIPO` é obrigatório e deve ser `CORRENTE`, `POUPANCA`, `INVESTIMENTO` ou `CARTEIRA` (enum `TipoConta`). |
-| <a id="rn05"></a>RN05 | `CTA_MOEDA` é obrigatória, `CHAR(3)` no padrão ISO 4217, default `BRL`. A v1.0 apenas armazena a moeda; não há conversão de valores. O tratamento de contas não-BRL no saldo consolidado é do documento `13` (ver Seção 17). |
+| <a id="rn05"></a>RN05 | `CTA_MOEDA` é obrigatória, `CHAR(3)` no padrão ISO 4217, default `BRL`. A v1.0 apenas armazena a moeda; não há conversão de valores. O tratamento de contas não-BRL no saldo consolidado é do documento `14` (ver Seção 17). |
 | <a id="rn06"></a>RN06 | `INFI_ID` é obrigatória. Na criação ([EDP04](#edp04)), a instituição deve estar ativa (`INFI_FL_ATIVO = TRUE`) — instituição inativa ou inexistente → [MSG02](#msg02) no campo Instituição. Na edição ([EDP05](#edp05)), `INFI_ID` **não** é alterável: qualquer valor divergente enviado é ignorado; se a intenção explícita for trocar a instituição, retornar [MSG11](#msg11). Ver a decisão em aberto na Seção 17. |
 | <a id="rn07"></a>RN07 | Exclusão de conta ([EDP06](#edp06)): recusar se existir **qualquer** lançamento não excluído apontando para a conta — transação bancária (`TRANSACOES_BANCARIAS.CTA_ID`), receita (`RECEITAS.CTA_ID`), despesa (`DESPESAS.CTA_ID`), investimento (`INVESTIMENTOS.CTA_ID`) ou cartão de crédito (`CARTOES_CREDITO.CTA_ID`, conta de débito da fatura) — executa [C4](#c4) — e retornar [MSG06](#msg06). A alternativa oferecida é a desativação ([RN08](#rn08)). O comportamento das FKs **nullable** é controlado pelo parâmetro `CONTA_EXCLUSAO_BLOQUEIA_EM_USO` ([Seção 12](#12-parâmetros-de-sistema)): quando `false`, a exclusão é permitida e os lançamentos com FK nullable ficam com `CTA_ID` nulo. Como `TRANSACOES_BANCARIAS.CTA_ID` é `NOT NULL`, uma conta com transação **nunca** é excluível, independentemente do parâmetro. Ver a decisão em aberto na Seção 17. |
 | <a id="rn08"></a>RN08 | Conta inativa (`CTA_FL_ATIVO = FALSE`): não é devolvida por [EDP07](#edp07) e não pode ser escolhida em novos lançamentos. Os lançamentos que já a referenciam permanecem inalterados, e ela continua contando nos relatórios. Reativar é apenas voltar `CTA_FL_ATIVO = TRUE` por [EDP05](#edp05). |
-| <a id="rn09"></a>RN09 | `CTA_FL_CONSIDERA_SALDO` (default `TRUE`) indica se o `CTA_SALDO` da conta entra no "saldo geral consolidado" do Dashboard. Esta tela apenas mantém o flag; o cálculo do saldo consolidado e o efeito exato do flag são do documento `13`. |
+| <a id="rn09"></a>RN09 | `CTA_FL_CONSIDERA_SALDO` (default `TRUE`) indica se o `CTA_SALDO` da conta entra no "saldo geral consolidado" do Dashboard. Esta tela apenas mantém o flag; o cálculo do saldo consolidado e o efeito exato do flag são do documento `14`. |
 | <a id="rn10"></a>RN10 | O `CTA_SALDO` é definido no cadastro ([EDP04](#edp04), campo "Saldo inicial", default `0,00`). A edição cadastral ([EDP05](#edp05)) **ignora** qualquer `CTA_SALDO` no corpo. A alteração posterior do saldo é feita só por [EDP08](#edp08) (ação "Ajustar saldo"), que grava o novo valor e deixa o registro no Hibernate Envers, sem tocar em `CTA_SALDO_SINCRONIZADO_EM`. Aceita valor negativo (conta no cheque especial, fatura em aberto etc.). |
-| <a id="rn11"></a>RN11 | Contas com `CTA_SALDO_SINCRONIZADO_EM` não nulo têm o saldo mantido pela sincronização de Open Finance (documentos `14`/`15`). A v1.0 permite o ajuste manual e a edição cadastral dessas contas nesta tela; se a gestão deve ser exclusiva dos documentos `14`/`15` (tela somente-leitura aqui) é ponto em aberto na Seção 17. |
+| <a id="rn11"></a>RN11 | Contas com `CTA_SALDO_SINCRONIZADO_EM` não nulo têm o saldo mantido pela sincronização de Open Finance (documentos `15`/`16`). A v1.0 permite o ajuste manual e a edição cadastral dessas contas nesta tela; se a gestão deve ser exclusiva dos documentos `15`/`16` (tela somente-leitura aqui) é ponto em aberto na Seção 17. |
 | <a id="rn12"></a>RN12 | `TipoConta` é um enum novo (não existe na geração 1). O tipo `CARTEIRA` representa dinheiro em espécie; a obrigatoriedade de `INFI_ID` também para esse tipo segue o Documento 0 ([QUADRO_DESCRITIVO_5](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-5), item 13) — ver Seção 17. **[Requer código]** |
 | <a id="rn13"></a>RN13 | `CONTAS` é auditada via Hibernate Envers (`@Audited`). Cada criação, edição, ajuste de saldo, desativação/reativação e exclusão lógica gera uma revisão com autor e data. |
 
@@ -575,7 +575,7 @@ Então o sistema deve gravar o saldo 1.234,56, manter `CTA_SALDO_SINCRONIZADO_EM
 Dado que eu cadastro a conta "Reserva de emergência" com "considera no saldo geral" em "Não".
 Quando eu consultar a listagem.
 Então a conta deve aparecer com o marcador "Não" na coluna "Considera no saldo geral".
-E o efeito no saldo consolidado é validado no documento `13`.
+E o efeito no saldo consolidado é validado no documento `14`.
 
 ### 16.15 Auditoria da conta
 
@@ -613,10 +613,10 @@ Descrição: Levantamento a partir do Documento 0 (Observação 11; [QUADRO_DESC
 
 **A Confirmar:**
 - **Ajuste de saldo:** o registro do ajuste no comentário da revisão do Envers ([ID4](#qdd4-4) do modal) é suficiente, ou é preciso uma tabela de histórico de ajustes dedicada (data, valor anterior, valor novo, observação, autor)?
-- **`CTA_FL_CONSIDERA_SALDO`:** confirmar com o documento `13` o efeito exato no "saldo geral consolidado" e se o default `TRUE` é o desejado.
+- **`CTA_FL_CONSIDERA_SALDO`:** confirmar com o documento `14` o efeito exato no "saldo geral consolidado" e se o default `TRUE` é o desejado.
 - **Instituição imutável (adotado):** deve ser relaxado para permitir a troca enquanto a conta ainda não tem nenhum lançamento?
 - **Moeda ≠ BRL:** a v1.0 só armazena `CTA_MOEDA`. Confirmar se o Dashboard fará conversão, se contas não-BRL ficam fora do saldo consolidado, ou se a moeda deve sair do escopo e ficar fixa em `BRL` nesta versão. Confirmar também o conjunto de moedas do combobox ([SB03](#sb03)).
-- **Contas conectadas ao Open Finance** (`CTA_SALDO_SINCRONIZADO_EM` não nulo): esta tela permite editar/ajustar saldo/excluir essas contas, ou elas ficam somente-leitura aqui e são geridas nos documentos `14`/`15`?
+- **Contas conectadas ao Open Finance** (`CTA_SALDO_SINCRONIZADO_EM` não nulo): esta tela permite editar/ajustar saldo/excluir essas contas, ou elas ficam somente-leitura aqui e são geridas nos documentos `15`/`16`?
 - **Descrição única por usuário (adotado, validação de serviço):** vira um índice parcial no banco (`ALTER` no Documento 0), ou fica só na camada de serviço?
 - **`CARTEIRA` e instituição:** faz sentido exigir `INFI_ID` para uma carteira de dinheiro em espécie? Se não, seria preciso tornar `INFI_ID` nullable no Documento 0 ou criar uma instituição "sistema" do tipo "Carteira". **Ficou mais urgente:** os documentos `08` (receita) e `09` (despesa) decidiram que **dinheiro em espécie é sempre uma conta do tipo `CARTEIRA`** (conta continua obrigatória em todo lançamento), então esta tela precisa permitir criar uma `CARTEIRA` sem fricção.
 - **Conta `CARTEIRA` semeada automaticamente?** Como todo lançamento em espécie precisa de uma, o sistema deve criar uma conta "Carteira / Dinheiro em espécie" por usuário na carga inicial / no primeiro uso, ou o usuário cria manualmente quando precisar?
