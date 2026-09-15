@@ -234,7 +234,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
-| <a id="qdd5-1"></a>1 | GRÁFICO – DESPESAS POR CATEGORIA | Tipo: Gráfico donut (ApexCharts) | Uma fatia por categoria com despesa na competência filtrada; despesas sem categoria agrupadas em "Sem categoria" ([RN05](#rn05), [C4](#c4)). Cor de cada fatia vem de `CATE_COR` quando definida. |
+| <a id="qdd5-1"></a>1 | GRÁFICO – DESPESAS POR CATEGORIA | Tipo: Gráfico donut (ApexCharts) | Uma fatia por categoria com a **cota líquida** de despesa (descontado o rateio a contatos) na competência filtrada; despesas sem categoria agrupadas em "Sem categoria" ([RN05](#rn05), [C4](#c4), [Observação 6](#2-observações)). Cor de cada fatia vem de `CATE_COR` quando definida. |
 | <a id="qdd5-2"></a>2 | ESTADO VAZIO | Tipo: Texto informativo<br>Exibição: condicional | Exibido quando não há despesa do usuário na competência filtrada ([MSG01](#msg01)). |
 
 ### <a id="quadro-descritivo-6"></a>7.6 Card: Pagas × Pendentes no Mês — QUADRO_DESCRITIVO_6
@@ -243,7 +243,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
-| <a id="qdd6-1"></a>1 | GRÁFICO – PAGAS × PENDENTES | Tipo: Gráfico donut ou barras (ApexCharts)<br>Séries: Pagas, Pendentes, Não se aplica | Soma de `DESP_VALOR` do usuário na competência filtrada, agrupada por status ([RN06](#rn06), [C5](#c5)). |
+| <a id="qdd6-1"></a>1 | GRÁFICO – PAGAS × PENDENTES | Tipo: Gráfico donut ou barras (ApexCharts)<br>Séries: Pagas, Pendentes, Não se aplica | Soma da **cota líquida** de `DESP_VALOR` (descontado o rateio a contatos) do usuário na competência filtrada, agrupada por status ([RN06](#rn06), [C5](#c5), [Observação 6](#2-observações)). |
 | <a id="qdd6-2"></a>2 | ESTADO VAZIO | Tipo: Texto informativo<br>Exibição: condicional | Exibido quando não há despesa do usuário na competência filtrada ([MSG01](#msg01)). |
 
 ### <a id="quadro-descritivo-7"></a>7.7 Card: Total Rateado no Mês, por Pessoa — QUADRO_DESCRITIVO_7
@@ -261,9 +261,10 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
-| <a id="qdd8-1"></a>1 | BARRA – LIMITE POR CARTÃO | Tipo: Barra de progresso segmentada, uma por cartão<br>Segmentos: Usado, Disponível | Usado = soma de `DESP_VALOR` das despesas com `CACR_ID` do cartão e `DESP_IND_STATUS_PAGAMENTO = 'NAO'`, sem filtro de competência, inclusive despesas de importação de fatura/extrato ([RN10](#rn10), [C7](#c7)). Disponível = `CACR_LIMITE - usado`, quando `CACR_LIMITE` não é nulo. |
+| <a id="qdd8-1"></a>1 | BARRA – LIMITE POR CARTÃO | Tipo: Barra de progresso segmentada, uma por cartão<br>Segmentos: Usado, Disponível<br>Cor: verde (usado < 70%), amarelo (70–99%), vermelho (≥ 100%) | Usado = soma de `DESP_VALOR` das despesas com `CACR_ID` do cartão e `DESP_IND_STATUS_PAGAMENTO = 'NAO'`, sem filtro de competência, inclusive despesas de importação de fatura/extrato ([RN10](#rn10), [C7](#c7)). Disponível = `CACR_LIMITE - usado`, quando `CACR_LIMITE` não é nulo. Percentual usado = `usado / CACR_LIMITE`, colorindo a barra pela faixa correspondente ([RN11](#rn11), [Observação 15](#2-observações)). |
 | <a id="qdd8-2"></a>2 | VALOR – SOMENTE USADO | Tipo: Card numérico (sem barra)<br>Exibição: condicional | Exibido no lugar de [ID1](#qdd8-1) quando `CACR_LIMITE` é nulo — mostra só o valor usado, sem barra nem percentual ([RN11](#rn11)). |
-| <a id="qdd8-3"></a>3 | ESTADO VAZIO | Tipo: Texto informativo<br>Exibição: condicional | Exibido quando o usuário não tem nenhum cartão de crédito ativo ([MSG03](#msg03)). |
+| <a id="qdd8-3"></a>3 | LIMITE ESTOURADO | Tipo: Barra 100% vermelha + texto negativo<br>Exibição: condicional | Exibido no lugar de [ID1](#qdd8-1) quando o usado ultrapassa `CACR_LIMITE`: barra 100% preenchida em vermelho e o texto "Disponível" no valor negativo (ex.: "Disponível: -R$ 120,00"), sem travar nada ([RN11](#rn11), [Observação 15](#2-observações)). |
+| <a id="qdd8-4"></a>4 | ESTADO VAZIO | Tipo: Texto informativo<br>Exibição: condicional | Exibido quando o usuário não tem nenhum cartão de crédito ativo ([MSG03](#msg03)). |
 
 ### <a id="quadro-descritivo-9"></a>7.9 Card: Evolução Receitas × Despesas — QUADRO_DESCRITIVO_9
 
@@ -289,7 +290,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 |---|---|
 | <a id="rt01"></a>RT01 | Ao alterar o filtro de competência global ([ID1](#qdd1-1)), recarregar a página inteira via GET com a nova competência, mantendo o filtro de anos do Card 8 já aplicado, se houver. |
 | <a id="rt02"></a>RT02 | Ao alterar o ano inicial ou o ano final do Card 8 ([ID1](#qdd9-1)/[ID2](#qdd9-2)), recarregar a página inteira via GET com os novos anos, mantendo a competência global já aplicada. Se `anoInicio > anoFim` for submetido, o serviço troca os dois valores antes de calcular ([RN13](#rn13)). |
-| <a id="rt03"></a>RT03 | Em qualquer card sem dado no período filtrado, exibir o texto do estado vazio correspondente ([ID2](#qdd2-2), [ID3](#qdd3-3), [ID2](#qdd4-2), [ID2](#qdd5-2), [ID2](#qdd6-2), [ID2](#qdd7-2), [ID3](#qdd8-3), [ID5](#qdd9-5)) em vez de um gráfico ou valor vazio. |
+| <a id="rt03"></a>RT03 | Em qualquer card sem dado no período filtrado, exibir o texto do estado vazio correspondente ([ID2](#qdd2-2), [ID3](#qdd3-3), [ID2](#qdd4-2), [ID2](#qdd5-2), [ID2](#qdd6-2), [ID2](#qdd7-2), [ID4](#qdd8-4), [ID5](#qdd9-5)) em vez de um gráfico ou valor vazio. |
 | <a id="rt04"></a>RT04 | No Card 6, quando houver 5 ou mais contatos com rateio na competência filtrada ([ID1](#qdd7-1)), paginar a lista exibindo os primeiros itens diretamente e os demais em páginas subsequentes ([RN07](#rn07), [Observação 17](#2-observações)). |
 
 ---
