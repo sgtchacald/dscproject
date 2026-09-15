@@ -248,7 +248,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 ### <a id="quadro-descritivo-7"></a>7.7 Card: Total Rateado no Mês, por Pessoa — QUADRO_DESCRITIVO_7
 
-> OBSERVAÇÕES: Card 6. Fonte: `DESPESAS_USUARIO` (rateio) das despesas do usuário autenticado na competência filtrada, agrupadas por `CONTATOS`. Não depende do documento `16` estar implementado ([Observação 10](#2-observações)). Consulta: [C6](#c6).
+> OBSERVAÇÕES: Card 6. Fonte: `DESPESAS_USUARIO` (rateio) das despesas do usuário autenticado na competência filtrada, agrupadas por `CONTATOS`. Não depende do documento `16` estar implementado ([Observação 10](#2-observações)). Pagina a partir de 5 contatos com rateio na competência ([RT04](#rt04), [Observação 17](#2-observações)). Consulta: [C6](#c6).
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
