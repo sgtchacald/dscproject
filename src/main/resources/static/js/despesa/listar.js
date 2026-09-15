@@ -316,11 +316,49 @@ function labelOrigem(origem) {
 
 function atualizarBotoesLote() {
     if (btnDuplicarLote) {
-        btnDuplicarLote.disabled = selecionadasMap.size === 0;
+        const mostrarDuplicar = selecionadasMap.size > 0;
+        btnDuplicarLote.style.display = mostrarDuplicar ? '' : 'none';
+        btnDuplicarLote.disabled = !mostrarDuplicar;
     }
     if (btnPagarLote) {
         const temParaPagar = Array.from(selecionadasMap.values()).some(d => d.statusPagamento === 'NAO' || d.statusPagamento === 'NAO_SE_APLICA');
+        btnPagarLote.style.display = temParaPagar ? '' : 'none';
         btnPagarLote.disabled = !temParaPagar;
+    }
+}
+
+function obterValorEfetivoUsuario(d) {
+    if (d.valorUsuario != null) return Number(d.valorUsuario);
+    const val = d.valor != null ? Number(d.valor) : 0;
+    const rateado = d.valorRateado != null ? Number(d.valorRateado) : 0;
+    return Math.max(0, val - rateado);
+}
+
+function renderConteudoValor(d) {
+    const valorPrincipal = formatarMoeda(d.valor);
+    if (!d.temRateio) {
+        return valorPrincipal;
+    }
+    const valUsu = obterValorEfetivoUsuario(d);
+    if (valUsu === 0) {
+        return `${valorPrincipal}<br><span class="badge bg-purple-lt fw-normal mt-1" title="100% rateado com contatos. Cota do titular: R$ 0,00"><i class="ph ph-users me-1"></i>Sua cota: R$ 0,00</span>`;
+    }
+    return `${valorPrincipal}<br><span class="badge bg-blue-lt fw-normal mt-1" title="Rateado com contatos: ${formatarMoeda(d.valorRateado || 0)}"><i class="ph ph-users me-1"></i>Sua cota: ${formatarMoeda(valUsu)}</span>`;
+}
+
+const cacheReceitaCompetencia = new Map();
+
+async function obterReceitaCompetencia(comp) {
+    if (cacheReceitaCompetencia.has(comp)) {
+        return cacheReceitaCompetencia.get(comp);
+    }
+    try {
+        const res = await getJson(`/despesas/receita-competencia?competencia=${encodeURIComponent(comp)}`);
+        const total = res && res.totalReceita != null ? Number(res.totalReceita) : 0;
+        cacheReceitaCompetencia.set(comp, total);
+        return total;
+    } catch (_) {
+        return 0;
     }
 }
 
@@ -332,19 +370,61 @@ function atualizarTotalizador(filtradas) {
     if (f.competenciaInicio && f.competenciaInicio === f.competenciaFim) {
         const totalPago = filtradas
             .filter(d => !d.excluido && d.statusPagamento === 'SIM')
-            .reduce((acc, d) => acc + (d.valor != null ? Number(d.valor) : 0), 0);
+            .reduce((acc, d) => acc + obterValorEfetivoUsuario(d), 0);
         const totalPendente = filtradas
             .filter(d => !d.excluido && (d.statusPagamento === 'NAO' || d.statusPagamento === 'NAO_SE_APLICA'))
-            .reduce((acc, d) => acc + (d.valor != null ? Number(d.valor) : 0), 0);
+            .reduce((acc, d) => acc + obterValorEfetivoUsuario(d), 0);
         const totalGeral = totalPago + totalPendente;
+
+        const totalBruto = filtradas
+            .filter(d => !d.excluido)
+            .reduce((acc, d) => acc + (d.valor != null ? Number(d.valor) : 0), 0);
+        const totalRateado = filtradas
+            .filter(d => !d.excluido)
+            .reduce((acc, d) => acc + (d.valorRateado != null ? Number(d.valorRateado) : 0), 0);
 
         const elPago = document.getElementById('totalDespesaPago');
         const elPendente = document.getElementById('totalDespesaPendente');
         const elGeral = document.getElementById('totalDespesaGeral');
+        const elSubtitulo = document.getElementById('totalDespesaGeralSubtitulo');
+        const elSaldo = document.getElementById('totalDespesaSaldoRestante');
+        const elSaldoSubtitulo = document.getElementById('totalDespesaSaldoRestanteSubtitulo');
 
         if (elPago) elPago.textContent = formatarMoeda(totalPago);
         if (elPendente) elPendente.textContent = formatarMoeda(totalPendente);
         if (elGeral) elGeral.textContent = formatarMoeda(totalGeral);
+
+        if (elSubtitulo) {
+            if (totalRateado > 0) {
+                elSubtitulo.textContent = `Bruto: ${formatarMoeda(totalBruto)} (Rateado: ${formatarMoeda(totalRateado)})`;
+                elSubtitulo.style.display = '';
+            } else {
+                elSubtitulo.style.display = 'none';
+            }
+        }
+
+        const compFiltro = f.competenciaInicio;
+        obterReceitaCompetencia(compFiltro).then(totalReceita => {
+            if (!elSaldo) return;
+            // Se o filtro mudou durante a requisição assíncrona, ignora resposta defasada
+            const filtroAtual = obterFiltroAtual();
+            if (filtroAtual.competenciaInicio !== compFiltro || filtroAtual.competenciaFim !== compFiltro) return;
+
+            const saldoRestante = totalReceita - totalGeral;
+            elSaldo.textContent = formatarMoeda(saldoRestante);
+            if (saldoRestante < 0) {
+                elSaldo.classList.add('text-danger');
+                elSaldo.classList.remove('text-secondary');
+            } else {
+                elSaldo.classList.remove('text-danger');
+                elSaldo.classList.add('text-secondary');
+            }
+            if (elSaldoSubtitulo) {
+                elSaldoSubtitulo.textContent = `Receitas: ${formatarMoeda(totalReceita)}`;
+                elSaldoSubtitulo.style.display = '';
+            }
+        });
+
         cardTotalizador.style.display = '';
     } else {
         cardTotalizador.style.display = 'none';
@@ -474,7 +554,7 @@ function render() {
                 <td class="${classeNome}" data-id="${d.id}" title="${titleNome}"><strong>${d.nome}</strong>${parcelaBadge}${recorrenteBadge}</td>
                 <td class="${classeCategoria}" data-id="${d.id}" title="${titleCategoria}">${categoriaHtml}</td>
                 <td class="${classeForma}" data-id="${d.id}" title="${titleForma}">${badgeForma(d)}</td>
-                <td class="${classeValor}" data-id="${d.id}" title="${titleValor}">${formatarMoeda(d.valor)}</td>
+                <td class="${classeValor}" data-id="${d.id}" title="${titleValor}">${renderConteudoValor(d)}</td>
                 <td>${d.dataVencimento ? dataBr(d.dataVencimento) : '<span class="text-muted">—</span>'}</td>
                 <td>${badgeStatus(d)}</td>
                 <td>${d.dataPagamento ? dataBr(d.dataPagamento) : '<span class="text-muted">—</span>'}</td>
@@ -518,7 +598,7 @@ function inicializarEdicaoInline() {
         function restaurar() {
             if (finalizado) return;
             finalizado = true;
-            celula.innerHTML = formatarMoeda(d.valor);
+            celula.innerHTML = renderConteudoValor(d);
         }
 
         async function salvar() {
@@ -527,12 +607,12 @@ function inicializarEdicaoInline() {
             const novoValor = parseDecimal(input.value);
             if (novoValor < 0) {
                 toast('O valor da despesa deve ser maior ou igual a zero.', true);
-                celula.innerHTML = formatarMoeda(d.valor);
+                celula.innerHTML = renderConteudoValor(d);
                 return;
             }
 
             if (Math.abs(novoValor - Number(d.valor)) < 0.001) {
-                celula.innerHTML = formatarMoeda(d.valor);
+                celula.innerHTML = renderConteudoValor(d);
                 return;
             }
 
@@ -543,8 +623,13 @@ function inicializarEdicaoInline() {
                 const res = await enviar(url, 'PATCH', body);
                 if (res.sucesso) {
                     d.valor = novoValor;
+                    if (d.temRateio) {
+                        d.valorUsuario = Math.max(0, novoValor - (d.valorRateado || 0));
+                    } else {
+                        d.valorUsuario = novoValor;
+                    }
                     toast(res.mensagem || 'Valor atualizado com sucesso.');
-                    celula.innerHTML = formatarMoeda(novoValor);
+                    celula.innerHTML = renderConteudoValor(d);
                     const tr = celula.closest('tr');
                     if (tr) {
                         const btnPag = tr.querySelector('[data-acao="pagamento"]');
@@ -554,11 +639,11 @@ function inicializarEdicaoInline() {
                 } else {
                     const erroMsg = res.errosCampos?.valor || res.mensagem || 'Erro ao atualizar valor.';
                     toast(erroMsg, true);
-                    celula.innerHTML = formatarMoeda(d.valor);
+                    celula.innerHTML = renderConteudoValor(d);
                 }
             } catch (err) {
                 toast('Erro de comunicação ao atualizar valor.', true);
-                celula.innerHTML = formatarMoeda(d.valor);
+                celula.innerHTML = renderConteudoValor(d);
             }
         }
 
@@ -1060,8 +1145,45 @@ function inicializarEdicaoInlineForma() {
     });
 }
 
+let despesasParaDuplicar = [];
+
+function atualizarPreviasDuplicacao() {
+    const tipo = document.querySelector('input[name="duplicarTipo"]:checked')?.value || 'AVULSA';
+    const secaoParcelada = document.getElementById('secaoDuplicarParcelada');
+    const secaoRecorrente = document.getElementById('secaoDuplicarRecorrente');
+    if (secaoParcelada) secaoParcelada.style.display = (tipo === 'PARCELADA') ? 'block' : 'none';
+    if (secaoRecorrente) secaoRecorrente.style.display = (tipo === 'RECORRENTE') ? 'block' : 'none';
+
+    if (!despesasParaDuplicar || despesasParaDuplicar.length === 0) return;
+    const valorOriginal = Number(despesasParaDuplicar[0]?.valor) || 0;
+
+    if (tipo === 'PARCELADA') {
+        const inputN = document.getElementById('duplicarQtdParcelas');
+        const n = Math.max(2, Math.min(72, parseInt(inputN ? inputN.value : '2', 10) || 2));
+        const baseValor = document.getElementById('duplicarBaseValor')?.value || 'PARCELA';
+        const previaEl = document.getElementById('duplicarPreviaParcelamento');
+        if (previaEl) {
+            if (baseValor === 'TOTAL') {
+                const parcela = valorOriginal / n;
+                previaEl.innerHTML = `<i class="ph ph-info me-1"></i>Serão geradas <strong>${n} parcelas de ${formatarMoeda(parcela)}</strong> (Total: ${formatarMoeda(valorOriginal)}).`;
+            } else {
+                const total = valorOriginal * n;
+                previaEl.innerHTML = `<i class="ph ph-info me-1"></i>Serão geradas <strong>${n} parcelas de ${formatarMoeda(valorOriginal)}</strong> (Total: ${formatarMoeda(total)}).`;
+            }
+        }
+    } else if (tipo === 'RECORRENTE') {
+        const inputMeses = document.getElementById('duplicarQtdMesesRecorrencia');
+        const meses = Math.max(2, Math.min(36, parseInt(inputMeses ? inputMeses.value : '12', 10) || 12));
+        const previaEl = document.getElementById('duplicarPreviaRecorrencia');
+        if (previaEl) {
+            previaEl.innerHTML = `<i class="ph ph-info me-1"></i>Serão gerados <strong>${meses} lançamentos mensais de ${formatarMoeda(valorOriginal)}</strong>.`;
+        }
+    }
+}
+
 export function abrirModalDuplicar(despesas) {
     if (!despesas || despesas.length === 0) return;
+    despesasParaDuplicar = despesas;
     idsParaDuplicar = despesas.map(d => d.id);
 
     const resumoEl = document.getElementById('duplicarResumoSelecao');
@@ -1079,10 +1201,34 @@ export function abrirModalDuplicar(despesas) {
         inputComp.value = compOrigem || new Date().toISOString().slice(0, 7);
     }
 
+    const rdoAvulsa = document.querySelector('input[name="duplicarTipo"][value="AVULSA"]');
+    if (rdoAvulsa) rdoAvulsa.checked = true;
+
+    const inputN = document.getElementById('duplicarQtdParcelas');
+    if (inputN) inputN.value = 2;
+    const selectBase = document.getElementById('duplicarBaseValor');
+    if (selectBase) selectBase.value = 'PARCELA';
+    const inputMeses = document.getElementById('duplicarQtdMesesRecorrencia');
+    if (inputMeses) inputMeses.value = 12;
+
+    atualizarPreviasDuplicacao();
     abrirModal('modalDuplicarDespesa');
 }
 
 function inicializarDuplicacao() {
+    document.querySelectorAll('input[name="duplicarTipo"]').forEach(rdo => {
+        rdo.addEventListener('change', atualizarPreviasDuplicacao);
+    });
+
+    const inputN = document.getElementById('duplicarQtdParcelas');
+    if (inputN) inputN.addEventListener('input', atualizarPreviasDuplicacao);
+
+    const selectBase = document.getElementById('duplicarBaseValor');
+    if (selectBase) selectBase.addEventListener('change', atualizarPreviasDuplicacao);
+
+    const inputMeses = document.getElementById('duplicarQtdMesesRecorrencia');
+    if (inputMeses) inputMeses.addEventListener('input', atualizarPreviasDuplicacao);
+
     const btnConfirmar = document.getElementById('btnConfirmarDuplicar');
     if (btnConfirmar) {
         btnConfirmar.addEventListener('click', async function () {
@@ -1100,11 +1246,24 @@ function inicializarDuplicacao() {
                 return;
             }
 
+            const tipo = document.querySelector('input[name="duplicarTipo"]:checked')?.value || 'AVULSA';
+
             btnConfirmar.disabled = true;
             try {
                 const body = new URLSearchParams();
                 idsParaDuplicar.forEach(id => body.append('ids', id));
                 body.append('competenciaDestino', compDestino);
+                body.append('tipo', tipo);
+
+                if (tipo === 'PARCELADA') {
+                    const qtdParcelas = document.getElementById('duplicarQtdParcelas')?.value || '2';
+                    const baseValor = document.getElementById('duplicarBaseValor')?.value || 'PARCELA';
+                    body.append('qtdParcelas', qtdParcelas);
+                    body.append('baseValor', baseValor);
+                } else if (tipo === 'RECORRENTE') {
+                    const qtdMeses = document.getElementById('duplicarQtdMesesRecorrencia')?.value || '12';
+                    body.append('qtdMesesRecorrencia', qtdMeses);
+                }
 
                 const res = await enviar(cfg().urlDuplicar, 'POST', body);
                 if (res.sucesso) {

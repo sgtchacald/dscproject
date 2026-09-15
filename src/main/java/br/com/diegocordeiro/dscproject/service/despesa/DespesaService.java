@@ -391,6 +391,102 @@ public class DespesaService {
 
         d.setAlteradoPor(loginAutor);
 
+        boolean eraAvulsa = !d.isParcelada() && !d.isRecorrente();
+        if (eraAvulsa && dto.isParcelada()) {
+            int n = dto.getQtdParcelas() != null ? dto.getQtdParcelas() : 2;
+            BigDecimal total = dto.getValorTotalCompra() != null ? dto.getValorTotalCompra() : dto.getValor();
+            BigDecimal parcelaBase = total.divide(BigDecimal.valueOf(n), 2, RoundingMode.DOWN);
+            d.setParcelada(true);
+            d.setNroParcela(1);
+            d.setQtdParcelas(n);
+            d.setValor(parcelaBase);
+            d.setValorTotalCompra(total);
+            d.setParcelaPai(null);
+
+            if (podeRatear && dto.getRateio() != null) {
+                sincronizarRateio(d, dto.getRateio(), loginAutor);
+            }
+
+            d = despesaRepository.save(d);
+
+            for (int i = 2; i <= n; i++) {
+                Despesa filha = new Despesa();
+                filha.setNome(d.getNome());
+                filha.setDescricao(d.getDescricao());
+                filha.setDataLancamento(d.getDataLancamento());
+                if (d.getDataVencimento() != null) {
+                    filha.setDataVencimento(d.getDataVencimento().plusMonths(i - 1));
+                }
+                filha.setCompetencia(d.getCompetencia().plusMonths(i - 1));
+                if (i < n) {
+                    filha.setValor(parcelaBase);
+                } else {
+                    BigDecimal residuo = total.subtract(parcelaBase.multiply(BigDecimal.valueOf(n - 1)));
+                    filha.setValor(residuo);
+                }
+                filha.setValorTotalCompra(total);
+                filha.setParcelada(true);
+                filha.setNroParcela(i);
+                filha.setQtdParcelas(n);
+                filha.setParcelaPai(d);
+                filha.setRecorrente(false);
+                filha.setRecorrentePai(null);
+                filha.setConta(d.getConta());
+                filha.setCartao(d.getCartao());
+                filha.setMeioPagamento(d.getMeioPagamento());
+                filha.setStatusPagamento(StatusPagamento.NAO);
+                filha.setDataPagamento(null);
+                filha.setCategoria(d.getCategoria());
+                filha.setOrigem(d.getOrigem());
+                filha.setCriadoPor(loginAutor);
+                filha.setAlteradoPor(loginAutor);
+                filha = despesaRepository.save(filha);
+                salvarRateios(filha, dto.getRateio(), i, n, podeRatear, loginAutor);
+            }
+            return d;
+        } else if (eraAvulsa && dto.isRecorrente()) {
+            int meses = dto.getQtdMesesRecorrencia() != null ? dto.getQtdMesesRecorrencia() : 12;
+            d.setRecorrente(true);
+            d.setRecorrentePai(null);
+
+            if (podeRatear && dto.getRateio() != null) {
+                sincronizarRateio(d, dto.getRateio(), loginAutor);
+            }
+
+            d = despesaRepository.save(d);
+
+            for (int i = 2; i <= meses; i++) {
+                Despesa filha = new Despesa();
+                filha.setNome(d.getNome());
+                filha.setDescricao(d.getDescricao());
+                filha.setDataLancamento(d.getDataLancamento());
+                if (d.getDataVencimento() != null) {
+                    filha.setDataVencimento(d.getDataVencimento().plusMonths(i - 1));
+                }
+                filha.setCompetencia(d.getCompetencia().plusMonths(i - 1));
+                filha.setValor(d.getValor());
+                filha.setValorTotalCompra(null);
+                filha.setParcelada(false);
+                filha.setNroParcela(null);
+                filha.setQtdParcelas(null);
+                filha.setParcelaPai(null);
+                filha.setRecorrente(true);
+                filha.setRecorrentePai(d);
+                filha.setConta(d.getConta());
+                filha.setCartao(d.getCartao());
+                filha.setMeioPagamento(d.getMeioPagamento());
+                filha.setStatusPagamento(StatusPagamento.NAO);
+                filha.setDataPagamento(null);
+                filha.setCategoria(d.getCategoria());
+                filha.setOrigem(d.getOrigem());
+                filha.setCriadoPor(loginAutor);
+                filha.setAlteradoPor(loginAutor);
+                filha = despesaRepository.save(filha);
+                salvarRateios(filha, dto.getRateio(), 1, 1, podeRatear, loginAutor);
+            }
+            return d;
+        }
+
         if (podeRatear && dto.getRateio() != null) {
             sincronizarRateio(d, dto.getRateio(), loginAutor);
         }
@@ -534,6 +630,19 @@ public class DespesaService {
 
     @Transactional
     public List<Despesa> duplicar(List<Long> ids, String competenciaDestino, Long usuarioId, String loginAutor) {
+        return duplicar(ids, competenciaDestino, "AVULSA", null, "PARCELA", null, usuarioId, loginAutor);
+    }
+
+    @Transactional
+    public List<Despesa> duplicar(
+            List<Long> ids,
+            String competenciaDestino,
+            String tipo,
+            Integer qtdParcelas,
+            String baseValor,
+            Integer qtdMesesRecorrencia,
+            Long usuarioId,
+            String loginAutor) {
         if (ids == null || ids.isEmpty()) {
             throw new RegraNegocioException("msg.despesa.duplicar.vazio");
         }
@@ -544,57 +653,186 @@ public class DespesaService {
         YearMonth comp = (competenciaDestino != null && !competenciaDestino.isBlank()) ? YearMonth.parse(competenciaDestino) : null;
         List<Despesa> originais = despesaRepository.buscarPorIdsEUsuario(ids, usuarioId);
         List<Despesa> duplicadas = new ArrayList<>();
+
         for (Despesa origem : originais) {
-            Despesa copia = new Despesa();
-            copia.setNome(origem.getNome());
-            copia.setDescricao(origem.getDescricao());
-            copia.setValor(origem.getValor());
-            copia.setDataLancamento(origem.getDataLancamento());
-            copia.setCompetencia(comp != null ? comp : origem.getCompetencia());
+            YearMonth compBase = comp != null ? comp : origem.getCompetencia();
+            LocalDate vencimentoBase = null;
             if (origem.getDataVencimento() != null) {
-                if (comp != null) {
-                    int dia = Math.min(origem.getDataVencimento().getDayOfMonth(), comp.lengthOfMonth());
-                    copia.setDataVencimento(comp.atDay(dia));
-                } else {
-                    copia.setDataVencimento(origem.getDataVencimento());
-                }
+                int dia = Math.min(origem.getDataVencimento().getDayOfMonth(), compBase.lengthOfMonth());
+                vencimentoBase = compBase.atDay(dia);
             }
-            copia.setConta(origem.getConta());
-            copia.setCartao(origem.getCartao());
-            copia.setMeioPagamento(origem.getMeioPagamento());
-            copia.setCategoria(origem.getCategoria());
-            copia.setOrigem(OrigemLancamento.MANUAL);
-            copia.setStatusPagamento(StatusPagamento.NAO);
-            copia.setDataPagamento(null);
-            copia.setParcelada(false);
-            copia.setNroParcela(null);
-            copia.setQtdParcelas(null);
-            copia.setParcelaPai(null);
-            copia.setValorTotalCompra(null);
-            copia.setRecorrente(false);
-            copia.setRecorrentePai(null);
-            copia.setCriadoPor(loginAutor);
-            copia.setAlteradoPor(loginAutor);
-            copia = despesaRepository.save(copia);
-            if (origem.getRateios() != null) {
-                for (DespesaUsuario du : origem.getRateios()) {
-                    if (du.getDataExclusao() == null && du.getContato() != null) {
-                        DespesaUsuario novoDu = new DespesaUsuario();
-                        novoDu.setDespesa(copia);
-                        novoDu.setContato(du.getContato());
-                        novoDu.setValor(du.getValor());
-                        novoDu.setStatusPagamento(StatusPagamento.NAO);
-                        novoDu.setDataAcerto(null);
-                        novoDu.setCriadoPor(loginAutor);
-                        novoDu.setAlteradoPor(loginAutor);
-                        despesaUsuarioRepository.save(novoDu);
-                        copia.getRateios().add(novoDu);
+
+            if ("PARCELADA".equalsIgnoreCase(tipo)) {
+                int n = (qtdParcelas != null && qtdParcelas >= 2 && qtdParcelas <= 72) ? qtdParcelas : 2;
+                boolean valorEhTotal = "TOTAL".equalsIgnoreCase(baseValor);
+                BigDecimal total = valorEhTotal ? origem.getValor() : origem.getValor().multiply(BigDecimal.valueOf(n));
+                BigDecimal parcelaBase = total.divide(BigDecimal.valueOf(n), 2, RoundingMode.DOWN);
+
+                Despesa mae = new Despesa();
+                copiarDadosBasicos(origem, mae);
+                mae.setCompetencia(compBase);
+                mae.setDataVencimento(vencimentoBase);
+                mae.setParcelada(true);
+                mae.setNroParcela(1);
+                mae.setQtdParcelas(n);
+                mae.setParcelaPai(null);
+                mae.setValor(parcelaBase);
+                mae.setValorTotalCompra(total);
+                mae.setRecorrente(false);
+                mae.setRecorrentePai(null);
+                mae.setCriadoPor(loginAutor);
+                mae.setAlteradoPor(loginAutor);
+                mae = despesaRepository.save(mae);
+                clonarRateiosOrigem(mae, origem, 1, n, valorEhTotal, loginAutor);
+                duplicadas.add(mae);
+
+                for (int i = 2; i <= n; i++) {
+                    YearMonth compMes = compBase.plusMonths(i - 1);
+                    LocalDate vencMes = null;
+                    if (vencimentoBase != null) {
+                        int diaMes = Math.min(vencimentoBase.getDayOfMonth(), compMes.lengthOfMonth());
+                        vencMes = compMes.atDay(diaMes);
                     }
+                    Despesa filha = new Despesa();
+                    copiarDadosBasicos(origem, filha);
+                    filha.setCompetencia(compMes);
+                    filha.setDataVencimento(vencMes);
+                    filha.setParcelada(true);
+                    filha.setNroParcela(i);
+                    filha.setQtdParcelas(n);
+                    filha.setParcelaPai(mae);
+                    if (i < n) {
+                        filha.setValor(parcelaBase);
+                    } else {
+                        BigDecimal residuo = total.subtract(parcelaBase.multiply(BigDecimal.valueOf(n - 1)));
+                        filha.setValor(residuo);
+                    }
+                    filha.setValorTotalCompra(total);
+                    filha.setRecorrente(false);
+                    filha.setRecorrentePai(null);
+                    filha.setCriadoPor(loginAutor);
+                    filha.setAlteradoPor(loginAutor);
+                    filha = despesaRepository.save(filha);
+                    clonarRateiosOrigem(filha, origem, i, n, valorEhTotal, loginAutor);
+                    duplicadas.add(filha);
                 }
+            } else if ("RECORRENTE".equalsIgnoreCase(tipo)) {
+                int meses = (qtdMesesRecorrencia != null && qtdMesesRecorrencia >= 2 && qtdMesesRecorrencia <= 36) ? qtdMesesRecorrencia : 12;
+
+                Despesa mae = new Despesa();
+                copiarDadosBasicos(origem, mae);
+                mae.setCompetencia(compBase);
+                mae.setDataVencimento(vencimentoBase);
+                mae.setValor(origem.getValor());
+                mae.setValorTotalCompra(null);
+                mae.setParcelada(false);
+                mae.setNroParcela(null);
+                mae.setQtdParcelas(null);
+                mae.setParcelaPai(null);
+                mae.setRecorrente(true);
+                mae.setRecorrentePai(null);
+                mae.setCriadoPor(loginAutor);
+                mae.setAlteradoPor(loginAutor);
+                mae = despesaRepository.save(mae);
+                clonarRateiosOrigem(mae, origem, 1, 1, false, loginAutor);
+                duplicadas.add(mae);
+
+                for (int i = 2; i <= meses; i++) {
+                    YearMonth compMes = compBase.plusMonths(i - 1);
+                    LocalDate vencMes = null;
+                    if (vencimentoBase != null) {
+                        int diaMes = Math.min(vencimentoBase.getDayOfMonth(), compMes.lengthOfMonth());
+                        vencMes = compMes.atDay(diaMes);
+                    }
+                    Despesa filha = new Despesa();
+                    copiarDadosBasicos(origem, filha);
+                    filha.setCompetencia(compMes);
+                    filha.setDataVencimento(vencMes);
+                    filha.setValor(origem.getValor());
+                    filha.setValorTotalCompra(null);
+                    filha.setParcelada(false);
+                    filha.setNroParcela(null);
+                    filha.setQtdParcelas(null);
+                    filha.setParcelaPai(null);
+                    filha.setRecorrente(true);
+                    filha.setRecorrentePai(mae);
+                    filha.setCriadoPor(loginAutor);
+                    filha.setAlteradoPor(loginAutor);
+                    filha = despesaRepository.save(filha);
+                    clonarRateiosOrigem(filha, origem, 1, 1, false, loginAutor);
+                    duplicadas.add(filha);
+                }
+            } else {
+                Despesa copia = new Despesa();
+                copiarDadosBasicos(origem, copia);
+                copia.setCompetencia(compBase);
+                copia.setDataVencimento(vencimentoBase);
+                copia.setValor(origem.getValor());
+                copia.setValorTotalCompra(null);
+                copia.setParcelada(false);
+                copia.setNroParcela(null);
+                copia.setQtdParcelas(null);
+                copia.setParcelaPai(null);
+                copia.setRecorrente(false);
+                copia.setRecorrentePai(null);
+                copia.setCriadoPor(loginAutor);
+                copia.setAlteradoPor(loginAutor);
+                copia = despesaRepository.save(copia);
+                clonarRateiosOrigem(copia, origem, 1, 1, false, loginAutor);
+                duplicadas.add(copia);
             }
-            duplicadas.add(copia);
         }
         return duplicadas;
+    }
+
+    private void copiarDadosBasicos(Despesa origem, Despesa destino) {
+        destino.setNome(origem.getNome());
+        destino.setDescricao(origem.getDescricao());
+        destino.setDataLancamento(origem.getDataLancamento());
+        destino.setConta(origem.getConta());
+        destino.setCartao(origem.getCartao());
+        destino.setMeioPagamento(origem.getMeioPagamento());
+        destino.setCategoria(origem.getCategoria());
+        destino.setOrigem(OrigemLancamento.MANUAL);
+        destino.setStatusPagamento(StatusPagamento.NAO);
+        destino.setDataPagamento(null);
+    }
+
+    private void clonarRateiosOrigem(
+            Despesa destino,
+            Despesa origem,
+            int parcelaAtual,
+            int totalParcelas,
+            boolean valorEhTotal,
+            String loginAutor) {
+        if (origem.getRateios() == null) return;
+        for (DespesaUsuario du : origem.getRateios()) {
+            if (du.getDataExclusao() == null && du.getContato() != null) {
+                BigDecimal valorFatia;
+                if (totalParcelas > 1) {
+                    BigDecimal base = valorEhTotal ? du.getValor() : du.getValor().multiply(BigDecimal.valueOf(totalParcelas));
+                    BigDecimal fatiaBase = base.divide(BigDecimal.valueOf(totalParcelas), 2, RoundingMode.DOWN);
+                    if (parcelaAtual < totalParcelas) {
+                        valorFatia = fatiaBase;
+                    } else {
+                        valorFatia = base.subtract(fatiaBase.multiply(BigDecimal.valueOf(totalParcelas - 1)));
+                    }
+                } else {
+                    valorFatia = du.getValor();
+                }
+
+                DespesaUsuario novoDu = new DespesaUsuario();
+                novoDu.setDespesa(destino);
+                novoDu.setContato(du.getContato());
+                novoDu.setValor(valorFatia);
+                novoDu.setStatusPagamento(StatusPagamento.NAO);
+                novoDu.setDataAcerto(null);
+                novoDu.setCriadoPor(loginAutor);
+                novoDu.setAlteradoPor(loginAutor);
+                despesaUsuarioRepository.save(novoDu);
+                destino.getRateios().add(novoDu);
+            }
+        }
     }
 
     @Transactional
@@ -760,7 +998,14 @@ public class DespesaService {
         if (termo == null || termo.trim().length() < 3) {
             return List.of();
         }
-        return contatoRepository.buscarAtivosPorDonoETermo(usuarioIdLogado, termo.trim()).stream()
+        String termoLimpo = termo.trim();
+        if (termoLimpo.contains("(")) {
+            String antesParenteses = termoLimpo.substring(0, termoLimpo.indexOf('(')).trim();
+            if (antesParenteses.length() >= 2) {
+                termoLimpo = antesParenteses;
+            }
+        }
+        return contatoRepository.buscarAtivosPorDonoETermo(usuarioIdLogado, termoLimpo).stream()
                 .limit(20)
                 .map(ContatoRateioDTO::new)
                 .toList();

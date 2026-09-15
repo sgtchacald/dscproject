@@ -25,6 +25,7 @@ import br.com.diegocordeiro.dscproject.repository.usuario.UsuarioRepository;
 import br.com.diegocordeiro.dscproject.service.perfil.AutorizacaoService;
 import br.com.diegocordeiro.dscproject.service.despesa.DespesaService;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegistroNaoEncontradoException;
+import br.com.diegocordeiro.dscproject.service.receita.ReceitaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,7 @@ class DespesaControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean private DespesaService despesaService;
+    @MockitoBean private ReceitaService receitaService;
     @MockitoBean private DespesaRepository despesaRepository;
     @MockitoBean private ContaRepository contaRepository;
     @MockitoBean private CartaoCreditoRepository cartaoCreditoRepository;
@@ -366,7 +368,15 @@ class DespesaControllerTest {
                 .andExpect(jsonPath("$.sucesso").value(true))
                 .andExpect(jsonPath("$.mensagem").exists());
 
-        verify(despesaService).duplicar(eq(List.of(1L, 2L)), eq("2026-10"), eq(1L), eq("user_teste"));
+        verify(despesaService).duplicar(
+                eq(List.of(1L, 2L)),
+                eq("2026-10"),
+                eq("AVULSA"),
+                isNull(),
+                eq("PARCELA"),
+                isNull(),
+                eq(1L),
+                eq("user_teste"));
     }
 
     @Test
@@ -610,5 +620,68 @@ class DespesaControllerTest {
                         .param("cartaoId", "5")
                         .with(csrf()))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("EDP19 - Obter receita por competência retorna 200 e total de receita")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_LISTAR")
+    void obterReceitaCompetencia_comPermissao_retorna200ETotal() throws Exception {
+        when(receitaService.somarPorCompetencia(eq(YearMonth.parse("2026-09")), eq(1L)))
+                .thenReturn(new BigDecimal("5000.00"));
+
+        mockMvc.perform(get("/despesas/receita-competencia")
+                        .param("competencia", "2026-09"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.competencia").value("2026-09"))
+                .andExpect(jsonPath("$.totalReceita").value(5000.00));
+    }
+
+    @Test
+    @DisplayName("EDP12 - Duplicar despesa parcelada com permissão chama serviço e retorna 200")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_INSERIR")
+    void duplicar_parceladaComPermissao_retorna200() throws Exception {
+        mockMvc.perform(post("/despesas/duplicar")
+                        .param("despesaIds", "10")
+                        .param("competenciaDestino", "2026-10")
+                        .param("tipo", "PARCELADA")
+                        .param("qtdParcelas", "3")
+                        .param("baseValor", "PARCELA")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sucesso").value(true));
+
+        verify(despesaService).duplicar(
+                eq(List.of(10L)),
+                eq("2026-10"),
+                eq("PARCELADA"),
+                eq(3),
+                eq("PARCELA"),
+                isNull(),
+                eq(1L),
+                eq("user_teste"));
+    }
+
+    @Test
+    @DisplayName("EDP12 - Duplicar despesa recorrente com permissão chama serviço e retorna 200")
+    @WithMockUser(username = "user_teste", authorities = "PERM_DESPESAS_INSERIR")
+    void duplicar_recorrenteComPermissao_retorna200() throws Exception {
+        mockMvc.perform(post("/despesas/duplicar")
+                        .param("despesaIds", "15")
+                        .param("competenciaDestino", "2026-11")
+                        .param("tipo", "RECORRENTE")
+                        .param("qtdMesesRecorrencia", "6")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sucesso").value(true));
+
+        verify(despesaService).duplicar(
+                eq(List.of(15L)),
+                eq("2026-11"),
+                eq("RECORRENTE"),
+                isNull(),
+                eq("PARCELA"),
+                eq(6),
+                eq(1L),
+                eq("user_teste"));
     }
 }

@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,4 +29,14 @@ public interface ReceitaRepository extends JpaRepository<Receita, Long> {
         ORDER BY r.competencia DESC, r.dataLancamento DESC
         """)
     List<Receita> listarPorUsuario(@Param("usuarioId") Long usuarioId);
+
+    @Query("""
+        SELECT COALESCE(SUM(r.valor), 0) FROM Receita r
+        JOIN r.conta c
+        WHERE c.usuario.id = :usuarioId
+          AND r.competencia = :competencia
+          AND r.dataExclusao IS NULL
+        """)
+    BigDecimal somarPorCompetenciaEUsuario(@Param("competencia") YearMonth competencia, @Param("usuarioId") Long usuarioId);
 }
+

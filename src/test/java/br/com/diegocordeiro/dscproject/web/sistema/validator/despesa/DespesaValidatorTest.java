@@ -300,6 +300,21 @@ class DespesaValidatorTest {
     }
 
     @Test
+    @DisplayName("RN17 - Rateio com valor integral para contato e cota do dono zerada (soma das fatias == valor da despesa) deve ser aceito")
+    void validate_rateioValorIntegralContato_devePassar() {
+        when(contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(10L, 1L)).thenReturn(Optional.of(contaAtiva(10L, 1L, TipoConta.CORRENTE)));
+        when(contatoRepository.findByIdAndUsuarioDonoIdAndDataExclusaoIsNull(2L, 1L)).thenReturn(Optional.of(contatoAtivo(2L, 1L)));
+
+        DespesaFormDTO dto = dtoValido();
+        dto.setValor(new BigDecimal("100.00"));
+        dto.setRateio(List.of(new DespesaRateioDTO(2L, "Amigo", new BigDecimal("100.00"), StatusPagamento.NAO, null)));
+
+        Errors errors = new BeanPropertyBindingResult(dto, "despesaFormDTO");
+        validator(1L, true).validate(dto, errors);
+        assertFalse(errors.hasErrors());
+    }
+
+    @Test
     @DisplayName("RN16/RN19 - Rateio com contato inexistente ou de outro usuário é rejeitado")
     void validate_rateioComContatoDeOutroUsuario_deveRejeitar() {
         when(contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(10L, 1L)).thenReturn(Optional.of(contaAtiva(10L, 1L, TipoConta.CORRENTE)));

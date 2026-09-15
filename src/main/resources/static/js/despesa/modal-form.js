@@ -1,6 +1,6 @@
 import { getJson, enviar } from '../comum/http.js';
 import { toast, abrirModal, fecharModal } from '../comum/ui.js';
-import { definirValorMoeda } from '../comum/mascara.js';
+import { definirValorMoeda, formatarElemento, formatarValorPtBr } from '../comum/mascara.js';
 import { obterFiltroAtual } from './modal-filtro.js';
 
 export const EVENTO_ALTERADO = 'despesa:alterada';
@@ -16,6 +16,8 @@ let formaAtual = 'CONTA';
 let modoEdicao = false;
 let origemAtual = 'MANUAL';
 let taxaBuscaTimeout = null;
+let contatosBuscadosCache = new Map();
+let contatoSelecionadoAtual = null;
 
 // Mapa de usuários adicionados ao rateio na tela: { id, nome, valor, statusPagamento, dataAcerto }
 let itensRateio = [];
@@ -160,6 +162,15 @@ function limparErros() {
         alerta.style.display = 'none';
         alerta.textContent = '';
     }
+    const inputMinhaCota = document.getElementById('despesaMinhaCota');
+    if (inputMinhaCota) {
+        inputMinhaCota.classList.remove('is-invalid', 'text-danger');
+    }
+    const erroRateio = document.getElementById('erroRateio');
+    if (erroRateio) {
+        erroRateio.textContent = '';
+        erroRateio.classList.remove('d-block');
+    }
 }
 
 function atualizarValorParcelaCalculada() {
@@ -168,27 +179,139 @@ function atualizarValorParcelaCalculada() {
     const parcela = n > 0 ? valor / n : 0;
     const el = document.getElementById('despesaValorParcelaCalculada');
     if (el) el.textContent = formatarMoeda(parcela);
-    atualizarMinhaCota();
+
+    const parcelada = document.getElementById('despesaParcelada')?.checked;
+    const detalheRateio = document.getElementById('despesaDetalheParcelaRateio');
+    const somaRateios = itensRateio.reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
+    const cota = +(valor - somaRateios).toFixed(2);
+
+    if (detalheRateio) {
+        if (parcelada && n > 1 && itensRateio.length > 0) {
+            const parcelaDono = Math.max(0, +(cota / n).toFixed(2));
+            const parcelaContatos = +(somaRateios / n).toFixed(2);
+            detalheRateio.style.display = 'block';
+            detalheRateio.innerHTML = `Sua parcela: <strong class="text-dark">${formatarMoeda(parcelaDono)}</strong> | Contatos: <strong class="text-dark">${formatarMoeda(parcelaContatos)}</strong>`;
+        } else {
+            detalheRateio.style.display = 'none';
+            detalheRateio.textContent = '';
+        }
+    }
+
+    // Atualizar informativos de parcela por contato na tabela de rateio
+    document.querySelectorAll('.info-parcela-rateio').forEach(infoEl => {
+        const idx = Number(infoEl.dataset.index);
+        const item = itensRateio[idx];
+        if (parcelada && n > 1 && item && (Number(item.valor) || 0) > 0) {
+            infoEl.style.display = 'block';
+            infoEl.textContent = `${n}x de ${formatarMoeda((Number(item.valor) || 0) / n)}`;
+        } else {
+            infoEl.style.display = 'none';
+            infoEl.textContent = '';
+        }
+    });
+
+    atualizarMinhaCota(false);
 }
 
-function atualizarMinhaCota() {
-    const el = document.getElementById('minhaCotaRateio');
-    if (!el) return;
+function atualizarMinhaCota(recalcularParcela = true) {
     const total = parseDecimal(document.getElementById('despesaValor').value);
-    const somaRateios = itensRateio.reduce((acc, curr) => acc + (parseDecimal(curr.valor) || 0), 0);
-    const cota = total - somaRateios;
-    el.textContent = formatarMoeda(cota);
-    if (cota < 0) {
-        el.classList.add('text-danger');
-    } else {
-        el.classList.remove('text-danger');
+    const somaRateios = itensRateio.reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
+    const cota = +(total - somaRateios).toFixed(2);
+    const parcelada = document.getElementById('despesaParcelada')?.checked;
+    const n = parseInt(document.getElementById('despesaQtdParcelas')?.value, 10) || 1;
+
+    const inputMinhaCota = document.getElementById('despesaMinhaCota');
+    if (inputMinhaCota && document.activeElement !== inputMinhaCota) {
+        definirValorMoeda(inputMinhaCota, Math.max(0, cota));
     }
+
+    const resumoTotal = document.getElementById('resumoTotalDespesa');
+    if (resumoTotal) resumoTotal.textContent = formatarMoeda(total);
+
+    const resumoFatias = document.getElementById('resumoFatiasContatos');
+    if (resumoFatias) resumoFatias.textContent = formatarMoeda(somaRateios);
+
+    const badgeZerada = document.getElementById('badgeCotaZerada');
+    const infoStatus = document.getElementById('infoStatusRateio');
+    const erroRateio = document.getElementById('erroRateio');
+
+    if (somaRateios > 0 && Math.abs(cota) < 0.001) {
+        if (badgeZerada) badgeZerada.style.display = 'inline-block';
+        if (infoStatus) infoStatus.textContent = '100% repassado aos contatos (sua cota: R$ 0,00)';
+        if (inputMinhaCota) inputMinhaCota.classList.remove('is-invalid', 'text-danger');
+        if (erroRateio) {
+            erroRateio.textContent = '';
+            erroRateio.classList.remove('d-block');
+        }
+    } else {
+        if (badgeZerada) badgeZerada.style.display = 'none';
+        if (cota < -0.001) {
+            if (infoStatus) infoStatus.textContent = 'A soma das fatias excede o valor da despesa';
+            if (inputMinhaCota) inputMinhaCota.classList.add('is-invalid', 'text-danger');
+            if (erroRateio) {
+                erroRateio.textContent = `A soma das fatias (${formatarMoeda(somaRateios)}) não pode ser maior que o valor da despesa (${formatarMoeda(total)}).`;
+                erroRateio.classList.add('d-block');
+            }
+        } else {
+            const sufParcela = (parcelada && n > 1) ? ` (${n}x de ${formatarMoeda(cota / n)})` : '';
+            if (infoStatus) infoStatus.textContent = `Parte da despesa sob sua responsabilidade${sufParcela}`;
+            if (inputMinhaCota) inputMinhaCota.classList.remove('is-invalid', 'text-danger');
+            if (erroRateio) {
+                erroRateio.textContent = '';
+                erroRateio.classList.remove('d-block');
+            }
+        }
+    }
+
+    if (recalcularParcela) {
+        atualizarValorParcelaCalculada();
+    }
+}
+
+function dividirRateioIgualmente() {
+    if (itensRateio.length === 0) return;
+    const total = parseDecimal(document.getElementById('despesaValor').value);
+    if (total <= 0) return;
+
+    const inputMinhaCota = document.getElementById('despesaMinhaCota');
+    const cotaAtual = inputMinhaCota ? parseDecimal(inputMinhaCota.value) : total;
+    const titularZerado = Math.abs(cotaAtual) < 0.001;
+
+    if (titularZerado) {
+        const qtd = itensRateio.length;
+        const fatiaBase = Math.floor((total / qtd) * 100) / 100;
+        let acumulado = 0;
+        itensRateio.forEach((item, i) => {
+            if (i === qtd - 1) {
+                item.valor = +(total - acumulado).toFixed(2);
+            } else {
+                item.valor = fatiaBase;
+                acumulado += fatiaBase;
+            }
+        });
+        if (inputMinhaCota) definirValorMoeda(inputMinhaCota, 0);
+    } else {
+        const participantes = 1 + itensRateio.length;
+        const fatiaBase = Math.floor((total / participantes) * 100) / 100;
+        let acumulado = 0;
+        itensRateio.forEach(item => {
+            item.valor = fatiaBase;
+            acumulado += fatiaBase;
+        });
+        const cotaDono = +(total - acumulado).toFixed(2);
+        if (inputMinhaCota) definirValorMoeda(inputMinhaCota, cotaDono);
+    }
+
+    renderizarRateios();
 }
 
 function renderizarRateios() {
     const corpo = document.getElementById('corpoTabelaRateio');
     if (!corpo) return;
     corpo.innerHTML = '';
+
+    const parcelada = document.getElementById('despesaParcelada')?.checked;
+    const n = parseInt(document.getElementById('despesaQtdParcelas')?.value, 10) || 1;
 
     itensRateio.forEach((item, index) => {
         const badgeTipo = item.tipo === 'SISTEMA'
@@ -198,6 +321,10 @@ function renderizarRateios() {
             ? `<div class="text-muted" style="font-size: 0.75rem;"><i class="ph ph-qr-code me-1"></i>PIX: ${item.chavePix}</div>`
             : '';
 
+        const valorNum = Number(item.valor) || 0;
+        const exibeParcela = parcelada && n > 1 && valorNum > 0;
+        const textoParcela = exibeParcela ? `${n}x de ${formatarMoeda(valorNum / n)}` : '';
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>
@@ -205,8 +332,10 @@ function renderizarRateios() {
                 ${infoPix}
             </td>
             <td>
-                <input type="text" class="form-control form-control-sm input-fatia-rateio mascara-moeda"
-                       data-index="${index}" value="${formatarInputDecimal(item.valor)}">
+                <input type="text" class="form-control form-control-sm input-fatia-rateio mascara-moeda text-end"
+                       data-index="${index}" value="${formatarValorPtBr(Math.round(valorNum * 100))}">
+                <div class="text-muted text-end info-parcela-rateio mt-1" data-index="${index}"
+                     style="font-size: 0.75rem; ${exibeParcela ? '' : 'display:none;'}">${textoParcela}</div>
             </td>
             <td>
                 <label class="form-check form-check-inline m-0">
@@ -215,7 +344,11 @@ function renderizarRateios() {
                     <span class="form-check-label small">${item.statusPagamento === 'SIM' ? 'Pago' : 'Pendente'}</span>
                 </label>
             </td>
-            <td>
+            <td class="text-end">
+                <button type="button" class="btn btn-action btn-outline-primary btn-sm btn-total-rateio me-1"
+                        data-index="${index}" title="Atribuir valor total a este contato (zerar minha cota)">
+                    <span class="small fw-bold">100%</span>
+                </button>
                 <button type="button" class="btn btn-action text-danger btn-remover-rateio" data-index="${index}" title="Remover">
                     <i class="ph ph-trash" aria-hidden="true"></i>
                 </button>
@@ -280,7 +413,13 @@ export async function abrirNovo() {
     document.getElementById('secaoParcelamentoRecorrencia').style.display = 'block';
     document.getElementById('grupoCamposParcelamento').style.display = 'none';
     document.getElementById('grupoCamposRecorrencia').style.display = 'none';
-    document.getElementById('labelValor').textContent = 'Valor';
+    const inputMinhaCota = document.getElementById('despesaMinhaCota');
+    if (inputMinhaCota) definirValorMoeda(inputMinhaCota, 0);
+    const detalheParcela = document.getElementById('despesaDetalheParcelaRateio');
+    if (detalheParcela) {
+        detalheParcela.style.display = 'none';
+        detalheParcela.textContent = '';
+    }
 
     renderizarRateios();
     abrirModal('modalDespesa');
@@ -338,8 +477,32 @@ export async function abrirEdicao(id, focarRateio = false) {
         document.getElementById('grupoDataPagamento').style.display = pago ? 'block' : 'none';
         document.getElementById('despesaDataPagamento').value = d.dataPagamento || '';
 
-        // Parcelamento e Recorrência (na edição de item isolado, esconde campos de gerar série)
-        document.getElementById('secaoParcelamentoRecorrencia').style.display = 'none';
+        // Parcelamento e Recorrência (na edição de item isolado, esconde se já for parcelada/recorrente; exibe se for avulsa)
+        const secaoParcRec = document.getElementById('secaoParcelamentoRecorrencia');
+        if (secaoParcRec) {
+            if (!d.parcelada && !d.recorrente) {
+                secaoParcRec.style.display = 'block';
+                document.getElementById('despesaParcelada').checked = false;
+                document.getElementById('despesaParcelada').disabled = false;
+                document.getElementById('despesaRecorrente').checked = false;
+                document.getElementById('despesaRecorrente').disabled = false;
+                document.getElementById('grupoCamposParcelamento').style.display = 'none';
+                document.getElementById('grupoCamposRecorrencia').style.display = 'none';
+                document.getElementById('despesaQtdParcelas').value = '2';
+                document.getElementById('despesaQtdMesesRecorrencia').value = '12';
+                const detalheParcela = document.getElementById('despesaDetalheParcelaRateio');
+                if (detalheParcela) {
+                    detalheParcela.style.display = 'none';
+                    detalheParcela.textContent = '';
+                }
+            } else {
+                secaoParcRec.style.display = 'none';
+                document.getElementById('despesaParcelada').checked = false;
+                document.getElementById('despesaRecorrente').checked = false;
+                document.getElementById('grupoCamposParcelamento').style.display = 'none';
+                document.getElementById('grupoCamposRecorrencia').style.display = 'none';
+            }
+        }
 
         // Rateio
         if (d.rateio && Array.isArray(d.rateio)) {
@@ -459,62 +622,157 @@ export function inicializarForm() {
     const dataList = document.getElementById('listaUsuariosRateio');
     if (buscaInput) {
         buscaInput.addEventListener('input', function () {
-            const termo = this.value.trim();
-            if (termo.length < 3) return;
+            const rawVal = this.value;
+            const termo = rawVal.trim();
+            if (!termo) {
+                contatoSelecionadoAtual = null;
+                return;
+            }
+
+            // 1. Verifica se o texto digitado/selecionado coincide com uma das opções já existentes na datalist
+            const optExistente = Array.from(dataList.options).find(o => o.value === termo || o.dataset.nome === termo);
+            if (optExistente) {
+                contatoSelecionadoAtual = {
+                    id: Number(optExistente.dataset.id),
+                    nome: optExistente.dataset.nome,
+                    tipo: optExistente.dataset.tipo,
+                    chavePix: optExistente.dataset.chavePix || ''
+                };
+                clearTimeout(taxaBuscaTimeout);
+                return;
+            }
+
+            // 2. Verifica se está no cache de contatos buscados
+            if (contatosBuscadosCache.has(termo.toLowerCase())) {
+                contatoSelecionadoAtual = contatosBuscadosCache.get(termo.toLowerCase());
+                clearTimeout(taxaBuscaTimeout);
+                return;
+            }
+
+            contatoSelecionadoAtual = null;
+            const termoBusca = termo.split('(')[0].trim();
+            if (termoBusca.length < 2) return;
 
             clearTimeout(taxaBuscaTimeout);
             taxaBuscaTimeout = setTimeout(async () => {
                 try {
                     const url = cfg().urlContatosRateio || cfg().urlUsuariosRateio;
-                    const contatos = await getJson(`${url}?termo=${encodeURIComponent(termo)}`);
+                    const contatos = await getJson(`${url}?termo=${encodeURIComponent(termoBusca)}`);
                     dataList.innerHTML = '';
                     contatos.forEach(c => {
                         const opt = document.createElement('option');
                         const tipoLabel = c.tipo === 'SISTEMA' ? 'Usuário' : 'Externo';
                         const info = c.email || c.telefone || '';
-                        opt.value = info ? `${c.nome} (${tipoLabel} - ${info})` : `${c.nome} (${tipoLabel})`;
+                        const displayVal = info ? `${c.nome} (${tipoLabel} - ${info})` : `${c.nome} (${tipoLabel})`;
+                        opt.value = displayVal;
                         opt.dataset.id = c.id;
                         opt.dataset.nome = c.nome;
                         opt.dataset.tipo = c.tipo;
                         opt.dataset.chavePix = c.chavePix || '';
                         dataList.appendChild(opt);
+
+                        const contatoObj = {
+                            id: c.id,
+                            nome: c.nome,
+                            tipo: c.tipo,
+                            chavePix: c.chavePix || ''
+                        };
+                        contatosBuscadosCache.set(displayVal.toLowerCase(), contatoObj);
+                        contatosBuscadosCache.set(c.nome.toLowerCase(), contatoObj);
                     });
+
+                    // Verifica se o valor atual do input casa com alguma opção retornada
+                    const matchRecente = Array.from(dataList.options).find(o => o.value === buscaInput.value.trim() || o.dataset.nome === buscaInput.value.trim());
+                    if (matchRecente) {
+                        contatoSelecionadoAtual = {
+                            id: Number(matchRecente.dataset.id),
+                            nome: matchRecente.dataset.nome,
+                            tipo: matchRecente.dataset.tipo,
+                            chavePix: matchRecente.dataset.chavePix || ''
+                        };
+                    }
                 } catch (e) {
                     console.error('Erro ao buscar contatos para rateio', e);
                 }
             }, 300);
         });
 
-        document.getElementById('btnAdicionarRateio')?.addEventListener('click', function () {
-            const val = buscaInput.value;
-            const opt = Array.from(dataList.options).find(o => o.value === val);
-            if (!opt) {
+        buscaInput.addEventListener('change', function () {
+            const val = this.value.trim();
+            if (!val) return;
+            const opt = Array.from(dataList.options).find(o => o.value === val || o.dataset.nome === val);
+            if (opt) {
+                contatoSelecionadoAtual = {
+                    id: Number(opt.dataset.id),
+                    nome: opt.dataset.nome,
+                    tipo: opt.dataset.tipo,
+                    chavePix: opt.dataset.chavePix || ''
+                };
+            }
+        });
+
+        function executarAdicionarContato() {
+            let contato = contatoSelecionadoAtual;
+            const val = buscaInput.value.trim();
+
+            if (!contato && val) {
+                const opt = Array.from(dataList.options).find(o => o.value === val || o.dataset.nome === val);
+                if (opt) {
+                    contato = {
+                        id: Number(opt.dataset.id),
+                        nome: opt.dataset.nome,
+                        tipo: opt.dataset.tipo,
+                        chavePix: opt.dataset.chavePix || ''
+                    };
+                } else if (contatosBuscadosCache.has(val.toLowerCase())) {
+                    contato = contatosBuscadosCache.get(val.toLowerCase());
+                } else {
+                    const nomeAntesParen = val.split('(')[0].trim().toLowerCase();
+                    if (contatosBuscadosCache.has(nomeAntesParen)) {
+                        contato = contatosBuscadosCache.get(nomeAntesParen);
+                    }
+                }
+            }
+
+            if (!contato) {
                 toast('Selecione um contato válido da lista.', true);
                 return;
             }
 
-            const contatoId = Number(opt.dataset.id);
-            const contatoNome = opt.dataset.nome;
-            const contatoTipo = opt.dataset.tipo;
-            const contatoChavePix = opt.dataset.chavePix;
-
-            if (itensRateio.some(i => i.id === contatoId)) {
+            if (itensRateio.some(i => i.id === contato.id)) {
                 toast('Contato já adicionado ao rateio.', true);
                 return;
             }
 
             itensRateio.push({
-                id: contatoId,
-                nome: contatoNome,
-                tipo: contatoTipo,
-                chavePix: contatoChavePix,
+                id: contato.id,
+                nome: contato.nome,
+                tipo: contato.tipo,
+                chavePix: contato.chavePix,
                 valor: 0,
                 statusPagamento: 'NAO',
                 dataAcerto: null
             });
 
             buscaInput.value = '';
-            renderizarRateios();
+            dataList.innerHTML = '';
+            contatoSelecionadoAtual = null;
+
+            const total = parseDecimal(document.getElementById('despesaValor').value);
+            if (total > 0) {
+                dividirRateioIgualmente();
+            } else {
+                renderizarRateios();
+            }
+        }
+
+        document.getElementById('btnAdicionarRateio')?.addEventListener('click', executarAdicionarContato);
+
+        buscaInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                executarAdicionarContato();
+            }
         });
     }
 
@@ -575,7 +833,12 @@ export function inicializarForm() {
                             statusPagamento: 'NAO',
                             dataAcerto: null
                         });
-                        renderizarRateios();
+                        const total = parseDecimal(document.getElementById('despesaValor').value);
+                        if (total > 0) {
+                            dividirRateioIgualmente();
+                        } else {
+                            renderizarRateios();
+                        }
                     }
 
                     if (nomeInput) nomeInput.value = '';
@@ -606,6 +869,7 @@ export function inicializarForm() {
     if (tabelaRateio) {
         tabelaRateio.addEventListener('input', function (e) {
             if (e.target.classList.contains('input-fatia-rateio')) {
+                formatarElemento(e.target);
                 const idx = Number(e.target.dataset.index);
                 itensRateio[idx].valor = parseDecimal(e.target.value);
                 atualizarMinhaCota();
@@ -627,12 +891,90 @@ export function inicializarForm() {
         });
 
         tabelaRateio.addEventListener('click', function (e) {
-            const btn = e.target.closest('.btn-remover-rateio');
-            if (btn) {
-                const idx = Number(btn.dataset.index);
+            const btnTotal = e.target.closest('.btn-total-rateio');
+            if (btnTotal) {
+                const idx = Number(btnTotal.dataset.index);
+                const total = parseDecimal(document.getElementById('despesaValor').value);
+                let outrosTotal = 0;
+                itensRateio.forEach((item, i) => {
+                    if (i !== idx) {
+                        outrosTotal += Number(item.valor) || 0;
+                    }
+                });
+                const valorAtribuir = Math.max(0, +(total - outrosTotal).toFixed(2));
+                itensRateio[idx].valor = valorAtribuir;
+                const inputFatia = tabelaRateio.querySelector(`.input-fatia-rateio[data-index="${idx}"]`);
+                if (inputFatia) {
+                    definirValorMoeda(inputFatia, valorAtribuir);
+                }
+                atualizarMinhaCota();
+                return;
+            }
+
+            const btnRemover = e.target.closest('.btn-remover-rateio');
+            if (btnRemover) {
+                const idx = Number(btnRemover.dataset.index);
                 itensRateio.splice(idx, 1);
                 renderizarRateios();
             }
+        });
+    }
+
+    // Interações com Minha Cota (Você - Titular)
+    const inputMinhaCota = document.getElementById('despesaMinhaCota');
+    if (inputMinhaCota) {
+        inputMinhaCota.addEventListener('input', function (e) {
+            formatarElemento(e.target);
+            const cotaDigitada = parseDecimal(e.target.value);
+            const total = parseDecimal(document.getElementById('despesaValor').value);
+
+            if (itensRateio.length === 1) {
+                const novaFatia = Math.max(0, +(total - cotaDigitada).toFixed(2));
+                itensRateio[0].valor = novaFatia;
+                const inputFatia = tabelaRateio?.querySelector('.input-fatia-rateio[data-index="0"]');
+                if (inputFatia) {
+                    definirValorMoeda(inputFatia, novaFatia);
+                }
+            }
+            atualizarMinhaCota();
+        });
+    }
+
+    const btnZerarMinhaCota = document.getElementById('btnZerarMinhaCota');
+    if (btnZerarMinhaCota) {
+        btnZerarMinhaCota.addEventListener('click', function () {
+            const total = parseDecimal(document.getElementById('despesaValor').value);
+            if (inputMinhaCota) {
+                definirValorMoeda(inputMinhaCota, 0);
+            }
+            if (itensRateio.length === 1) {
+                itensRateio[0].valor = total;
+                const inputFatia = tabelaRateio?.querySelector('.input-fatia-rateio[data-index="0"]');
+                if (inputFatia) {
+                    definirValorMoeda(inputFatia, total);
+                }
+            } else if (itensRateio.length > 1) {
+                const qtd = itensRateio.length;
+                const fatiaBase = Math.floor((total / qtd) * 100) / 100;
+                let acumulado = 0;
+                itensRateio.forEach((item, i) => {
+                    if (i === qtd - 1) {
+                        item.valor = +(total - acumulado).toFixed(2);
+                    } else {
+                        item.valor = fatiaBase;
+                        acumulado += fatiaBase;
+                    }
+                });
+                renderizarRateios();
+            }
+            atualizarMinhaCota();
+        });
+    }
+
+    const btnDividirIgualmente = document.getElementById('btnDividirIgualmenteRateio');
+    if (btnDividirIgualmente) {
+        btnDividirIgualmente.addEventListener('click', function () {
+            dividirRateioIgualmente();
         });
     }
 
@@ -645,6 +987,30 @@ export function inicializarForm() {
         const parcelada = document.getElementById('despesaParcelada').checked;
         const recorrente = document.getElementById('despesaRecorrente').checked;
         const valorInformado = parseDecimal(document.getElementById('despesaValor').value);
+
+        // Validação client-side de rateio
+        if (itensRateio.length > 0) {
+            const itemInvalido = itensRateio.find(item => !item.valor || Number(item.valor) <= 0);
+            if (itemInvalido) {
+                const erroRateio = document.getElementById('erroRateio');
+                if (erroRateio) {
+                    erroRateio.textContent = 'Informe um valor maior que zero para cada contato no rateio.';
+                    erroRateio.classList.add('d-block');
+                }
+                toast('Informe um valor maior que zero para cada contato no rateio.', true);
+                return;
+            }
+            const somaFatias = itensRateio.reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
+            if (somaFatias > valorInformado) {
+                const erroRateio = document.getElementById('erroRateio');
+                if (erroRateio) {
+                    erroRateio.textContent = `A soma das fatias (${formatarMoeda(somaFatias)}) não pode ser maior que o valor da despesa (${formatarMoeda(valorInformado)}).`;
+                    erroRateio.classList.add('d-block');
+                }
+                toast('A soma das fatias não pode ser maior que o valor da despesa.', true);
+                return;
+            }
+        }
 
         const body = new URLSearchParams();
         body.append('nome', document.getElementById('despesaNome').value.trim());
@@ -674,14 +1040,14 @@ export function inicializarForm() {
         const catId = document.getElementById('despesaCategoriaId').value;
         if (catId) body.append('categoriaId', catId);
 
-        if (!modoEdicao && parcelada) {
+        if (parcelada) {
             body.append('parcelada', 'true');
             body.append('recorrente', 'false');
             body.append('qtdParcelas', document.getElementById('despesaQtdParcelas').value);
             body.append('valorTotalCompra', valorInformado.toFixed(2));
             const n = parseInt(document.getElementById('despesaQtdParcelas').value, 10) || 1;
             body.append('valor', (valorInformado / n).toFixed(2));
-        } else if (!modoEdicao && recorrente) {
+        } else if (recorrente) {
             body.append('recorrente', 'true');
             body.append('parcelada', 'false');
             body.append('qtdMesesRecorrencia', document.getElementById('despesaQtdMesesRecorrencia').value || '12');

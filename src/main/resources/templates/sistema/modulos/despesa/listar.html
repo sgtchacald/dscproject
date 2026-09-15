@@ -39,11 +39,11 @@
                 <i class="ph ph-upload-simple" aria-hidden="true"></i>
                 <span th:text="#{despesa.lista.botao.importar}">Importar extrato</span>
             </button>
-            <button class="btn" id="btnDuplicarLote" disabled sec:authorize="hasAuthority('PERM_DESPESAS_INSERIR')">
+            <button class="btn" id="btnDuplicarLote" style="display: none;" sec:authorize="hasAuthority('PERM_DESPESAS_INSERIR')">
                 <i class="ph ph-copy" aria-hidden="true"></i>
                 <span th:text="#{despesa.lista.botao.duplicar}">Duplicar</span>
             </button>
-            <button class="btn" id="btnPagarLote" disabled sec:authorize="hasAuthority('PERM_DESPESAS_PAGAR')"
+            <button class="btn" id="btnPagarLote" style="display: none;" sec:authorize="hasAuthority('PERM_DESPESAS_PAGAR')"
                     data-bs-toggle="modal" data-bs-target="#modalPagamentoLote">
                 <i class="ph ph-currency-dollar" aria-hidden="true"></i>
                 <span th:text="#{despesa.lista.botao.pagarLote}">Registrar pagamento</span>
@@ -58,11 +58,11 @@
 </div>
 
 <section layout:fragment="corpo">
-    <div class="row row-cards mb-3" id="cardTotalizadorDespesa" style="display: none;">
-        <div class="col-sm-6 col-lg-4">
-            <div class="card card-sm">
-                <div class="card-body">
-                    <div class="row align-items-center">
+    <div class="row row-cards mb-3 align-items-stretch" id="cardTotalizadorDespesa" style="display: none;">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="row align-items-center w-100 g-2">
                         <div class="col-auto">
                             <span class="bg-green text-white avatar">
                                 <i class="ph ph-check-circle" aria-hidden="true"></i>
@@ -70,16 +70,16 @@
                         </div>
                         <div class="col">
                             <div class="font-weight-medium" th:text="#{despesa.totalizador.pago}">Pago</div>
-                            <div class="text-secondary" id="totalDespesaPago">R$ 0,00</div>
+                            <div class="text-secondary fw-bold" id="totalDespesaPago">R$ 0,00</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-4">
-            <div class="card card-sm">
-                <div class="card-body">
-                    <div class="row align-items-center">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="row align-items-center w-100 g-2">
                         <div class="col-auto">
                             <span class="bg-yellow text-white avatar">
                                 <i class="ph ph-clock" aria-hidden="true"></i>
@@ -87,16 +87,16 @@
                         </div>
                         <div class="col">
                             <div class="font-weight-medium" th:text="#{despesa.totalizador.pendente}">Pendente</div>
-                            <div class="text-secondary" id="totalDespesaPendente">R$ 0,00</div>
+                            <div class="text-secondary fw-bold" id="totalDespesaPendente">R$ 0,00</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-4">
-            <div class="card card-sm">
-                <div class="card-body">
-                    <div class="row align-items-center">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="row align-items-center w-100 g-2">
                         <div class="col-auto">
                             <span class="bg-primary text-white avatar">
                                 <i class="ph ph-money" aria-hidden="true"></i>
@@ -105,6 +105,25 @@
                         <div class="col">
                             <div class="font-weight-medium" th:text="#{despesa.totalizador.total}">Total Geral</div>
                             <div class="text-secondary fw-bold" id="totalDespesaGeral">R$ 0,00</div>
+                            <div class="text-muted small mt-1" id="totalDespesaGeralSubtitulo" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="row align-items-center w-100 g-2">
+                        <div class="col-auto">
+                            <span class="bg-teal text-white avatar">
+                                <i class="ph ph-wallet" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{despesa.totalizador.saldo-restante}">Receita Restante</div>
+                            <div class="text-secondary fw-bold" id="totalDespesaSaldoRestante">R$ 0,00</div>
+                            <div class="text-muted small mt-1" id="totalDespesaSaldoRestanteSubtitulo" style="display: none;"></div>
                         </div>
                     </div>
                 </div>
