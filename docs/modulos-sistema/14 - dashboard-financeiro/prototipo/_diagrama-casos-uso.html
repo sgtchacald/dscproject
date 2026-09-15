@@ -1,0 +1,60 @@
+<title>Casos de Uso — Dashboard Financeiro</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f7f9fb;font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2430}
+  #diagram{width:980px;padding:26px 30px 30px}
+  h1{font-size:15px;margin:0 0 16px}
+  svg{display:block;width:920px;height:460px}
+  .frame{fill:none;stroke:#d8dee6}
+  .frame-t{fill:#69747f;font-size:12px;font-weight:700}
+  .uc{fill:#fff;stroke:#1f6fd0}
+  .uc-t{fill:#1b2430;font-size:11px}
+  .lk{stroke:#69747f;stroke-width:1.2}
+  .act-t{fill:#1b2430;font-size:11px;font-weight:600}
+  .foot{fill:#69747f;font-size:10px}
+</style>
+<div id="diagram">
+  <h1>Casos de Uso — Dashboard Financeiro</h1>
+  <svg viewBox="0 0 920 460">
+    <rect class="frame" x="290" y="30" width="500" height="380" rx="2"/>
+    <text class="frame-t" x="310" y="52">Dashboard Financeiro (tipo FINANCEIRO)</text>
+
+    <!-- ator -->
+    <g transform="translate(100,200)">
+      <circle cx="18" cy="10" r="9" fill="none" stroke="#1b2430"/>
+      <line x1="18" y1="19" x2="18" y2="44" stroke="#1b2430"/>
+      <line x1="4" y1="28" x2="32" y2="28" stroke="#1b2430"/>
+      <line x1="18" y1="44" x2="6" y2="64" stroke="#1b2430"/>
+      <line x1="18" y1="44" x2="30" y2="64" stroke="#1b2430"/>
+      <text class="act-t" x="18" y="82" text-anchor="middle">Usuário autenticado</text>
+      <text class="act-t" x="18" y="96" text-anchor="middle">(PERF01 / PERF02)</text>
+      <text class="act-t" x="18" y="110" text-anchor="middle" fill="#69747f">com PERM01</text>
+    </g>
+
+    <!-- ligações -->
+    <g class="lk">
+      <line x1="130" y1="230" x2="440" y2="100"/>
+      <line x1="130" y1="230" x2="440" y2="230"/>
+      <line x1="130" y1="230" x2="440" y2="350"/>
+    </g>
+
+    <!-- casos de uso -->
+    <g>
+      <ellipse class="uc" cx="580" cy="100" rx="180" ry="34"/>
+      <text class="uc-t" x="580" y="92" text-anchor="middle">CAUS01 — Visualizar Dashboard</text>
+      <text class="uc-t" x="580" y="106" text-anchor="middle">Financeiro</text>
+      <text class="uc-t" x="580" y="120" text-anchor="middle" fill="#69747f">(8 cards, competência mes_atual-1)</text>
+
+      <ellipse class="uc" cx="580" cy="230" rx="160" ry="30"/>
+      <text class="uc-t" x="580" y="227" text-anchor="middle">CAUS02 — Filtrar por</text>
+      <text class="uc-t" x="580" y="241" text-anchor="middle">Competência</text>
+
+      <ellipse class="uc" cx="580" cy="350" rx="170" ry="32"/>
+      <text class="uc-t" x="580" y="343" text-anchor="middle">CAUS03 — Consultar Evolução</text>
+      <text class="uc-t" x="580" y="357" text-anchor="middle">Anual/Mensal</text>
+    </g>
+
+    <text class="foot" x="580" y="430" text-anchor="middle">Escopo row-level em todos os casos (RN01) — inclusive para o ADMIN. Conteúdo delegado pelo documento 13.</text>
+  </svg>
+</div>

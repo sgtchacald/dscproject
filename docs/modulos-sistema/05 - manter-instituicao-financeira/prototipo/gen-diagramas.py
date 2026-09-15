@@ -403,7 +403,7 @@ for cid in [ids[0], ids[1], ids[2], ids[3], ids[4], ids[6], ids[7], ids[8]]:
 u.link(usr, ids[5])
 u.link(sis, ids[9])
 u.rect(330, 866, 540, 24,
-       "CAUS06 exige só autenticação (EDP07). CAUS10 é contexto — regra no documento 15.",
+       "CAUS06 exige só autenticação (EDP07). CAUS10 é contexto — regra no documento 16.",
        f"text;html=1;align=center;fontFamily=Helvetica;fontSize=10;fontColor={MUT};")
 xml3 = '<mxfile host="app.diagrams.net">' + u.page() + '</mxfile>'
 M.parseString(xml3)

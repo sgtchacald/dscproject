@@ -68,7 +68,7 @@ Este documento cobre **apenas o cadastro do cartão**:
 - **Fatura de cartão** — ciclo de vida (`ABERTA` → `FECHADA` → `PAGA` / `PAGA_PARCIAL`), fechamento, pagamento e o valor parcial da fatura em aberto. Tudo isso é o documento `11 - manter-fatura-cartao`. Aqui, apenas os campos `CACR_DIA_FECHAMENTO` e `CACR_DIA_VENCIMENTO`, que a geração da fatura do documento `11` consome.
 - CRUD de Despesa, que **consome** o cartão (`CACR_ID`) — documento `09`.
 - CRUD de Conta, que fornece o combobox de conta de débito — documento `06`.
-- Alerta de estouro de limite, projeção de fatura e "limite disponível" — cálculos do Dashboard (documento `13`) e da fatura (documento `11`). Ver Seção 17.
+- Alerta de estouro de limite, projeção de fatura e "limite disponível" — cálculos do Dashboard (documento `14`) e da fatura (documento `11`). Ver Seção 17.
 - Cartão de débito / cartão de sistema: não existem. `CARTOES_CREDITO` só guarda cartão de crédito, sempre de um usuário.
 
 **Perfis com acesso:** [PERF01](#perf01) (ADMIN) e [PERF02](#perf02) (USER). A tela não é administrativa — cada perfil enxerga e mantém **apenas os próprios cartões** ([RN02](#rn02)). O ADMIN não tem visão consolidada dos cartões de outros usuários.
@@ -89,7 +89,7 @@ Este documento cobre **apenas o cadastro do cartão**:
 | 8 | **Final do cartão.** `CACR_FINAL_CARTAO` é `CHAR(4)` opcional — os últimos 4 dígitos, só para o usuário reconhecer o cartão na lista. Quando informado, tem de ser exatamente 4 dígitos numéricos ([RN05](#rn05)). Nunca se guarda o número completo do cartão. | [RN05](#rn05) |
 | 9 | **Exclusão travada por vínculo.** Excluir um cartão referenciado por alguma fatura (`FATURAS_CARTAO`) ou por alguma despesa (`DESPESAS`) não excluída é **bloqueado** ([RN08](#rn08)); a alternativa é **desativar** o cartão. Mesma lógica da [RN06 do documento `04 - manter-categoria`](../04%20-%20manter-categoria/documento-analise-manter-categoria.md#rn06). O comportamento sobre despesas é parametrizável ([Seção 12](#12-parâmetros-de-sistema)); sobre faturas o bloqueio é duro, porque `FATURAS_CARTAO.CACR_ID` é `NOT NULL`. | [RN08](#rn08), [QUADRO_DESCRITIVO_8](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-8) |
 | 10 | **Desativação ≠ exclusão.** Um cartão inativo (`CACR_FL_ATIVO = FALSE`) some do combobox de **novas** despesas ([EDP07](#edp07)), mas continua válido nas despesas e faturas que já o usam e nos relatórios. | [RN09](#rn09) |
-| 11 | **Limite é informativo nesta versão.** `CACR_LIMITE` é guardado e exibido, mas a tela não calcula "limite disponível" nem alerta quando as despesas do ciclo passam do limite — isso depende da fatura (documento `11`) e do Dashboard (documento `13`). Ver Seção 17. | Seção 17 |
+| 11 | **Limite é informativo nesta versão.** `CACR_LIMITE` é guardado e exibido, mas a tela não calcula "limite disponível" nem alerta quando as despesas do ciclo passam do limite — isso depende da fatura (documento `11`) e do Dashboard (documento `14`). Ver Seção 17. | Seção 17 |
 | 12 | **Grid client-side.** A lista de cartões de um usuário é curta (raramente mais que uma dúzia). A tela carrega tudo uma vez e pagina/ordena/filtra no navegador (DataTables). | [RNF04](#rnf04) |
 | 13 | **Auditoria.** `CARTOES_CREDITO` é auditada via Hibernate Envers (`@Audited`), conforme o Documento 0. Criação, edição, desativação e exclusão lógica ficam registradas (quem, quando, o quê). | [RNF02](#rnf02) |
 | 14 | **Mapeamento JPA.** `CartaoCredito` estende `AbstractAuditoria` (Documento 0, Seção 7.5), com `@ManyToOne Conta` (opcional) e `@ManyToOne Usuario` (`@JsonIgnore`). A ordem de criação da tabela é o grupo 4 do `V1__init.sql` (Documento 0, Seção 6.4). | Documento 0, Seções 6.4 e 7.5 |
@@ -318,7 +318,7 @@ Todos os endpoints deste documento resolvem o `USU_ID` do usuário autenticado a
 | <a id="rn09"></a>RN09 | Cartão inativo (`CACR_FL_ATIVO = FALSE`): não é devolvido por [EDP07](#edp07) e não pode ser escolhido em novas despesas. As despesas e faturas que já o referenciam permanecem inalteradas, e ele continua contando nos relatórios. Reativar é apenas voltar `CACR_FL_ATIVO = TRUE` por [EDP05](#edp05). |
 | <a id="rn10"></a>RN10 | Editar `CACR_DIA_FECHAMENTO` ou `CACR_DIA_VENCIMENTO` de um cartão que já possui faturas ([EDP05](#edp05)) é **permitido**; os novos valores passam a valer para as faturas geradas **a partir da alteração** (documento `11`). As faturas já existentes não são recalculadas nem têm as datas reescritas. Se essa edição deve ser **travada** quando há faturas é decisão da Seção 17. |
 | <a id="rn11"></a>RN11 | Exclusão de cartão é sempre **lógica** (`audit_data_exclusao` / `audit_excluido_por`), nunca física — o histórico de despesas e faturas continua referenciável. |
-| <a id="rn12"></a>RN12 | `CACR_LIMITE` é um dado informativo nesta versão. O serviço não valida o valor das despesas do ciclo contra o limite, não calcula "limite disponível" e não emite alerta de estouro — isso depende da fatura (documento `11`) e do Dashboard (documento `13`). Ver a decisão em aberto na Seção 17. |
+| <a id="rn12"></a>RN12 | `CACR_LIMITE` é um dado informativo nesta versão. O serviço não valida o valor das despesas do ciclo contra o limite, não calcula "limite disponível" e não emite alerta de estouro — isso depende da fatura (documento `11`) e do Dashboard (documento `14`). Ver a decisão em aberto na Seção 17. |
 
 ---
 
@@ -559,7 +559,7 @@ Descrição: Levantamento a partir do Documento 0 (Observação 15; [QUADRO_DESC
 - Editar `CACR_DIA_FECHAMENTO` / `CACR_DIA_VENCIMENTO` depois de já existirem faturas: permitir e valer da próxima fatura ([RN10](#rn10) atual), ou travar a edição enquanto houver faturas?
 - Se informar o dia de fechamento deve obrigar a informar o dia de vencimento (e vice-versa), ou os dois seguem independentes e opcionais.
 - Descrição do cartão: única entre os cartões não excluídos do mesmo usuário, ou pode repetir?
-- `CACR_LIMITE`: fica só informativo (decisão atual — [RN12](#rn12)), ou a tela / o Dashboard passam a alertar quando as despesas do ciclo ultrapassam o limite? (provável fora de escopo — trataria no documento `11` ou `13`.)
+- `CACR_LIMITE`: fica só informativo (decisão atual — [RN12](#rn12)), ou a tela / o Dashboard passam a alertar quando as despesas do ciclo ultrapassam o limite? (provável fora de escopo — trataria no documento `11` ou `14`.)
 - Exibir "fatura atual" / "limite disponível" nesta tela (read-only, calculado a partir das despesas do ciclo), ou deixar 100% para o documento `11`?
 - `CARTAO_EXCLUSAO_BLOQUEIA_EM_USO`: manter como parâmetro ou fixar o bloqueio (sobre despesas) em regra dura, já que sobre faturas ele é sempre duro?
 - Necessidade de uma tela/modal de histórico de alterações do cartão (Envers) nesta versão, ou basta a auditoria em banco.
