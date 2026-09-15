@@ -101,9 +101,9 @@ A maioria dos cards é filtrada por um **filtro global de competência** no topo
 |---|---|---|---|
 | <a id="rf01"></a>RF01 | O sistema deve exibir o saldo consolidado das contas do usuário autenticado onde "considera no saldo geral" está marcado, independentemente da competência filtrada. | Alta | Em análise |
 | <a id="rf02"></a>RF02 | O sistema deve exibir o saldo atual de cada conta ativa do usuário autenticado, independentemente da competência filtrada. | Alta | Em análise |
-| <a id="rf03"></a>RF03 | O sistema deve exibir, para a competência filtrada, o comparativo entre o total de receitas e o total de despesas do usuário autenticado. | Alta | Em análise |
-| <a id="rf04"></a>RF04 | O sistema deve exibir, para a competência filtrada, as despesas do usuário autenticado agrupadas por categoria, em gráfico donut. | Alta | Em análise |
-| <a id="rf05"></a>RF05 | O sistema deve exibir, para a competência filtrada, as despesas do usuário autenticado agrupadas por status de pagamento (pagas, pendentes, não se aplica). | Alta | Em análise |
+| <a id="rf03"></a>RF03 | O sistema deve exibir, para a competência filtrada, o comparativo entre o total de receitas e a cota líquida de despesas do usuário autenticado (`DESP_VALOR` descontado o rateio transferido a contatos). | Alta | Analisado |
+| <a id="rf04"></a>RF04 | O sistema deve exibir, para a competência filtrada, a cota líquida de despesas do usuário autenticado agrupada por categoria, em gráfico donut. | Alta | Analisado |
+| <a id="rf05"></a>RF05 | O sistema deve exibir, para a competência filtrada, a cota líquida de despesas do usuário autenticado agrupada por status de pagamento (pagas, pendentes, não se aplica). | Alta | Analisado |
 | <a id="rf06"></a>RF06 | O sistema deve exibir, para a competência filtrada, o total rateado com cada contato do usuário autenticado, somando as fatias de `DESPESAS_USUARIO`. | Média | Em análise |
 | <a id="rf07"></a>RF07 | O sistema deve exibir, para cada cartão de crédito ativo do usuário autenticado, o valor usado e o valor disponível de limite numa mesma barra segmentada, independentemente da competência filtrada. | Alta | Em análise |
 | <a id="rf08"></a>RF08 | Quando o limite do cartão não estiver definido, o sistema deve exibir somente o valor usado, sem barra nem percentual. | Média | Em análise |
