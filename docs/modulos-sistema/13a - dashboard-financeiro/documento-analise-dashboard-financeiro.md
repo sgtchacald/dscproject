@@ -221,7 +221,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 ### <a id="quadro-descritivo-4"></a>7.4 Card: Receitas × Despesas do Mês — QUADRO_DESCRITIVO_4
 
-> OBSERVAÇÕES: Card 3. Fonte: `RECEITAS` e `DESPESAS` do usuário autenticado na competência filtrada. Comparativo em duas colunas/barras. Consulta: [C3](#c3).
+> OBSERVAÇÕES: Card 3. Fonte: `RECEITAS` e `DESPESAS` (cota líquida do titular, descontado o rateio) do usuário autenticado na competência filtrada. Comparativo em duas colunas/barras. Consulta: [C3](#c3).
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
@@ -230,7 +230,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 ### <a id="quadro-descritivo-5"></a>7.5 Card: Despesas por Categoria — QUADRO_DESCRITIVO_5
 
-> OBSERVAÇÕES: Card 4. Fonte: `DESPESAS` do usuário autenticado na competência filtrada, agrupadas por `CATEGORIAS`. Consulta: [C4](#c4).
+> OBSERVAÇÕES: Card 4. Fonte: `DESPESAS` (cota líquida do titular, descontado o rateio) do usuário autenticado na competência filtrada, agrupadas por `CATEGORIAS`. Consulta: [C4](#c4).
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
