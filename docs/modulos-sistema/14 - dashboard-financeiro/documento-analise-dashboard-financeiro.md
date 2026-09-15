@@ -2,8 +2,8 @@
 ## Módulo Dashboard — USER / ADMIN — Dashboard Financeiro
 
 **Gerado em:** 14/09/2026
-**Versão:** 1.0
-**Status:** Em análise
+**Versão:** 1.2
+**Status:** Analisado
 **Projeto:** `dscproject-spring-mvc` (geração 2)
 
 ---
@@ -26,6 +26,8 @@
 | Versão | Data | Analista Responsável | Descrição da Alteração |
 |---|---|---|---|
 | 1.0 | 14/09/2026 | Diego dos Santos Cordeiro | Criação do documento. Primeiro dashboard concreto, plugado na mecânica de orquestração do documento `13 - dashboard` como o tipo `FINANCEIRO`. Tela somente leitura com 8 cards sobre dados já existentes (`CONTAS`, `RECEITAS`, `DESPESAS`, `DESPESAS_USUARIO`, `CATEGORIAS`, `CARTOES_CREDITO`, `CONTATOS`): saldo consolidado, saldo por conta, receitas × despesas do mês, despesas por categoria, pagas × pendentes, total rateado por pessoa, limite usado × disponível por cartão e evolução anual/mensal de receitas × despesas. Filtro global de competência (`YearMonth` único, padrão `mes_atual - 1`) aplicado à maioria dos cards, com contrato uniforme de parâmetro mesmo nos cards que o ignoram. Gráficos em ApexCharts, dados embutidos no HTML pelo servidor — sem AJAX. Nova permissão `DASHBOARD_VISUALIZAR`. Não introduz tabela nova nem faz `ALTER TABLE`. |
+| 1.1 | 15/09/2026 | Diego dos Santos Cordeiro | Confirmação das 5 pendências da Seção 17: Cards 3/4/5 passam a somar a cota líquida do titular (`valorUsuario`, descontado o rateio), no critério da [RN30 do documento 09](../09%20-%20manter-despesa/documento-analise-manter-despesa.md#rn30) ([RN04](#rn04)–[RN06](#rn06), [C3](#c3)–[C5](#c5)); Card 2 ganha badge "Não entra no saldo geral" nas contas fora do saldo consolidado ([RN09](#rn09), [QUADRO_DESCRITIVO_3](#quadro-descritivo-3)); Card 7 ganha faixas de cor na barra de limite (verde/amarelo/vermelho) e destaque de limite estourado ([RN11](#rn11), [QUADRO_DESCRITIVO_8](#quadro-descritivo-8)); Card 8 usa o ano do lançamento mais recente como `anoFim` padrão quando não há lançamento no ano corrente ([RN13](#rn13)); Card 6 pagina a partir de 5 contatos com rateio na competência ([RN07](#rn07), [RT04](#rt04)). Corpo do documento fechado — Status avança para `Analisado` (D-CICLO-01). |
+| 1.2 | 15/09/2026 | Diego dos Santos Cordeiro | Protótipo navegável (8 cards, 4 estados: dados normais, estado vazio, limite estourado, evolução anual), DER do subconjunto e diagrama de casos de uso (Seções 4, 6.1 e 7), no padrão Tabler Core 1.4.0 + Phosphor Icons 2.1.2 do design system real do projeto. Gráficos mockados em CSS/SVG (sem ApexCharts real). |
 
 ---
 
@@ -61,7 +63,7 @@ A maioria dos cards é filtrada por um **filtro global de competência** no topo
 **Não contempla:**
 - Qualquer **escrita** de dado financeiro — cadastro, edição e exclusão de conta, receita, despesa, cartão ou contato continuam nos documentos `06`, `07`, `08`, `09` e `16`.
 - O **ciclo de fatura de cartão** (fechamento, vencimento) — documento `11 - manter-fatura-cartao`, hoje "A escrever". O card de limite ([Card 7](#quadro-descritivo-8)) ignora esse ciclo nesta versão (ver [RN12](#rn12) e a referência cruzada ao documento `07`, Observação 11).
-- **CRUD de Contatos** — o card de rateio por pessoa ([Card 6](#quadro-descritivo-7)) lê a tabela `CONTATOS` diretamente; não depende do documento `16 - manter-contato` estar implementado.
+- **CRUD de Contatos** — o card de rateio por pessoa ([Card 6](#quadro-descritivo-7)) lê a tabela `CONTATOS` diretamente; não depende do documento `17 - manter-contato` estar implementado.
 - A **mecânica de seleção de tipo de dashboard** (catálogo, seletor condicional, roteamento) — documento `13 - dashboard`.
 
 **Perfis com acesso:** [PERF01](#perf01) (ADMIN) e [PERF02](#perf02) (USER), mediante [PERM01](#perm01) (`DASHBOARD_VISUALIZAR`). Cada perfil vê **apenas os próprios dados** ([RN01](#rn01)).
@@ -81,7 +83,7 @@ A maioria dos cards é filtrada por um **filtro global de competência** no topo
 | 7 | **Gráficos em ApexCharts.** O tema Tabler, já usado no projeto, tem seus exemplos de dashboard construídos sobre ApexCharts. Verificar se a dependência já está disponível como webjar no `pom.xml` — hoje não está presente no projeto. **[Requer código]** | [RNF03](#rnf03) |
 | 8 | **Limite do cartão é informativo quando nulo.** Quando `CACR_LIMITE` é nulo (campo opcional, [documento 07](../07%20-%20manter-cartao-credito/documento-analise-manter-cartao-credito.md)), o [Card 7](#quadro-descritivo-8) exibe somente o valor gasto, sem barra nem percentual — não há limite contra o qual calcular "disponível". | [RN11](#rn11) |
 | 9 | **Limite disponível ignora o ciclo de fatura.** O cálculo do [Card 7](#quadro-descritivo-8) usa despesas com status de pagamento pendente vinculadas ao cartão, sem considerar dia de fechamento/vencimento — essa é exatamente a conta que o [documento 07 (Observação 11)](../07%20-%20manter-cartao-credito/documento-analise-manter-cartao-credito.md#2-observações) já registrou como pendente e delegada ao Dashboard: "a tela não calcula limite disponível... isso depende da fatura (11) e do Dashboard (13)". O ciclo de fechamento fica para quando o documento `11 - manter-fatura-cartao` existir. | [RN10](#rn10), [RN12](#rn12) |
-| 10 | **Card 6 não depende do CRUD de Contatos.** O total rateado por pessoa lê `CONTATOS` e `DESPESAS_USUARIO` diretamente — ambas já existem no Documento 0 ([QUADRO_DESCRITIVO_29](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-29) e [_11](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-11)), consumidas pelo rateio do [documento 09](../09%20-%20manter-despesa/documento-analise-manter-despesa.md). O CRUD de manutenção da agenda de contatos ([documento 16](../16%20-%20manter-contato)) pode estar implementado ou não; o card funciona de qualquer forma. | Documento `09`, Documento `16` |
+| 10 | **Card 6 não depende do CRUD de Contatos.** O total rateado por pessoa lê `CONTATOS` e `DESPESAS_USUARIO` diretamente — ambas já existem no Documento 0 ([QUADRO_DESCRITIVO_29](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-29) e [_11](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-11)), consumidas pelo rateio do [documento 09](../09%20-%20manter-despesa/documento-analise-manter-despesa.md). O CRUD de manutenção da agenda de contatos ([documento 17](../17%20-%20manter-contato)) pode estar implementado ou não; o card funciona de qualquer forma. | Documento `09`, Documento `17` |
 | 11 | **Card 8 tem filtro próprio, independente do filtro global.** "Evolução: Receitas × Despesas" usa dois seletores de ano (`anoInicio`, `anoFim`), com opções calculadas dinamicamente a partir dos anos com registro de receita ou despesa do usuário — não é um intervalo fixo. Mudar esse filtro também recarrega a página inteira via GET, sem afetar o filtro de competência global dos demais cards. | [RN13](#rn13), [RN14](#rn14) |
 | 12 | **Granularidade condicional do Card 8.** Quando `anoInicio == anoFim`, o gráfico é mensal (12 pontos, Jan a Dez daquele ano); quando `anoInicio != anoFim`, o gráfico é anual (1 ponto por ano no intervalo). Mesmo espírito do totalizador condicional por competência única da [RN30 do documento 09](../09%20-%20manter-despesa/documento-analise-manter-despesa.md#rn30) — a condição aqui é sobre o intervalo de anos, não sobre competência única. | [RN14](#rn14) |
 | 13 | **Estados vazios.** Todo card exibe uma mensagem amigável de "sem dados no período" quando não há dado para a competência/intervalo de anos filtrado, em vez de um gráfico ou valor vazio/zerado sem contexto. | [RN15](#rn15) |
@@ -131,7 +133,7 @@ A maioria dos cards é filtrada por um **filtro global de competência** no topo
 
 ## 4. Casos de Uso
 
-Diagrama de Casos de Uso: a gerar quando solicitado (ver Seção 18 — Anexos).
+![Casos de Uso - Dashboard Financeiro](images/dashboard-financeiro-casos-uso.png)
 
 | CÓDIGO | NOME | ATOR PRINCIPAL | DESCRIÇÃO |
 |---|---|---|---|
@@ -175,7 +177,9 @@ Toda a estrutura está no **Documento 0** (`00 - analise-geral`). Este documento
 
 ### 6.1 Diagrama ER
 
-Não aplicável — nenhuma tabela nova. Ver o DER do Documento 0 para o modelo completo.
+Subconjunto do DER do Documento 0 consumido pelos 8 cards — ver o DER completo no Documento 0.
+
+![DER - Dashboard Financeiro](images/dashboard-financeiro-der.png)
 
 ### 6.2 Auditoria de Tabelas
 
@@ -189,7 +193,23 @@ Nenhuma. Todos os agrupamentos e somatórios são consultas de leitura na camada
 
 ## 7. Protótipos de Interface
 
-Protótipo navegável ainda não gerado nesta versão — solicitar quando necessário (ver Seção 18 — Anexos). Os números em destaque nas telas, quando o protótipo existir, corresponderão aos IDs dos itens do respectivo QUADRO_DESCRITIVO.
+Protótipo navegável e diagramas: `prototipo/dashboard-financeiro-prototipo.html`, `prototipo/_diagrama-der.html` e `prototipo/_diagrama-casos-uso.html`. Os números em destaque nas telas, no formato **N.M**, correspondem ao item M do QUADRO_DESCRITIVO_N — os 8 cards convivem numa única tela (ao contrário de módulos com telas/modais alternados), então o número do quadro entra no marcador para não colidir o "1" de um card com o "1" de outro.
+
+**Dashboard com dados normais** (competência `08/2026`, cartões nas faixas verde/amarela, Card 8 em modo mensal):
+
+![Dashboard Financeiro - dados normais](images/df-tela-1.png)
+
+**Estado vazio** (competência `01/2020`, sem lançamento — Cards 3, 4, 5 e 6 exibem a mensagem de ausência de dados; Cards 1, 2, 7 e 8 não usam a competência global e continuam com dado, por contrato — [Observação 4](#2-observações)):
+
+![Dashboard Financeiro - estado vazio](images/df-tela-2.png)
+
+**Limite de cartão estourado** (Card 7 — barra 100% vermelha e "Disponível" negativo, [RN11](#rn11)):
+
+![Dashboard Financeiro - limite de cartão estourado](images/df-tela-3.png)
+
+**Evolução em modo anual** (Card 8 — `anoInicio=2024`, `anoFim=2026`, [RN14](#rn14)):
+
+![Dashboard Financeiro - evolução em modo anual](images/df-tela-4.png)
 
 ### <a id="quadro-descritivo-1"></a>7.1 Tela: Dashboard Financeiro (Estrutura Geral) — QUADRO_DESCRITIVO_1
 
@@ -248,7 +268,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 ### <a id="quadro-descritivo-7"></a>7.7 Card: Total Rateado no Mês, por Pessoa — QUADRO_DESCRITIVO_7
 
-> OBSERVAÇÕES: Card 6. Fonte: `DESPESAS_USUARIO` (rateio) das despesas do usuário autenticado na competência filtrada, agrupadas por `CONTATOS`. Não depende do documento `16` estar implementado ([Observação 10](#2-observações)). Pagina a partir de 5 contatos com rateio na competência ([RT04](#rt04), [Observação 17](#2-observações)). Consulta: [C6](#c6).
+> OBSERVAÇÕES: Card 6. Fonte: `DESPESAS_USUARIO` (rateio) das despesas do usuário autenticado na competência filtrada, agrupadas por `CONTATOS`. Não depende do documento `17` estar implementado ([Observação 10](#2-observações)). Pagina a partir de 5 contatos com rateio na competência ([RT04](#rt04), [Observação 17](#2-observações)). Consulta: [C6](#c6).
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
@@ -321,7 +341,7 @@ Este dashboard não define endpoint próprio — reaproveita [EDP01 do documento
 | <a id="rn04"></a>RN04 | **Card 3 — Receitas × Despesas do mês.** Soma `RECE_VALOR` de todas as `RECEITAS` do usuário na competência filtrada (`RECE_COMPETENCIA = competencia`) e soma a **cota líquida do titular** de todas as `DESPESAS` do usuário na mesma competência (`DESP_COMPETENCIA = competencia`): para cada despesa, `DESP_VALOR` menos a soma de `DEPU_VALOR` das suas linhas em `DESPESAS_USUARIO` (mesmo critério da [RN30 do documento 09](../09%20-%20manter-despesa/documento-analise-manter-despesa.md#rn30), campo `valorUsuario`) — [Observação 6](#2-observações). Executa [C3](#c3). |
 | <a id="rn05"></a>RN05 | **Card 4 — Despesas por categoria.** Agrupa a soma da **cota líquida do titular** das despesas do usuário na competência filtrada (mesmo cálculo da [RN04](#rn04)) por `CATE_ID`; despesas com `CATE_ID` nulo entram no grupo "Sem categoria". Executa [C4](#c4). |
 | <a id="rn06"></a>RN06 | **Card 5 — Pagas × pendentes.** Agrupa a soma da **cota líquida do titular** das despesas do usuário na competência filtrada (mesmo cálculo da [RN04](#rn04)) por `DESP_IND_STATUS_PAGAMENTO` (`SIM` = Pagas, `NAO` = Pendentes, `NAO_SE_APLICA` = Não se aplica; nulo é tratado como `NAO_SE_APLICA`). Executa [C5](#c5). |
-| <a id="rn07"></a>RN07 | **Card 6 — Total rateado por pessoa.** Soma `DEPU_VALOR` das linhas de `DESPESAS_USUARIO` cuja despesa (`DESP_ID`) pertence ao usuário autenticado e está na competência filtrada, agrupada por `CONT_ID`/`CONT_NOME` (via `CONTATOS`). Executa [C6](#c6). Independe do documento `16` estar implementado ([Observação 10](#2-observações)). A partir de 5 contatos com rateio na competência, a lista pagina ([RT04](#rt04), [Observação 17](#2-observações)). |
+| <a id="rn07"></a>RN07 | **Card 6 — Total rateado por pessoa.** Soma `DEPU_VALOR` das linhas de `DESPESAS_USUARIO` cuja despesa (`DESP_ID`) pertence ao usuário autenticado e está na competência filtrada, agrupada por `CONT_ID`/`CONT_NOME` (via `CONTATOS`). Executa [C6](#c6). Independe do documento `17` estar implementado ([Observação 10](#2-observações)). A partir de 5 contatos com rateio na competência, a lista pagina ([RT04](#rt04), [Observação 17](#2-observações)). |
 | <a id="rn08"></a>RN08 | **Card 1 — Saldo consolidado.** Soma `CTA_SALDO` das `CONTAS` ativas e não excluídas do usuário autenticado com `CTA_FL_CONSIDERA_SALDO = TRUE`. Ignora a competência filtrada, recebida por contrato ([RN03](#rn03)). Executa [C1](#c1). |
 | <a id="rn09"></a>RN09 | **Card 2 — Saldo por conta bancária.** Lista **todas** as `CONTAS` ativas e não excluídas do usuário autenticado com o respectivo `CTA_SALDO`, ordenadas por descrição, independentemente de `CTA_FL_CONSIDERA_SALDO` — diferente do Card 1 ([RN08](#rn08)), que filtra por essa flag. A linha de cada conta com `CTA_FL_CONSIDERA_SALDO = FALSE` exibe o badge "Não entra no saldo geral" ([ID2 do QUADRO_DESCRITIVO_3](#qdd3-2), [Observação 16](#2-observações)). Ignora a competência filtrada, recebida por contrato ([RN03](#rn03)). Executa [C2](#c2). |
 | <a id="rn10"></a>RN10 | **Card 7 — Cálculo do usado.** Para cada cartão ativo e não excluído do usuário (`CACR_FL_ATIVO = TRUE`), o "usado" é a soma de `DESP_VALOR` das despesas com `CACR_ID` daquele cartão e `DESP_IND_STATUS_PAGAMENTO = 'NAO'` (pendentes), sem filtro de competência e sem distinção de origem (inclui despesas de importação de fatura/extrato do documento `09`). Ignora o ciclo de fechamento/vencimento do cartão ([Observação 9](#2-observações), [documento 07 Observação 11](../07%20-%20manter-cartao-credito/documento-analise-manter-cartao-credito.md#2-observações)). Executa [C7](#c7). |
@@ -353,12 +373,12 @@ Todas as consultas recebem o `:usuId` do usuário autenticado e o aplicam no `WH
 |---|---|
 | <a id="c1"></a>C1 | Card 1 — saldo consolidado (RN08).<br>`SELECT COALESCE(SUM(c.CTA_SALDO), 0) AS saldoConsolidado`<br>`FROM CONTAS c`<br>`WHERE c.USU_ID = :usuId`<br>`  AND c.CTA_FL_CONSIDERA_SALDO = TRUE`<br>`  AND c.CTA_FL_ATIVO = TRUE`<br>`  AND c.audit_data_exclusao IS NULL;` |
 | <a id="c2"></a>C2 | Card 2 — saldo por conta, com a flag do badge (RN09).<br>`SELECT c.CTA_ID, c.CTA_DESCRICAO, c.CTA_TIPO, c.CTA_SALDO, c.CTA_FL_CONSIDERA_SALDO`<br>`FROM CONTAS c`<br>`WHERE c.USU_ID = :usuId`<br>`  AND c.CTA_FL_ATIVO = TRUE`<br>`  AND c.audit_data_exclusao IS NULL`<br>`ORDER BY c.CTA_DESCRICAO ASC;` |
-| <a id="c3"></a>C3 | Card 3 — receitas × despesas da competência (RN04).<br>`SELECT`<br>`  (SELECT COALESCE(SUM(r.RECE_VALOR), 0) FROM RECEITAS r`<br>`     JOIN CONTAS ct ON ct.CTA_ID = r.CTA_ID`<br>`     WHERE ct.USU_ID = :usuId AND r.RECE_COMPETENCIA = :competencia AND r.audit_data_exclusao IS NULL) AS totalReceitas,`<br>`  (SELECT COALESCE(SUM(d.DESP_VALOR), 0) FROM DESPESAS d`<br>`     LEFT JOIN CONTAS c2           ON c2.CTA_ID  = d.CTA_ID`<br>`     LEFT JOIN CARTOES_CREDITO cc  ON cc.CACR_ID = d.CACR_ID`<br>`     WHERE (c2.USU_ID = :usuId OR cc.USU_ID = :usuId)`<br>`       AND d.DESP_COMPETENCIA = :competencia AND d.audit_data_exclusao IS NULL) AS totalDespesas;` |
-| <a id="c4"></a>C4 | Card 4 — despesas por categoria da competência (RN05).<br>`SELECT COALESCE(cat.CATE_NOME, 'Sem categoria') AS categoria, cat.CATE_COR AS cor,`<br>`       COALESCE(SUM(d.DESP_VALOR), 0) AS total`<br>`FROM DESPESAS d`<br>`LEFT JOIN CONTAS c           ON c.CTA_ID  = d.CTA_ID`<br>`LEFT JOIN CARTOES_CREDITO cc ON cc.CACR_ID = d.CACR_ID`<br>`LEFT JOIN CATEGORIAS cat     ON cat.CATE_ID = d.CATE_ID`<br>`WHERE (c.USU_ID = :usuId OR cc.USU_ID = :usuId)`<br>`  AND d.DESP_COMPETENCIA = :competencia`<br>`  AND d.audit_data_exclusao IS NULL`<br>`GROUP BY cat.CATE_ID, cat.CATE_NOME, cat.CATE_COR`<br>`ORDER BY total DESC;` |
-| <a id="c5"></a>C5 | Card 5 — pagas × pendentes da competência (RN06).<br>`SELECT COALESCE(d.DESP_IND_STATUS_PAGAMENTO, 'NAO_SE_APLICA') AS status,`<br>`       COALESCE(SUM(d.DESP_VALOR), 0) AS total`<br>`FROM DESPESAS d`<br>`LEFT JOIN CONTAS c           ON c.CTA_ID  = d.CTA_ID`<br>`LEFT JOIN CARTOES_CREDITO cc ON cc.CACR_ID = d.CACR_ID`<br>`WHERE (c.USU_ID = :usuId OR cc.USU_ID = :usuId)`<br>`  AND d.DESP_COMPETENCIA = :competencia`<br>`  AND d.audit_data_exclusao IS NULL`<br>`GROUP BY status;` |
+| <a id="c3"></a>C3 | Card 3 — receitas × cota líquida de despesas da competência (RN04).<br>`SELECT`<br>`  (SELECT COALESCE(SUM(r.RECE_VALOR), 0) FROM RECEITAS r`<br>`     JOIN CONTAS ct ON ct.CTA_ID = r.CTA_ID`<br>`     WHERE ct.USU_ID = :usuId AND r.RECE_COMPETENCIA = :competencia AND r.audit_data_exclusao IS NULL) AS totalReceitas,`<br>`  (SELECT COALESCE(SUM(d.DESP_VALOR - COALESCE(rat.totalRateado, 0)), 0) FROM DESPESAS d`<br>`     LEFT JOIN CONTAS c2           ON c2.CTA_ID  = d.CTA_ID`<br>`     LEFT JOIN CARTOES_CREDITO cc  ON cc.CACR_ID = d.CACR_ID`<br>`     LEFT JOIN (SELECT DESP_ID, SUM(DEPU_VALOR) AS totalRateado FROM DESPESAS_USUARIO`<br>`                WHERE audit_data_exclusao IS NULL GROUP BY DESP_ID) rat ON rat.DESP_ID = d.DESP_ID`<br>`     WHERE (c2.USU_ID = :usuId OR cc.USU_ID = :usuId)`<br>`       AND d.DESP_COMPETENCIA = :competencia AND d.audit_data_exclusao IS NULL) AS totalDespesasUsuario;` |
+| <a id="c4"></a>C4 | Card 4 — cota líquida de despesas por categoria da competência (RN05).<br>`SELECT COALESCE(cat.CATE_NOME, 'Sem categoria') AS categoria, cat.CATE_COR AS cor,`<br>`       COALESCE(SUM(d.DESP_VALOR - COALESCE(rat.totalRateado, 0)), 0) AS total`<br>`FROM DESPESAS d`<br>`LEFT JOIN CONTAS c           ON c.CTA_ID  = d.CTA_ID`<br>`LEFT JOIN CARTOES_CREDITO cc ON cc.CACR_ID = d.CACR_ID`<br>`LEFT JOIN CATEGORIAS cat     ON cat.CATE_ID = d.CATE_ID`<br>`LEFT JOIN (SELECT DESP_ID, SUM(DEPU_VALOR) AS totalRateado FROM DESPESAS_USUARIO`<br>`           WHERE audit_data_exclusao IS NULL GROUP BY DESP_ID) rat ON rat.DESP_ID = d.DESP_ID`<br>`WHERE (c.USU_ID = :usuId OR cc.USU_ID = :usuId)`<br>`  AND d.DESP_COMPETENCIA = :competencia`<br>`  AND d.audit_data_exclusao IS NULL`<br>`GROUP BY cat.CATE_ID, cat.CATE_NOME, cat.CATE_COR`<br>`ORDER BY total DESC;` |
+| <a id="c5"></a>C5 | Card 5 — cota líquida de despesas, pagas × pendentes da competência (RN06).<br>`SELECT COALESCE(d.DESP_IND_STATUS_PAGAMENTO, 'NAO_SE_APLICA') AS status,`<br>`       COALESCE(SUM(d.DESP_VALOR - COALESCE(rat.totalRateado, 0)), 0) AS total`<br>`FROM DESPESAS d`<br>`LEFT JOIN CONTAS c           ON c.CTA_ID  = d.CTA_ID`<br>`LEFT JOIN CARTOES_CREDITO cc ON cc.CACR_ID = d.CACR_ID`<br>`LEFT JOIN (SELECT DESP_ID, SUM(DEPU_VALOR) AS totalRateado FROM DESPESAS_USUARIO`<br>`           WHERE audit_data_exclusao IS NULL GROUP BY DESP_ID) rat ON rat.DESP_ID = d.DESP_ID`<br>`WHERE (c.USU_ID = :usuId OR cc.USU_ID = :usuId)`<br>`  AND d.DESP_COMPETENCIA = :competencia`<br>`  AND d.audit_data_exclusao IS NULL`<br>`GROUP BY status;` |
 | <a id="c6"></a>C6 | Card 6 — total rateado por pessoa na competência (RN07).<br>`SELECT ct.CONT_ID, ct.CONT_NOME, COALESCE(SUM(du.DEPU_VALOR), 0) AS total`<br>`FROM DESPESAS_USUARIO du`<br>`JOIN DESPESAS d  ON d.DESP_ID  = du.DESP_ID`<br>`JOIN CONTATOS ct ON ct.CONT_ID = du.CONT_ID`<br>`LEFT JOIN CONTAS c           ON c.CTA_ID  = d.CTA_ID`<br>`LEFT JOIN CARTOES_CREDITO cc ON cc.CACR_ID = d.CACR_ID`<br>`WHERE (c.USU_ID = :usuId OR cc.USU_ID = :usuId)`<br>`  AND d.DESP_COMPETENCIA = :competencia`<br>`  AND d.audit_data_exclusao IS NULL`<br>`  AND du.audit_data_exclusao IS NULL`<br>`GROUP BY ct.CONT_ID, ct.CONT_NOME`<br>`ORDER BY total DESC;` |
 | <a id="c7"></a>C7 | Card 7 — limite usado por cartão ativo (RN10, RN11).<br>`SELECT ca.CACR_ID, ca.CACR_DESCRICAO, ca.CACR_LIMITE,`<br>`       COALESCE((SELECT SUM(d.DESP_VALOR) FROM DESPESAS d`<br>`                   WHERE d.CACR_ID = ca.CACR_ID`<br>`                     AND d.DESP_IND_STATUS_PAGAMENTO = 'NAO'`<br>`                     AND d.audit_data_exclusao IS NULL), 0) AS usado`<br>`FROM CARTOES_CREDITO ca`<br>`WHERE ca.USU_ID = :usuId`<br>`  AND ca.CACR_FL_ATIVO = TRUE`<br>`  AND ca.audit_data_exclusao IS NULL`<br>`ORDER BY ca.CACR_DESCRICAO ASC;` |
-| <a id="c8"></a>C8 | Card 8 — anos disponíveis para o filtro (RN13, alimenta [SB01](#sb01)).<br>`SELECT DISTINCT ano FROM (`<br>`  SELECT CAST(SUBSTRING(r.RECE_COMPETENCIA, 1, 4) AS UNSIGNED) AS ano`<br>`    FROM RECEITAS r JOIN CONTAS c ON c.CTA_ID = r.CTA_ID`<br>`    WHERE c.USU_ID = :usuId AND r.audit_data_exclusao IS NULL`<br>`  UNION`<br>`  SELECT CAST(SUBSTRING(d.DESP_COMPETENCIA, 1, 4) AS UNSIGNED) AS ano`<br>`    FROM DESPESAS d`<br>`    LEFT JOIN CONTAS c2          ON c2.CTA_ID  = d.CTA_ID`<br>`    LEFT JOIN CARTOES_CREDITO cc ON cc.CACR_ID = d.CACR_ID`<br>`    WHERE (c2.USU_ID = :usuId OR cc.USU_ID = :usuId) AND d.audit_data_exclusao IS NULL`<br>`) anos`<br>`ORDER BY ano ASC;` |
+| <a id="c8"></a>C8 | Card 8 — anos disponíveis para o filtro (RN13, alimenta [SB01](#sb01)); o maior ano retornado é o "ano do lançamento mais recente" usado no fallback de `anoFim` quando não há lançamento no ano corrente ([Observação 18](#2-observações)).<br>`SELECT DISTINCT ano FROM (`<br>`  SELECT CAST(SUBSTRING(r.RECE_COMPETENCIA, 1, 4) AS UNSIGNED) AS ano`<br>`    FROM RECEITAS r JOIN CONTAS c ON c.CTA_ID = r.CTA_ID`<br>`    WHERE c.USU_ID = :usuId AND r.audit_data_exclusao IS NULL`<br>`  UNION`<br>`  SELECT CAST(SUBSTRING(d.DESP_COMPETENCIA, 1, 4) AS UNSIGNED) AS ano`<br>`    FROM DESPESAS d`<br>`    LEFT JOIN CONTAS c2          ON c2.CTA_ID  = d.CTA_ID`<br>`    LEFT JOIN CARTOES_CREDITO cc ON cc.CACR_ID = d.CACR_ID`<br>`    WHERE (c2.USU_ID = :usuId OR cc.USU_ID = :usuId) AND d.audit_data_exclusao IS NULL`<br>`) anos`<br>`ORDER BY ano ASC;` |
 | <a id="c9"></a>C9 | Card 8 — evolução mensal, quando `anoInicio == anoFim` (RN14).<br>`SELECT SUBSTRING(r.RECE_COMPETENCIA, 6, 2) AS mes, COALESCE(SUM(r.RECE_VALOR), 0) AS totalReceita`<br>`FROM RECEITAS r JOIN CONTAS c ON c.CTA_ID = r.CTA_ID`<br>`WHERE c.USU_ID = :usuId AND SUBSTRING(r.RECE_COMPETENCIA, 1, 4) = :ano AND r.audit_data_exclusao IS NULL`<br>`GROUP BY mes;`<br>`-- consulta equivalente sobre DESPESAS (mesmo agrupamento por mês) compõe totalDespesa;`<br>`-- o serviço une as duas por mês (01 a 12), preenchendo com zero o mês sem lançamento.` |
 | <a id="c10"></a>C10 | Card 8 — evolução anual, quando `anoInicio != anoFim` (RN14).<br>`SELECT SUBSTRING(r.RECE_COMPETENCIA, 1, 4) AS ano, COALESCE(SUM(r.RECE_VALOR), 0) AS totalReceita`<br>`FROM RECEITAS r JOIN CONTAS c ON c.CTA_ID = r.CTA_ID`<br>`WHERE c.USU_ID = :usuId AND SUBSTRING(r.RECE_COMPETENCIA, 1, 4) BETWEEN :anoInicio AND :anoFim AND r.audit_data_exclusao IS NULL`<br>`GROUP BY ano;`<br>`-- consulta equivalente sobre DESPESAS (mesmo agrupamento por ano) compõe totalDespesa;`<br>`-- o serviço une as duas por ano, preenchendo com zero o ano sem lançamento.` |
 
@@ -450,30 +470,32 @@ Dado que possuo duas contas com saldo, ambas com "considera no saldo geral" marc
 Quando eu trocar a competência global de "08/2026" para "01/2025".
 Então o valor do Card "Saldo Consolidado" não deve mudar.
 
-### 16.2 Conta fora do saldo geral não entra no consolidado
+### 16.2 Conta fora do saldo geral não entra no consolidado, mas aparece com badge no Card 2
 
 Dado que possuo a conta "Carteira" com "considera no saldo geral" desmarcado e saldo de R$ 100,00.
 E a conta "Nubank" com "considera no saldo geral" marcado e saldo de R$ 500,00.
 Quando eu acessar o Dashboard.
 Então o Card "Saldo Consolidado" deve exibir R$ 500,00.
+E o Card "Saldo por Conta" deve listar as duas contas, com o badge "Não entra no saldo geral" na linha da "Carteira".
 
-### 16.3 Receitas x despesas do mês
+### 16.3 Receitas x despesas do mês usa a cota líquida do titular
 
-Dado que tenho receitas somando R$ 3.000,00 e despesas somando R$ 1.200,00 na competência "08/2026".
+Dado que tenho receitas somando R$ 3.000,00 na competência "08/2026".
+E uma despesa de R$ 1.200,00 na mesma competência, rateada com o contato "Maria" (fatia de R$ 400,00).
 Quando eu filtrar a competência global em "08/2026".
-Então o Card "Receitas x Despesas" deve exibir R$ 3.000,00 de receita e R$ 1.200,00 de despesa.
+Então o Card "Receitas x Despesas" deve exibir R$ 3.000,00 de receita e R$ 800,00 de despesa (cota líquida: R$ 1.200,00 - R$ 400,00).
 
-### 16.4 Despesas por categoria com despesa sem categoria
+### 16.4 Despesas por categoria com despesa sem categoria e com rateio
 
-Dado que tenho uma despesa de R$ 200,00 na categoria "Alimentação" e outra de R$ 50,00 sem categoria, ambas na competência filtrada.
+Dado que tenho uma despesa de R$ 200,00 na categoria "Alimentação" (sem rateio) e outra de R$ 150,00 sem categoria, rateada com "Maria" (fatia de R$ 50,00), ambas na competência filtrada.
 Quando eu acessar o Dashboard.
-Então o Card "Despesas por Categoria" deve exibir uma fatia "Alimentação" de R$ 200,00 e uma fatia "Sem categoria" de R$ 50,00.
+Então o Card "Despesas por Categoria" deve exibir uma fatia "Alimentação" de R$ 200,00 e uma fatia "Sem categoria" de R$ 100,00 (cota líquida: R$ 150,00 - R$ 50,00).
 
-### 16.5 Pagas x pendentes
+### 16.5 Pagas x pendentes usa a cota líquida do titular
 
-Dado que tenho duas despesas pagas somando R$ 300,00 e uma pendente de R$ 150,00 na competência filtrada.
+Dado que tenho uma despesa paga de R$ 300,00 (sem rateio) e uma despesa pendente de R$ 200,00 rateada com "Maria" (fatia de R$ 50,00), ambas na competência filtrada.
 Quando eu acessar o Dashboard.
-Então o Card "Pagas x Pendentes" deve exibir R$ 300,00 em Pagas e R$ 150,00 em Pendentes.
+Então o Card "Pagas x Pendentes" deve exibir R$ 300,00 em Pagas e R$ 150,00 em Pendentes (cota líquida: R$ 200,00 - R$ 50,00).
 
 ### 16.6 Total rateado por pessoa
 
@@ -481,11 +503,36 @@ Dado que ratear uma despesa de R$ 100,00 com o contato "Maria" (fatia de R$ 50,0
 Quando eu acessar o Dashboard.
 Então o Card "Total Rateado por Pessoa" deve exibir "Maria: R$ 50,00".
 
-### 16.7 Limite usado x disponível com limite definido
+### 16.6a Paginação do Card 6 a partir de 5 contatos
+
+Dado que tenho rateio registrado com 6 contatos distintos na competência filtrada.
+Quando eu acessar o Dashboard.
+Então o Card "Total Rateado por Pessoa" deve exibir os primeiros itens diretamente e paginar os demais.
+
+### 16.6b Sem paginação com menos de 5 contatos
+
+Dado que tenho rateio registrado com 3 contatos distintos na competência filtrada.
+Quando eu acessar o Dashboard.
+Então o Card "Total Rateado por Pessoa" deve exibir os 3 contatos numa lista só, sem paginação.
+
+### 16.7 Limite usado x disponível com limite definido, faixa verde
 
 Dado que possuo o cartão "Nubank" com limite de R$ 1.000,00 e despesas pendentes de R$ 300,00 vinculadas a ele.
 Quando eu acessar o Dashboard.
-Então o Card "Limite por Cartão" deve exibir a barra do cartão "Nubank" com R$ 300,00 usado e R$ 700,00 disponível.
+Então o Card "Limite por Cartão" deve exibir a barra do cartão "Nubank" com R$ 300,00 usado (30%) e R$ 700,00 disponível, em verde.
+
+### 16.7a Faixa amarela entre 70% e 99% de uso
+
+Dado que possuo o cartão "Nubank" com limite de R$ 1.000,00 e despesas pendentes de R$ 800,00 vinculadas a ele.
+Quando eu acessar o Dashboard.
+Então a barra do cartão "Nubank" deve ficar amarela, com 80% preenchido e R$ 200,00 disponível.
+
+### 16.7b Limite estourado exibe barra vermelha e disponível negativo
+
+Dado que possuo o cartão "Nubank" com limite de R$ 1.000,00 e despesas pendentes de R$ 1.200,00 vinculadas a ele.
+Quando eu acessar o Dashboard.
+Então a barra do cartão "Nubank" deve ficar 100% preenchida em vermelho.
+E o texto "Disponível" deve exibir "-R$ 200,00".
 
 ### 16.8 Limite nulo exibe só o valor usado
 
@@ -523,25 +570,31 @@ Dado que meus lançamentos mais antigos são de 2023 e os mais recentes de 2026.
 Quando eu abrir os seletores de ano do Card "Evolução".
 Então as opções devem ser exatamente 2023, 2024, 2025 e 2026 — nunca uma lista fixa.
 
-### 16.14 Estado vazio de um card sem dado na competência
+### 16.14 Ano final padrão cai no lançamento mais recente sem dado no ano corrente
+
+Dado que hoje é 2026 e meu lançamento mais recente é de 2025 — não tenho nenhum lançamento em 2026.
+Quando eu acessar o Dashboard sem informar `anoInicio`/`anoFim` no Card "Evolução".
+Então o `anoFim` padrão deve ser 2025 (o ano do lançamento mais recente), não 2026.
+
+### 16.15 Estado vazio de um card sem dado na competência
 
 Dado que não tenho nenhuma despesa na competência "01/2020".
 Quando eu filtrar a competência global em "01/2020".
 Então os Cards "Despesas por Categoria" e "Pagas x Pendentes" devem exibir a mensagem de ausência de dados, não um gráfico vazio.
 
-### 16.15 Escopo por usuário em todos os cards
+### 16.16 Escopo por usuário em todos os cards
 
 Dado que o usuário A tem contas, despesas e receitas cadastradas, e o usuário B também.
 Quando o usuário A acessar o Dashboard.
 Então nenhum valor de nenhum card deve incluir dado do usuário B.
 
-### 16.16 ADMIN também só vê os próprios dados
+### 16.17 ADMIN também só vê os próprios dados
 
 Dado que estou autenticado como ADMIN e existem despesas de outros usuários no sistema.
 Quando eu acessar o Dashboard.
 Então todos os cards devem refletir apenas os meus próprios dados financeiros.
 
-### 16.17 Bloqueio de acesso sem a permissão
+### 16.18 Bloqueio de acesso sem a permissão
 
 Dado que estou autenticado com um perfil personalizado sem `DASHBOARD_VISUALIZAR`.
 Quando eu acessar "/dashboard".
@@ -563,16 +616,18 @@ Descrição: Sessão de brainstorming sobre o primeiro dashboard concreto, pluga
 - Sem AJAX: toda troca de filtro recarrega a página inteira via GET; gráficos calculados no servidor e embutidos via `th:inline="javascript"`.
 - Biblioteca de gráficos: ApexCharts (via webjar) — verificar/adicionar dependência no `pom.xml`.
 - Card 7 (limite por cartão): usado = despesas pendentes vinculadas ao cartão, sem distinguir origem (manual ou importação) e sem considerar ciclo de fatura; disponível só quando há limite definido. Resolve o pendente já registrado no documento `07` (Observação 11).
-- Card 6 (rateio por pessoa) não depende do CRUD de Contatos (documento `16`) estar pronto — lê `CONTATOS` e `DESPESAS_USUARIO` diretamente.
+- Card 6 (rateio por pessoa) não depende do CRUD de Contatos (documento `17`) estar pronto — lê `CONTATOS` e `DESPESAS_USUARIO` diretamente.
 - Card 8 (evolução) tem filtro próprio de anos, independente da competência global, com opções dinâmicas e granularidade condicional (mensal quando `anoInicio == anoFim`, anual quando diferentes), no mesmo espírito do precedente da RN30 do documento `09`.
 - Nova permissão atômica `DASHBOARD_VISUALIZAR`, concedida a ADMIN e USER.
+- **(v1.1)** Cards 3, 4 e 5 somam a **cota líquida do titular** (`DESP_VALOR` descontado o rateio a contatos), no mesmo critério da [RN30 do documento 09](../09%20-%20manter-despesa/documento-analise-manter-despesa.md#rn30) — evita inflar o gasto pessoal exibido e mantém consistência com a tela de Despesas na mesma competência.
+- **(v1.1)** Card 2 mantém listando **todas** as contas ativas do usuário, independentemente de `CTA_FL_CONSIDERA_SALDO`; a linha da conta fora do saldo geral ganha o badge "Não entra no saldo geral" para não confundir com o total do Card 1.
+- **(v1.1)** Card 7: barra de limite colorida por faixa de uso (verde < 70%, amarelo 70–99%, vermelho ≥ 100%); limite estourado deixa a barra 100% vermelha e o texto "Disponível" no valor negativo, sem travar nada.
+- **(v1.1)** Card 8: quando não há lançamento no ano corrente, `anoFim` padrão passa a ser o ano do lançamento mais recente do usuário.
+- **(v1.1)** Card 6: lista pagina a partir de 5 contatos com rateio na competência filtrada.
 
 **A Confirmar:**
-- **Valores brutos × líquidos de rateio nos Cards 3, 4 e 5.** Esta versão soma `DESP_VALOR` bruto, sem deduzir a parte transferida a contatos via rateio — diferente do totalizador da listagem de Despesas ([RN30 do documento 09](../09%20-%20manter-despesa/documento-analise-manter-despesa.md#rn30)), que usa a cota líquida do titular (`valorUsuario`). Confirmar se o Dashboard deve adotar o mesmo critério de "cota líquida" para consistência entre as duas telas, ou se o valor bruto é intencional aqui (visão consolidada de todo o gasto, rateado ou não).
-- **Cartão com despesas pendentes acima do limite.** [RN11](#rn11) prevê "disponível negativo" sem travar nada — confirmar se a tela deve destacar esse caso de alguma forma além da barra (ex.: cor de alerta, badge "Limite excedido").
-- **Card 2 (saldo por conta) inclui contas com "considera no saldo geral" desmarcado?** Esta versão lista **todas** as contas ativas do usuário, independentemente da flag — só o Card 1 (consolidado) filtra por ela. Confirmar se esse é o comportamento desejado.
-- **Ordenação e limite de itens no Card 6 (rateio por pessoa).** Esta versão não define um teto de contatos exibidos; confirmar se, com muitos contatos, a tela deve paginar, limitar aos N maiores ou manter a lista completa.
-- **Ano corrente sem nenhum lançamento no Card 8.** Esta versão usa o ano corrente como `anoFim` padrão mesmo sem lançamento nele; confirmar se o padrão deveria ser, em vez disso, o ano do lançamento mais recente do usuário.
+
+Nenhum item pendente nesta versão — todas as decisões em aberto da v1.0 foram confirmadas em v1.1.
 
 ---
 
@@ -584,4 +639,5 @@ Descrição: Sessão de brainstorming sobre o primeiro dashboard concreto, pluga
 - Documento `07 - manter-cartao-credito`: `../07 - manter-cartao-credito/documento-analise-manter-cartao-credito.md` (Observação 11 — pendência de limite disponível, resolvida pelo Card 7 desta versão).
 - Documento `08 - manter-receita`: `../08 - manter-receita/documento-analise-manter-receita.md` (fonte do Card 3 e do Card 8).
 - Documento `09 - manter-despesa`: `../09 - manter-despesa/documento-analise-manter-despesa.md` (RN30 — precedente da granularidade condicional do Card 8; fonte dos Cards 3 a 8; DESPESAS_USUARIO do rateio, Card 6).
-- Documento `16 - manter-contato`: `../16 - manter-contato` (CRUD de `CONTATOS`, consumido só como leitura pelo Card 6; não é dependência de implementação).
+- Documento `17 - manter-contato`: `../17 - manter-contato` (CRUD de `CONTATOS`, consumido só como leitura pelo Card 6; não é dependência de implementação).
+- **Protótipo e diagramas (v1.2):** protótipo navegável (`prototipo/dashboard-financeiro-prototipo.html`, Tabler Core 1.4.0 + Phosphor Icons 2.1.2 via CDN) com os 4 estados (dados normais, estado vazio, limite estourado, evolução anual — `images/df-tela-1..4.png`); DER do subconjunto (`prototipo/_diagrama-der.html` + `images/dashboard-financeiro-der.png`) e casos de uso (`prototipo/_diagrama-casos-uso.html` + `images/dashboard-financeiro-casos-uso.png`). Gráficos são mocks estáticos de aparência real (CSS/SVG) — não roda ApexCharts de verdade. PNGs gerados por `prototipo/render-pngs.py` (Playwright).

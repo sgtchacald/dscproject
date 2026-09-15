@@ -2,7 +2,7 @@
 ## Módulo Dashboard — USER / ADMIN — Orquestrador de Dashboard
 
 **Gerado em:** 14/09/2026
-**Versão:** 1.1
+**Versão:** 1.2
 **Status:** Analisado
 **Projeto:** `dscproject-spring-mvc` (geração 2)
 
@@ -25,8 +25,9 @@
 
 | Versão | Data | Analista Responsável | Descrição da Alteração |
 |---|---|---|---|
-| 1.0 | 14/09/2026 | Diego dos Santos Cordeiro | Criação do documento. Mecânica de **orquestração** de dashboards: catálogo de tipos em código (`enum TipoDashboard`, hoje com um único valor `FINANCEIRO`), substituição da tela inicial pós-login por `/dashboard`, exibição condicional de um seletor de tipo (só aparece a partir do 2º tipo cadastrado) e delegação da montagem de conteúdo ao módulo concreto de cada tipo. Não introduz tabela nova. O primeiro dashboard concreto (financeiro) é o documento `13a - dashboard-financeiro`. |
+| 1.0 | 14/09/2026 | Diego dos Santos Cordeiro | Criação do documento. Mecânica de **orquestração** de dashboards: catálogo de tipos em código (`enum TipoDashboard`, hoje com um único valor `FINANCEIRO`), substituição da tela inicial pós-login por `/dashboard`, exibição condicional de um seletor de tipo (só aparece a partir do 2º tipo cadastrado) e delegação da montagem de conteúdo ao módulo concreto de cada tipo. Não introduz tabela nova. O primeiro dashboard concreto (financeiro) é o documento `14 - dashboard-financeiro`. |
 | 1.1 | 15/09/2026 | Diego dos Santos Cordeiro | Confirmação da única pendência da Seção 17: usuário autenticado sem permissão para o único dashboard disponível vê o estado vazio ([RN07](#rn07), [MSG02](#msg02)), sem redirecionamento nem HTTP 403. Corpo do documento fechado — Status avança para `Analisado` (D-CICLO-01). |
+| 1.2 | 15/09/2026 | Diego dos Santos Cordeiro | Protótipo navegável e diagrama de casos de uso (Seção 7 e 4), no padrão Tabler Core 1.4.0 + Phosphor Icons 2.1.2 do design system real do projeto. Duas telas (sem seletor / com seletor de tipo). Sem DER — documento não lê tabela. |
 
 ---
 
@@ -36,7 +37,7 @@
 |---|---|
 | D01 | As responsabilidades de camada são documentadas como **Regra de Tela (RT)** e **Regra de Negócio (RN)** — nunca "o backend deve" / "o frontend deve". |
 | D02 | O termo `endpoint` é aceito na Seção 8. Fora dela, "chamada ao serviço". |
-| D03 | A estrutura de dados é a do Documento 0 (`00 - analise-geral`). Este documento **não introduz tabela nova** e **não lê tabela alguma diretamente** — a leitura e o cálculo dos dados de cada dashboard concreto são responsabilidade do respectivo documento de análise (ex.: `13a - dashboard-financeiro`). |
+| D03 | A estrutura de dados é a do Documento 0 (`00 - analise-geral`). Este documento **não introduz tabela nova** e **não lê tabela alguma diretamente** — a leitura e o cálculo dos dados de cada dashboard concreto são responsabilidade do respectivo documento de análise (ex.: `14 - dashboard-financeiro`). |
 | D04 | O catálogo de tipos de dashboard (`TipoDashboard`) vive **no código**, no mesmo padrão do catálogo de permissões (documento `02 - manter-perfil-permissao`) e do catálogo de parâmetros globais (documento `03 - manter-parametro-global`) — nunca em tabela nova. |
 
 ---
@@ -45,7 +46,7 @@
 
 Este documento descreve a **mecânica de orquestração de dashboards** do `dscproject-spring-mvc`: a rota `/dashboard`, que passa a ser a tela inicial exibida logo após o login, e a decisão de qual dashboard concreto renderizar.
 
-Hoje existe um único tipo de dashboard — o financeiro (documento `13a - dashboard-financeiro`). O desenho já nasce pensado para múltiplos dashboards no futuro (por exemplo, um dashboard de investimentos ou de metas): o catálogo de tipos fica **no código**, não em tabela nova, seguindo o mesmo padrão já usado para o catálogo de permissões (documento `02`) e para o catálogo de parâmetros globais (documento `03`) — uma coleção conhecida no código, sincronizada ou simplesmente enumerada, nunca mantida por uma tela de CRUD.
+Hoje existe um único tipo de dashboard — o financeiro (documento `14 - dashboard-financeiro`). O desenho já nasce pensado para múltiplos dashboards no futuro (por exemplo, um dashboard de investimentos ou de metas): o catálogo de tipos fica **no código**, não em tabela nova, seguindo o mesmo padrão já usado para o catálogo de permissões (documento `02`) e para o catálogo de parâmetros globais (documento `03`) — uma coleção conhecida no código, sincronizada ou simplesmente enumerada, nunca mantida por uma tela de CRUD.
 
 Este documento cobre **apenas a mecânica de orquestração**:
 
@@ -55,9 +56,9 @@ Este documento cobre **apenas a mecânica de orquestração**:
 - o **contrato de extensão**: como um novo tipo de dashboard se conecta a esta mecânica sem exigir alteração deste documento nem do controlador de orquestração.
 
 **Não contempla:**
-- Os **cards, cálculos e regras** de qualquer dashboard concreto — isso é responsabilidade do documento de análise de cada tipo (o financeiro é o `13a - dashboard-financeiro`).
+- Os **cards, cálculos e regras** de qualquer dashboard concreto — isso é responsabilidade do documento de análise de cada tipo (o financeiro é o `14 - dashboard-financeiro`).
 - Qualquer **tabela nova** — o catálogo de tipos é um enum no código, sem correspondência em banco.
-- A **permissão de acesso ao conteúdo** de um dashboard concreto — cada tipo define e controla a própria permissão (ex.: `DASHBOARD_VISUALIZAR` no documento `13a`). Este documento exige apenas que o usuário esteja **autenticado**.
+- A **permissão de acesso ao conteúdo** de um dashboard concreto — cada tipo define e controla a própria permissão (ex.: `DASHBOARD_VISUALIZAR` no documento `14`). Este documento exige apenas que o usuário esteja **autenticado**.
 
 **Perfis com acesso:** [PERF01](#perf01) (ADMIN) e [PERF02](#perf02) (USER). A rota `/dashboard` em si não exige nenhuma permissão granular — o que cada perfil vê dentro do dashboard depende do módulo concreto ativo.
 
@@ -70,9 +71,9 @@ Este documento cobre **apenas a mecânica de orquestração**:
 | 1 | **O catálogo de tipos vive no código, nunca em tabela.** Um `enum TipoDashboard` (código, rótulo de exibição, ordem, nome do fragmento/template que renderiza o conteúdo daquele tipo) é a única fonte da lista de dashboards disponíveis. Não existe `PARAMETROS_GLOBAIS`, `PERMISSOES` nem tabela nova envolvida — o padrão aqui é mais simples que o dos documentos `02`/`03` porque não há nada para persistir (não há "valor editável" nem "vínculo perfil × item"): é só uma lista fixa de tipos, cada um resolvido para uma implementação concreta. | [RN01](#rn01) |
 | 2 | **Hoje existe um único tipo: `FINANCEIRO`.** Enquanto o catálogo tiver exatamente um valor, a tela renderiza esse tipo direto — nenhum seletor aparece, mesmo que o código já preveja múltiplos tipos no futuro. | [RN02](#rn02), [RF03](#rf03) |
 | 3 | **Seletor a partir do 2º tipo.** Quando um segundo valor for adicionado ao catálogo, a tela passa automaticamente a exibir um combobox de seleção de tipo, sem qualquer alteração nesta mecânica — a condição "existe mais de um tipo" já é avaliada dinamicamente a partir do tamanho do catálogo. O tipo escolhido é refletido na URL (`?tipo=CODIGO`), permitindo *bookmark* e compartilhamento do link. | [RN02](#rn02), [RN03](#rn03) |
-| 4 | **Extensibilidade sem alterar este documento.** Acrescentar um novo tipo de dashboard no futuro exige apenas: (a) um novo valor no `enum TipoDashboard`; (b) uma implementação do contrato de renderização para aquele tipo (uma classe de serviço registrada para o novo valor do enum); e (c) o documento de análise do novo dashboard concreto, no padrão do `13a`. A mecânica de orquestração — catálogo, decisão de exibir o seletor, roteamento — não muda. | [RN05](#rn05) |
+| 4 | **Extensibilidade sem alterar este documento.** Acrescentar um novo tipo de dashboard no futuro exige apenas: (a) um novo valor no `enum TipoDashboard`; (b) uma implementação do contrato de renderização para aquele tipo (uma classe de serviço registrada para o novo valor do enum); e (c) o documento de análise do novo dashboard concreto, no padrão do `14`. A mecânica de orquestração — catálogo, decisão de exibir o seletor, roteamento — não muda. | [RN05](#rn05) |
 | 5 | **Substitui a tela inicial pós-login.** A rota que hoje serve de tela inicial passa a ser `/dashboard`. O item de menu e o título da tela mudam para "Dashboard". Não há mais uma tela de boas-vindas genérica separada. | [RF01](#rf01) |
-| 6 | **Permissão de conteúdo é do módulo concreto, não da orquestração.** `/dashboard` exige apenas usuário autenticado. Quem controla se o conteúdo aparece (e o quê) é o próprio dashboard concreto, com a sua própria permissão granular — no financeiro, `DASHBOARD_VISUALIZAR` (documento `13a`). Se o único tipo disponível não for permitido para o usuário autenticado, a tela exibe um estado vazio amigável em vez de um erro técnico (403) — comportamento confirmado (v1.1). | [RN06](#rn06), [RN07](#rn07) |
+| 6 | **Permissão de conteúdo é do módulo concreto, não da orquestração.** `/dashboard` exige apenas usuário autenticado. Quem controla se o conteúdo aparece (e o quê) é o próprio dashboard concreto, com a sua própria permissão granular — no financeiro, `DASHBOARD_VISUALIZAR` (documento `14`). Se o único tipo disponível não for permitido para o usuário autenticado, a tela exibe um estado vazio amigável em vez de um erro técnico (403) — comportamento confirmado (v1.1). | [RN06](#rn06), [RN07](#rn07) |
 | 7 | **Sem AJAX.** Toda troca de tipo de dashboard (quando o seletor existir) recarrega a página inteira via GET, seguindo a diretriz do projeto de evitar AJAX fora de casos de extrema dificuldade. Não há endpoint JSON nesta mecânica. | [RNF02](#rnf02) |
 
 ---
@@ -105,7 +106,7 @@ Este documento cobre **apenas a mecânica de orquestração**:
 
 ## 4. Casos de Uso
 
-Diagrama de Casos de Uso: a gerar quando solicitado (ver Seção 18 — Anexos).
+![Casos de Uso - Dashboard (Orquestrador)](images/dashboard-casos-uso.png)
 
 | CÓDIGO | NOME | ATOR PRINCIPAL | DESCRIÇÃO |
 |---|---|---|---|
@@ -134,7 +135,7 @@ Diagrama de Casos de Uso: a gerar quando solicitado (ver Seção 18 — Anexos).
 
 Este documento **não introduz nem altera nenhuma tabela**. O catálogo de tipos de dashboard (`TipoDashboard`) é um `enum` no código — não corresponde a nenhuma linha de tabela, ao contrário dos catálogos de permissões ([QUADRO_DESCRITIVO_26](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-26)) e de parâmetros globais ([QUADRO_DESCRITIVO_28](../00%20-%20analise-geral/documento-0-fundacao.md#quadro-descritivo-28)), que são sincronizados numa tabela para permitir vínculo com perfil ou edição de valor. Aqui não há nada disso: é uma lista fixa resolvida inteiramente em tempo de execução (ver [Observação 1](#2-observações)).
 
-A leitura de dados de negócio (contas, receitas, despesas etc.) é feita exclusivamente pelo dashboard concreto ativo — ver o documento correspondente (ex.: `13a - dashboard-financeiro`).
+A leitura de dados de negócio (contas, receitas, despesas etc.) é feita exclusivamente pelo dashboard concreto ativo — ver o documento correspondente (ex.: `14 - dashboard-financeiro`).
 
 ### 6.1 Diagrama ER
 
@@ -152,18 +153,26 @@ Nenhuma.
 
 ## 7. Protótipos de Interface
 
-Protótipo navegável ainda não gerado nesta versão — solicitar quando necessário (ver Seção 18 — Anexos).
+Protótipo navegável e diagramas: `prototipo/dashboard-prototipo.html` e `prototipo/_diagrama-casos-uso.html`. Sem DER — este documento não lê nenhuma tabela ([Seção 6](#6-banco-de-dados)). Os números em destaque nas telas correspondem aos IDs do QUADRO_DESCRITIVO_1 abaixo.
 
 ### <a id="quadro-descritivo-1"></a>7.1 Tela: Dashboard (Orquestração) — QUADRO_DESCRITIVO_1
 
 > OBSERVAÇÕES: Tela pós-login, acessada via `/dashboard` ou pelo menu "Dashboard". Restrita a usuário autenticado. A área de conteúdo ([ID3](#qdd1-3)) é inteiramente delegada ao dashboard concreto do tipo ativo — este quadro descreve apenas o invólucro da orquestração.
+
+**Catálogo com um único tipo (hoje) — sem seletor ([RN02](#rn02)):**
+
+![Dashboard - sem seletor (1 tipo cadastrado)](images/dash-tela-1.png)
+
+**Catálogo com dois ou mais tipos — seletor visível ([RN02](#rn02), [RN03](#rn03)):**
+
+![Dashboard - com seletor (2+ tipos cadastrados)](images/dash-tela-2.png)
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
 | <a id="qdd1-0"></a>0 | LINK | Caminho: "/dashboard" | — |
 | <a id="qdd1-1"></a>1 | TÍTULO DA TELA | Tipo: Texto<br>Texto: Dashboard | — |
 | <a id="qdd1-2"></a>2 | SELETOR DE TIPO DE DASHBOARD | Tipo: Combobox<br>Obrigatório: Não<br>Exibição: condicional (só quando o catálogo tem 2+ tipos) | Domínio: [SB01](#sb01). Ao trocar, executar [RT01](#rt01). Oculto por completo enquanto houver apenas um tipo cadastrado ([RN02](#rn02)). |
-| <a id="qdd1-3"></a>3 | ÁREA DE CONTEÚDO DO DASHBOARD | Tipo: Fragmento (Thymeleaf, incluído dinamicamente) | Renderiza o conteúdo do dashboard concreto do tipo ativo, resolvido por [RN04](#rn04). Ver o documento do tipo ativo (ex.: `13a - dashboard-financeiro`) para o conteúdo em si. |
+| <a id="qdd1-3"></a>3 | ÁREA DE CONTEÚDO DO DASHBOARD | Tipo: Fragmento (Thymeleaf, incluído dinamicamente) | Renderiza o conteúdo do dashboard concreto do tipo ativo, resolvido por [RN04](#rn04). Ver o documento do tipo ativo (ex.: `14 - dashboard-financeiro`) para o conteúdo em si. |
 
 ### 7.2 Suggestion Boxes
 
@@ -196,9 +205,9 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 | <a id="rn01"></a>RN01 | O catálogo de tipos de dashboard é o `enum TipoDashboard` do código — nenhuma tabela é lida ou gravada para compor a lista de tipos disponíveis. Cada valor do enum carrega: código (usado em `?tipo=`), rótulo de exibição (usado no seletor) e a referência à implementação que monta o conteúdo daquele tipo. |
 | <a id="rn02"></a>RN02 | **Decisão de exibir o seletor.** Se o catálogo tiver exatamente um tipo, esse tipo é sempre o ativo — o parâmetro `tipo` da requisição é ignorado quando presente, e o seletor ([ID2](#qdd1-2)) não é renderizado. Se o catálogo tiver dois ou mais tipos, o seletor é renderizado e o tipo ativo é resolvido por [RN03](#rn03). |
 | <a id="rn03"></a>RN03 | **Resolução do tipo ativo (catálogo com 2+ tipos).** Se `tipo` foi informado na querystring e corresponde a um código existente no catálogo, esse é o tipo ativo. Caso contrário (`tipo` ausente ou inexistente no catálogo), o tipo ativo é o padrão — o primeiro tipo do catálogo, na ordem declarada no enum — e [MSG01](#msg01) é exibida quando um `tipo` foi informado mas não reconhecido. |
-| <a id="rn04"></a>RN04 | **Delegação ao módulo concreto.** Resolvido o tipo ativo ([RN02](#rn02)/[RN03](#rn03)), o orquestrador invoca a implementação registrada para aquele tipo, que monta o modelo (dados) e devolve o fragmento a incluir na página. Nenhuma lógica de card, cálculo financeiro ou consulta a tabela de domínio vive neste documento — está inteiramente no documento do tipo ativo (ex.: `13a - dashboard-financeiro`). |
+| <a id="rn04"></a>RN04 | **Delegação ao módulo concreto.** Resolvido o tipo ativo ([RN02](#rn02)/[RN03](#rn03)), o orquestrador invoca a implementação registrada para aquele tipo, que monta o modelo (dados) e devolve o fragmento a incluir na página. Nenhuma lógica de card, cálculo financeiro ou consulta a tabela de domínio vive neste documento — está inteiramente no documento do tipo ativo (ex.: `14 - dashboard-financeiro`). |
 | <a id="rn05"></a>RN05 | **Extensibilidade.** Adicionar um novo tipo de dashboard exige exclusivamente: (a) um novo valor no `enum TipoDashboard`; (b) uma implementação do contrato de renderização registrada para esse novo valor; (c) o documento de análise do novo dashboard concreto. Este documento (a mecânica de orquestração) e o controlador de `/dashboard` não são alterados. |
-| <a id="rn06"></a>RN06 | `/dashboard` ([EDP01](#edp01)) exige apenas usuário autenticado. Não há verificação de permissão granular nesta camada — cada dashboard concreto verifica a própria permissão antes de montar o conteúdo (ex.: `DASHBOARD_VISUALIZAR` no documento `13a`, sobre a permissão do usuário). |
+| <a id="rn06"></a>RN06 | `/dashboard` ([EDP01](#edp01)) exige apenas usuário autenticado. Não há verificação de permissão granular nesta camada — cada dashboard concreto verifica a própria permissão antes de montar o conteúdo (ex.: `DASHBOARD_VISUALIZAR` no documento `14`, sobre a permissão do usuário). |
 | <a id="rn07"></a>RN07 | **Sem conteúdo disponível para o usuário.** Se o tipo ativo delegar a montagem e o módulo concreto recusar por falta de permissão, o orquestrador exibe um estado vazio amigável ([MSG02](#msg02)) na área de conteúdo ([ID3](#qdd1-3)), em vez de um erro HTTP 403 — a tela `/dashboard` é o destino do pós-login para **todo** usuário autenticado, independentemente do perfil. Comportamento confirmado (v1.1) — não há redirecionamento a outra tela nem HTTP 403. |
 
 ---
@@ -214,7 +223,7 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 
 ## 11. Consultas
 
-Nenhuma consulta SQL neste documento — a orquestração não lê tabela de domínio alguma. A leitura de dados fica inteiramente a cargo de cada dashboard concreto (ver, por exemplo, a Seção 11 do documento `13a - dashboard-financeiro`).
+Nenhuma consulta SQL neste documento — a orquestração não lê tabela de domínio alguma. A leitura de dados fica inteiramente a cargo de cada dashboard concreto (ver, por exemplo, a Seção 11 do documento `14 - dashboard-financeiro`).
 
 ---
 
@@ -226,7 +235,7 @@ Nenhum parâmetro novo. A mecânica de orquestração não depende de nenhum val
 
 ## 13. Permissões
 
-Este documento **não define nenhuma permissão nova**. O acesso a `/dashboard` ([EDP01](#edp01)) exige apenas que o usuário esteja autenticado — sem autoridade (`PERM_*`) associada. A permissão de exibição do conteúdo é responsabilidade de cada dashboard concreto (ex.: `DASHBOARD_VISUALIZAR`, definida no documento `13a - dashboard-financeiro`).
+Este documento **não define nenhuma permissão nova**. O acesso a `/dashboard` ([EDP01](#edp01)) exige apenas que o usuário esteja autenticado — sem autoridade (`PERM_*`) associada. A permissão de exibição do conteúdo é responsabilidade de cada dashboard concreto (ex.: `DASHBOARD_VISUALIZAR`, definida no documento `14 - dashboard-financeiro`).
 
 ### 13.1 Matriz Perfil × Permissão
 
@@ -334,7 +343,7 @@ Descrição: Sessão de brainstorming sobre a mecânica de seleção de dashboar
 - `/dashboard` substitui a tela inicial pós-login; menu e título passam a se chamar "Dashboard".
 - Seletor de tipo **só aparece a partir do 2º tipo cadastrado**; com um único tipo, renderização direta sem combobox.
 - Quando o seletor existe, o tipo ativo é refletido na URL (`?tipo=`); trocar a seleção recarrega a página inteira via GET, sem AJAX.
-- Este documento cobre **só a mecânica**; nenhum card ou regra de cálculo financeiro é descrito aqui — isso é do documento do tipo concreto (o financeiro é o `13a`).
+- Este documento cobre **só a mecânica**; nenhum card ou regra de cálculo financeiro é descrito aqui — isso é do documento do tipo concreto (o financeiro é o `14`).
 - Novo tipo de dashboard no futuro = novo valor no enum + implementação do módulo + documento de análise próprio; a mecânica de orquestração não muda.
 - **(v1.1)** Usuário autenticado sem permissão para o único dashboard disponível: **confirmado** o estado vazio amigável ([RN07](#rn07), [MSG02](#msg02)) em vez de bloquear o acesso a `/dashboard` com 403 ou redirecionar a outra tela — a tela é o destino padrão pós-login de qualquer perfil autenticado.
 
@@ -349,4 +358,5 @@ Descrição: Sessão de brainstorming sobre a mecânica de seleção de dashboar
 - Documento 0 — Fundação: `../00 - analise-geral/documento-0-fundacao.md` (nenhuma tabela referenciada — este documento não lê banco).
 - Documento `02 - manter-perfil-permissao`: `../02 - manter-perfil-permissao/documento-analise-manter-perfil-permissao.md` (padrão de catálogo em código espelhado aqui, sem a parte de sincronização/persistência).
 - Documento `03 - manter-parametro-global`: `../03 - manter-parametro-global/documento-analise-manter-parametro-global.md` (padrão de catálogo em código espelhado aqui, sem a parte de sincronização/persistência).
-- Documento `13a - dashboard-financeiro`: `../13a - dashboard-financeiro/documento-analise-dashboard-financeiro.md` (primeiro e único dashboard concreto desta versão; consome a delegação [RN04](#rn04)).
+- Documento `14 - dashboard-financeiro`: `../14 - dashboard-financeiro/documento-analise-dashboard-financeiro.md` (primeiro e único dashboard concreto desta versão; consome a delegação [RN04](#rn04)).
+- **Protótipo e diagramas (v1.2):** protótipo navegável (`prototipo/dashboard-prototipo.html`, Tabler Core 1.4.0 + Phosphor Icons 2.1.2 via CDN) com as duas telas (sem seletor / com seletor) e casos de uso (`prototipo/_diagrama-casos-uso.html` + `images/dashboard-casos-uso.png`). PNGs gerados por `prototipo/render-pngs.py` (Playwright). Sem DER — documento sem tabela.
