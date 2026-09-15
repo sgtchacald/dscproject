@@ -105,14 +105,17 @@ A maioria dos cards é filtrada por um **filtro global de competência** no topo
 | <a id="rf04"></a>RF04 | O sistema deve exibir, para a competência filtrada, a cota líquida de despesas do usuário autenticado agrupada por categoria, em gráfico donut. | Alta | Analisado |
 | <a id="rf05"></a>RF05 | O sistema deve exibir, para a competência filtrada, a cota líquida de despesas do usuário autenticado agrupada por status de pagamento (pagas, pendentes, não se aplica). | Alta | Analisado |
 | <a id="rf06"></a>RF06 | O sistema deve exibir, para a competência filtrada, o total rateado com cada contato do usuário autenticado, somando as fatias de `DESPESAS_USUARIO`. | Média | Em análise |
-| <a id="rf07"></a>RF07 | O sistema deve exibir, para cada cartão de crédito ativo do usuário autenticado, o valor usado e o valor disponível de limite numa mesma barra segmentada, independentemente da competência filtrada. | Alta | Em análise |
-| <a id="rf08"></a>RF08 | Quando o limite do cartão não estiver definido, o sistema deve exibir somente o valor usado, sem barra nem percentual. | Média | Em análise |
+| <a id="rf07"></a>RF07 | O sistema deve exibir, para cada cartão de crédito ativo do usuário autenticado, o valor usado e o valor disponível de limite numa mesma barra segmentada, independentemente da competência filtrada, colorida por faixa de uso (verde < 70%, amarelo 70–99%, vermelho ≥ 100%). | Alta | Analisado |
+| <a id="rf08"></a>RF08 | Quando o limite do cartão não estiver definido, o sistema deve exibir somente o valor usado, sem barra nem percentual. Quando o usado ultrapassar o limite definido, a barra deve ficar 100% preenchida em vermelho e o texto "Disponível" deve exibir o valor negativo. | Média | Analisado |
 | <a id="rf09"></a>RF09 | O sistema deve exibir um gráfico de evolução de receitas e despesas do usuário autenticado, com filtro próprio de ano inicial e ano final, cujas opções são calculadas a partir dos anos com lançamento do usuário. | Alta | Em análise |
 | <a id="rf10"></a>RF10 | Quando o ano inicial e o ano final do Card 8 forem iguais, o sistema deve exibir a evolução mensal (12 pontos) daquele ano; quando forem diferentes, deve exibir a evolução anual (1 ponto por ano no intervalo). | Alta | Em análise |
 | <a id="rf11"></a>RF11 | O sistema deve inicializar o filtro global de competência com o mês anterior ao atual (`mes_atual - 1`). | Média | Em análise |
 | <a id="rf12"></a>RF12 | O sistema deve recarregar a página inteira via GET ao trocar o filtro global de competência ou o filtro de anos do Card 8, sem uso de AJAX. | Alta | Em análise |
 | <a id="rf13"></a>RF13 | O sistema deve exibir uma mensagem amigável de ausência de dados em cada card que não tiver dado para o período filtrado. | Média | Em análise |
 | <a id="rf14"></a>RF14 | O sistema deve restringir todo o conteúdo do Dashboard Financeiro ao usuário autenticado — nenhum usuário visualiza dado financeiro de outro, nem o ADMIN. | Alta | Em análise |
+| <a id="rf15"></a>RF15 | O sistema deve exibir um indicador visual ("Não entra no saldo geral") nas contas do Card 2 cuja flag "considera no saldo geral" estiver desmarcada. | Baixa | Analisado |
+| <a id="rf16"></a>RF16 | O sistema deve paginar a lista do Card 6 (total rateado por pessoa) quando houver 5 ou mais contatos com rateio na competência filtrada. | Baixa | Analisado |
+| <a id="rf17"></a>RF17 | Quando o usuário não tiver nenhum lançamento no ano corrente, o sistema deve inicializar o `anoFim` do Card 8 com o ano do lançamento mais recente do usuário, em vez do ano corrente. | Baixa | Analisado |
 
 ### 3.2 Requisitos Não Funcionais
 
