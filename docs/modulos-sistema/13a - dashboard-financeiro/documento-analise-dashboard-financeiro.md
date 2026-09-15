@@ -278,6 +278,8 @@ Protótipo navegável ainda não gerado nesta versão — solicitar quando neces
 | <a id="qdd9-4"></a>4 | GRÁFICO – EVOLUÇÃO ANUAL | Tipo: Gráfico de linhas (ApexCharts)<br>Eixo X: anos do intervalo<br>Exibição: condicional (`anoInicio != anoFim`) | Soma anual de `RECE_VALOR` e de `DESP_VALOR` de cada ano no intervalo `[anoInicio, anoFim]`, um ponto por ano ([RN14](#rn14), [C10](#c10)). |
 | <a id="qdd9-5"></a>5 | ESTADO VAZIO | Tipo: Texto informativo<br>Exibição: condicional | Exibido quando o usuário não tem nenhuma receita nem despesa em nenhum ano ([MSG01](#msg01)); nesse caso, [ID1](#qdd9-1)/[ID2](#qdd9-2) ficam sem opção disponível além do ano corrente. |
 
+> `anoFim` padrão: ano corrente, exceto quando o usuário não tem nenhum lançamento no ano corrente — nesse caso, `anoFim` padrão é o ano do lançamento mais recente do usuário ([RN13](#rn13), [Observação 18](#2-observações)).
+
 ### 7.10 Suggestion Boxes
 
 | ID | NOME | DESCRIÇÃO |
