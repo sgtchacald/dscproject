@@ -64,7 +64,7 @@ Este documento cobre:
 
 **Não contempla:**
 - CRUD de Receita, Despesa e Transação Bancária, que **consomem** a categoria — documentos `08`, `09` e `10`.
-- O job de sincronização de Open Finance e o passo de conciliação em si — documentos `14` e `15`. Aqui, apenas o mapa que a conciliação automática consulta.
+- O job de sincronização de Open Finance e o passo de conciliação em si — documentos `15` e `16`. Aqui, apenas o mapa que a conciliação automática consulta.
 - Cadastro de provedores de Open Finance (`OPFI_PROVEDORES`) — vem de carga inicial; a tela de Categorias por Provedor apenas o referencia num combobox.
 - Categoria **por usuário**: `CATEGORIAS` não tem dono no Documento 0 — as categorias são globais (ver Seção 17).
 
@@ -82,8 +82,8 @@ Este documento cobre:
 | 4 | **Exclusão em uso.** Excluir uma categoria referenciada por algum lançamento (Receita, Despesa ou Transação Bancária não excluído) é **bloqueado** ([RN06](#rn06)); a alternativa é **desativar** a categoria. O comportamento é parametrizável ([Seção 12](#12-parâmetros-de-sistema)) — ver a decisão em aberto na Seção 17. | [RN06](#rn06) |
 | 5 | **Desativação ≠ exclusão.** Uma categoria inativa (`CATE_FL_ATIVO = FALSE`) some dos comboboxes de **novos** lançamentos ([EDP05](#edp05)) e não pode ser escolhida em novos vínculos de provedor, mas continua válida nos lançamentos que já a usam, nos relatórios e na conciliação. | [RN09](#rn09) |
 | 6 | **`CATE_APLICA_A`** (`RECEITA` / `DESPESA` / `AMBOS`) restringe em quais telas de lançamento a categoria aparece: a tela de Receita só mostra `RECEITA` e `AMBOS`; a de Despesa, `DESPESA` e `AMBOS`; a de Transação Bancária, todas. É um campo de negócio, não de auditoria. | [RN03](#rn03) |
-| 7 | **Mapa de provedor em tela própria.** `CATEGORIAS_PROVEDOR` é mantido numa **tela administrativa dedicada**, não numa aba do modal de categoria (ver Seção 17). Como `OPFI_PROVEDORES` vem de carga inicial, esta tela funciona antes das telas de Open Finance (`14`/`15`). | [QUADRO_DESCRITIVO_4](#quadro-descritivo-4) |
-| 8 | **Uso do mapa na conciliação automática.** Quando uma transação de *staging* chega com `OFTR_CATEGORIA_EXTERNA` preenchida, o passo de conciliação (documento `15`) casa esse rótulo + o provedor da conexão com uma linha de `CATEGORIAS_PROVEDOR` e resolve o `CATE_ID`. Sem correspondência, a transação fica sem categoria para a conciliação manual. Este documento só mantém o mapa; a regra de casamento é detalhada no documento `15`. | Documento 0, Observação 19 |
+| 7 | **Mapa de provedor em tela própria.** `CATEGORIAS_PROVEDOR` é mantido numa **tela administrativa dedicada**, não numa aba do modal de categoria (ver Seção 17). Como `OPFI_PROVEDORES` vem de carga inicial, esta tela funciona antes das telas de Open Finance (`15`/`16`). | [QUADRO_DESCRITIVO_4](#quadro-descritivo-4) |
+| 8 | **Uso do mapa na conciliação automática.** Quando uma transação de *staging* chega com `OFTR_CATEGORIA_EXTERNA` preenchida, o passo de conciliação (documento `16`) casa esse rótulo + o provedor da conexão com uma linha de `CATEGORIAS_PROVEDOR` e resolve o `CATE_ID`. Sem correspondência, a transação fica sem categoria para a conciliação manual. Este documento só mantém o mapa; a regra de casamento é detalhada no documento `16`. | Documento 0, Observação 19 |
 | 9 | **Pagamento de fatura de cartão** entra como `TransacaoBancaria` com `TRBA_FL_PAGAMENTO_FATURA = TRUE` e é **excluído** do total de gastos por categoria (Documento 0, Observação 16). Não há categoria específica para isso — a regra de exclusão é do documento do Dashboard. A categoria `CARTAO_DE_CREDITO` da carga inicial continua existindo para classificar compras, não o pagamento da fatura. | Documento 0, Observação 16 |
 | 10 | **Carga inicial.** As 19 categorias equivalentes ao enum da geração 1 nascem com `CATE_FL_SISTEMA = TRUE` e `CATE_FL_ATIVO = TRUE`, via o `V1__init.sql` (Documento 0, Seção 6.4, grupo 2). A lista está na Seção 6.4 deste documento. | [RNF06](#rnf06) |
 | 11 | **Grid renderizado no servidor.** O Thymeleaf renderiza o `<tbody>` das duas telas com a lista completa ([EDP01](#edp01), [EDP06](#edp06)); o DataTables inicializa sobre a tabela estática e cuida de paginação, ordenação e busca no cliente. O catálogo tem dezenas de linhas; paginação server-side seria complexidade sem ganho. O filtro do modal recarrega a lista pelo servidor (GET). | [RNF04](#rnf04) |
@@ -111,7 +111,7 @@ Este documento cobre:
 | <a id="rf09"></a>RF09 | O sistema deve permitir cadastrar e editar um vínculo categoria × provedor (rótulo externo + provedor → categoria). | Média | Em análise |
 | <a id="rf10"></a>RF10 | O sistema deve impedir o cadastro de dois vínculos com o mesmo rótulo externo no mesmo provedor. | Média | Em análise |
 | <a id="rf11"></a>RF11 | O sistema deve permitir a exclusão lógica de um vínculo categoria × provedor. | Média | Em análise |
-| <a id="rf12"></a>RF12 | O sistema deve, no passo de conciliação automática das transações de Open Finance, consultar o mapa categoria × provedor para resolver a categoria de uma transação importada (regra detalhada no documento `15`). | Média | Em análise |
+| <a id="rf12"></a>RF12 | O sistema deve, no passo de conciliação automática das transações de Open Finance, consultar o mapa categoria × provedor para resolver a categoria de uma transação importada (regra detalhada no documento `16`). | Média | Em análise |
 
 ### 3.2 Requisitos Não Funcionais
 
@@ -143,7 +143,7 @@ Fonte: `prototipo/manter-categoria-casos-uso.drawio` (editável) e `prototipo/_d
 | <a id="caus07"></a>CAUS07 | Listar Vínculos Categoria × Provedor | [PERF01](#perf01) | ADMIN acessa o menu e visualiza o mapa categoria × provedor. ([RF08](#rf08)) |
 | <a id="caus08"></a>CAUS08 | Manter Vínculo Categoria × Provedor | [PERF01](#perf01) | ADMIN cadastra ou edita um vínculo rótulo externo + provedor → categoria. ([RF09](#rf09), [RF10](#rf10)) |
 | <a id="caus09"></a>CAUS09 | Excluir Vínculo Categoria × Provedor | [PERF01](#perf01) | ADMIN exclui logicamente um vínculo. ([RF11](#rf11)) |
-| <a id="caus10"></a>CAUS10 | Conciliar Transação por Categoria do Provedor | Sistema (job de conciliação) | O passo de conciliação automática consulta o mapa para resolver a categoria de uma transação importada. Contexto — regra no documento `15`. ([RF12](#rf12)) |
+| <a id="caus10"></a>CAUS10 | Conciliar Transação por Categoria do Provedor | Sistema (job de conciliação) | O passo de conciliação automática consulta o mapa para resolver a categoria de uma transação importada. Contexto — regra no documento `16`. ([RF12](#rf12)) |
 
 ---
 
@@ -397,7 +397,7 @@ As duas telas são renderizadas no servidor (ver [Observação 15](#2-observaç�
 | <a id="rn08"></a>RN08 | Exclusão de vínculo categoria × provedor ([EDP09](#edp09)) é sempre lógica (`audit_data_exclusao` / `audit_excluido_por`). Nenhuma trava adicional — o vínculo não é referenciado por FK de outra tabela. |
 | <a id="rn09"></a>RN09 | Categoria inativa (`CATE_FL_ATIVO = FALSE`): não é devolvida por [EDP05](#edp05) e não pode ser escolhida em novos vínculos de provedor ([RN10](#rn10)). Os lançamentos que já a referenciam permanecem inalterados, e ela continua contando nos relatórios e na conciliação. Reativar é apenas voltar `CATE_FL_ATIVO = TRUE` por [EDP03](#edp03). |
 | <a id="rn10"></a>RN10 | Um vínculo categoria × provedor ([EDP07](#edp07)/[EDP08](#edp08)) só aceita `CATE_ID` de categoria ativa e não excluída. Categoria inexistente, inativa ou excluída → [MSG02](#msg02) no campo Categoria. |
-| <a id="rn11"></a>RN11 | Na conciliação automática (documento `15`), ao processar uma transação de *staging* com `OFTR_CATEGORIA_EXTERNA` preenchida, o sistema busca em `CATEGORIAS_PROVEDOR` a linha cujo `OFPV_ID` é o provedor da conexão e cujo `CAPR_ROTULO_EXTERNO` casa com `OFTR_CATEGORIA_EXTERNA`, e usa o `CATE_ID` dela no lançamento gerado. Sem correspondência, o lançamento é criado sem categoria, para a conciliação manual resolver. Esta regra é **consumidora** do mapa; a manutenção do mapa é o escopo deste documento. |
+| <a id="rn11"></a>RN11 | Na conciliação automática (documento `16`), ao processar uma transação de *staging* com `OFTR_CATEGORIA_EXTERNA` preenchida, o sistema busca em `CATEGORIAS_PROVEDOR` a linha cujo `OFPV_ID` é o provedor da conexão e cujo `CAPR_ROTULO_EXTERNO` casa com `OFTR_CATEGORIA_EXTERNA`, e usa o `CATE_ID` dela no lançamento gerado. Sem correspondência, o lançamento é criado sem categoria, para a conciliação manual resolver. Esta regra é **consumidora** do mapa; a manutenção do mapa é o escopo deste documento. |
 
 ---
 
@@ -641,7 +641,7 @@ Descrição: Levantamento a partir do Documento 0 (Observações 14, 16 e 19; [Q
 - O enum `CategoriaRegistroFinanceiro` vira a tabela `CATEGORIAS`, editável por tela; `Receita`/`Despesa`/`TransacaoBancaria` passam a ter `CATE_ID` (FK nullable).
 - Categorias são **globais** e geridas só por ADMIN — `CATEGORIAS` não tem `USU_ID` no Documento 0. O `USER` consome as categorias ativas via [EDP05](#edp05) (só autenticação).
 - Categoria de sistema espelha o "perfil de sistema" do documento `02`: código imutável, flag de sistema não editável pela tela, não excluível; demais campos editáveis.
-- O mapa `CATEGORIAS_PROVEDOR` fica numa **tela administrativa própria** (não numa aba do modal de categoria), com permissões próprias. Funciona antes das telas `14`/`15` porque `OPFI_PROVEDORES` vem de carga inicial.
+- O mapa `CATEGORIAS_PROVEDOR` fica numa **tela administrativa própria** (não numa aba do modal de categoria), com permissões próprias. Funciona antes das telas `15`/`16` porque `OPFI_PROVEDORES` vem de carga inicial.
 - Exclusão de categoria em uso: bloqueada por padrão ([RN06](#rn06)), com a desativação como alternativa; comportamento parametrizável por `CATEGORIA_EXCLUSAO_BLOQUEIA_EM_USO`.
 - Permissões: uma por operação (`LISTAR` / `INSERIR` / `EDITAR` / `EXCLUIR` por módulo), na convenção domínio-primeiro do documento `01 - manter-usuario` (revisão 1.1). Desativar/reativar categoria não é permissão própria — cai em `CATEGORIAS_EDITAR`.
 - As duas telas são CRUD sem AJAX (revisão 1.1): grid renderizado no servidor, modal preenchido pelos dados da linha do grid, filtro por GET, gravação por POST → redirect → flash. AJAX só no combobox [EDP05](#edp05).
