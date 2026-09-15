@@ -20,6 +20,58 @@
                     <input type="month" class="form-control" id="duplicarCompetenciaDestino" required>
                     <small class="form-hint" th:text="#{despesa.duplicar.campo.competenciaDestino.ajuda}">Competência (mês/ano) em que as novas despesas serão criadas.</small>
                 </div>
+
+                <div class="mb-3" id="grupoTipoDuplicacao">
+                    <label class="form-label required" th:text="#{despesa.duplicar.campo.tipo.label}">Tipo de lançamento</label>
+                    <div class="form-selectgroup form-selectgroup-pills">
+                        <label class="form-selectgroup-item">
+                            <input type="radio" name="duplicarTipo" value="AVULSA" class="form-selectgroup-input" checked>
+                            <span class="form-selectgroup-label">
+                                <i class="ph ph-receipt me-1"></i>
+                                <span th:text="#{despesa.duplicar.tipo.avulsa}">Despesa avulsa</span>
+                            </span>
+                        </label>
+                        <label class="form-selectgroup-item">
+                            <input type="radio" name="duplicarTipo" value="PARCELADA" class="form-selectgroup-input">
+                            <span class="form-selectgroup-label">
+                                <i class="ph ph-credit-card me-1"></i>
+                                <span th:text="#{despesa.duplicar.tipo.parcelada}">Compra parcelada</span>
+                            </span>
+                        </label>
+                        <label class="form-selectgroup-item">
+                            <input type="radio" name="duplicarTipo" value="RECORRENTE" class="form-selectgroup-input">
+                            <span class="form-selectgroup-label">
+                                <i class="ph ph-arrows-clockwise me-1"></i>
+                                <span th:text="#{despesa.duplicar.tipo.recorrente}">Despesa recorrente</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="secaoDuplicarParcelada" style="display: none;">
+                    <div class="row g-2 mb-2">
+                        <div class="col-sm-6">
+                            <label class="form-label required" for="duplicarQtdParcelas" th:text="#{despesa.duplicar.campo.qtdParcelas.label}">Quantidade de parcelas</label>
+                            <input type="number" class="form-control" id="duplicarQtdParcelas" min="2" max="72" value="2">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label" th:text="#{despesa.duplicar.campo.baseValor.label}">Base do valor</label>
+                            <select class="form-select" id="duplicarBaseValor">
+                                <option value="PARCELA" th:text="#{despesa.duplicar.baseValor.parcela}">Valor original é o valor da parcela</option>
+                                <option value="TOTAL" th:text="#{despesa.duplicar.baseValor.total}">Valor original é o total da compra</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-muted small mb-3 p-2 bg-light rounded" id="duplicarPreviaParcelamento"></div>
+                </div>
+
+                <div id="secaoDuplicarRecorrente" style="display: none;">
+                    <div class="mb-2">
+                        <label class="form-label required" for="duplicarQtdMesesRecorrencia" th:text="#{despesa.duplicar.campo.qtdMesesRecorrencia.label}">Quantidade de meses</label>
+                        <input type="number" class="form-control" id="duplicarQtdMesesRecorrencia" min="2" max="36" value="12">
+                    </div>
+                    <div class="text-muted small mb-3 p-2 bg-light rounded" id="duplicarPreviaRecorrencia"></div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn" data-bs-dismiss="modal" th:text="#{despesa.duplicar.botao.cancelar}">Cancelar</button>

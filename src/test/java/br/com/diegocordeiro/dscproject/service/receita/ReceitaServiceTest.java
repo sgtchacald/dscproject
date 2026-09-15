@@ -464,4 +464,17 @@ class ReceitaServiceTest {
         assertEquals(YearMonth.of(2026, 10), copia.getCompetencia());
         assertFalse(copia.isRecebido());
     }
+
+    @Test
+    @DisplayName("somarPorCompetencia - Deve delegar para repositório e retornar total")
+    void somarPorCompetencia_deveDelegarERetornarTotal() {
+        YearMonth comp = YearMonth.of(2026, 9);
+        when(receitaRepository.somarPorCompetenciaEUsuario(comp, 1L))
+                .thenReturn(new BigDecimal("4500.00"));
+
+        BigDecimal total = receitaService.somarPorCompetencia(comp, 1L);
+
+        assertEquals(new BigDecimal("4500.00"), total);
+        verify(receitaRepository).somarPorCompetenciaEUsuario(comp, 1L);
+    }
 }

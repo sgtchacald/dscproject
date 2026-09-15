@@ -20,6 +20,7 @@ import br.com.diegocordeiro.dscproject.repository.contato.ContatoRepository;
 import br.com.diegocordeiro.dscproject.repository.despesa.DespesaRepository;
 import br.com.diegocordeiro.dscproject.repository.usuario.UsuarioRepository;
 import br.com.diegocordeiro.dscproject.service.despesa.DespesaService;
+import br.com.diegocordeiro.dscproject.service.receita.ReceitaService;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegistroNaoEncontradoException;
 import br.com.diegocordeiro.dscproject.util.SecurityUtils;
 import br.com.diegocordeiro.dscproject.web.sistema.validator.despesa.DespesaValidator;
@@ -67,6 +68,7 @@ public class DespesaController {
     private final CategoriaRepository categoriaRepository;
     private final UsuarioRepository usuarioRepository;
     private final ContatoRepository contatoRepository;
+    private final ReceitaService receitaService;
     private final MessageSource messageSource;
     private final SmartValidator smartValidator;
 
@@ -79,6 +81,7 @@ public class DespesaController {
             CategoriaRepository categoriaRepository,
             UsuarioRepository usuarioRepository,
             ContatoRepository contatoRepository,
+            ReceitaService receitaService,
             MessageSource messageSource,
             SmartValidator smartValidator) {
         this.despesaService = despesaService;
@@ -89,6 +92,7 @@ public class DespesaController {
         this.categoriaRepository = categoriaRepository;
         this.usuarioRepository = usuarioRepository;
         this.contatoRepository = contatoRepository;
+        this.receitaService = receitaService;
         this.messageSource = messageSource;
         this.smartValidator = smartValidator;
     }
@@ -110,6 +114,20 @@ public class DespesaController {
     public List<DespesaGridDTO> listarDados(Principal principal) {
         Usuario usuario = obterUsuarioAutenticado(principal);
         return despesaService.listarParaGrid(usuario.getId());
+    }
+
+    @GetMapping("/despesas/receita-competencia")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> obterReceitaCompetencia(@RequestParam("competencia") String competencia, Principal principal) {
+        Usuario usuario = obterUsuarioAutenticado(principal);
+        YearMonth comp;
+        try {
+            comp = YearMonth.parse(competencia);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "Competência inválida"));
+        }
+        BigDecimal totalReceita = receitaService.somarPorCompetencia(comp, usuario.getId());
+        return ResponseEntity.ok(Map.of("competencia", competencia, "totalReceita", totalReceita));
     }
 
     @PostMapping("/despesas/inserir")
@@ -249,7 +267,16 @@ public class DespesaController {
 
     @PostMapping("/despesas/duplicar")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> duplicar(@RequestParam(value = "despesaIds", required = false) List<Long> despesaIds, @RequestParam(value = "ids", required = false) List<Long> ids, @RequestParam(value = "competenciaDestino", required = false) String competenciaDestino, Principal principal, Locale locale) {
+    public ResponseEntity<Map<String, Object>> duplicar(
+            @RequestParam(value = "despesaIds", required = false) List<Long> despesaIds,
+            @RequestParam(value = "ids", required = false) List<Long> ids,
+            @RequestParam(value = "competenciaDestino", required = false) String competenciaDestino,
+            @RequestParam(value = "tipo", required = false, defaultValue = "AVULSA") String tipo,
+            @RequestParam(value = "qtdParcelas", required = false) Integer qtdParcelas,
+            @RequestParam(value = "baseValor", required = false, defaultValue = "PARCELA") String baseValor,
+            @RequestParam(value = "qtdMesesRecorrencia", required = false) Integer qtdMesesRecorrencia,
+            Principal principal,
+            Locale locale) {
         List<Long> targetIds = despesaIds != null && !despesaIds.isEmpty() ? despesaIds : ids;
         if (targetIds == null || targetIds.isEmpty()) {
             Map<String, Object> body = new LinkedHashMap<>();
@@ -259,7 +286,15 @@ public class DespesaController {
             return ResponseEntity.unprocessableEntity().body(body);
         }
         Usuario usuario = obterUsuarioAutenticado(principal);
-        despesaService.duplicar(targetIds, competenciaDestino, usuario.getId(), usuario.getLogin());
+        despesaService.duplicar(
+                targetIds,
+                competenciaDestino,
+                tipo,
+                qtdParcelas,
+                baseValor,
+                qtdMesesRecorrencia,
+                usuario.getId(),
+                usuario.getLogin());
         return ResponseEntity.ok(Map.of("sucesso", true, "mensagem", mensagem("msg.despesa.duplicada", locale)));
     }
 

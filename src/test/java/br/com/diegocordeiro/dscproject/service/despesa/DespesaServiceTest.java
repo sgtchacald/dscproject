@@ -206,6 +206,40 @@ class DespesaServiceTest {
     }
 
     @Test
+    @DisplayName("RN16 / RN17 - Inserir despesa simples com rateio integral para contato (cota do dono zerada) salva com sucesso")
+    void inserir_despesaSimplesComRateioIntegralContato_salvaComSucesso() {
+        Conta c = contaAtiva(10L, 1L);
+        when(contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(10L, 1L)).thenReturn(Optional.of(c));
+
+        Contato contato = new Contato();
+        contato.setId(2L);
+        contato.setNome("Amigo");
+        when(contatoRepository.findById(2L)).thenReturn(Optional.of(contato));
+
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> {
+            Despesa d = inv.getArgument(0);
+            d.setId(100L);
+            return d;
+        });
+
+        DespesaFormDTO dto = dtoSimples(10L);
+        dto.setValor(new BigDecimal("150.00"));
+        dto.setRateio(List.of(new DespesaRateioDTO(2L, "Amigo", new BigDecimal("150.00"), StatusPagamento.NAO, null)));
+
+        Despesa salva = despesaService.inserir(dto, 1L, "user_teste", true);
+
+        assertNotNull(salva);
+        assertEquals(new BigDecimal("150.00"), salva.getValor());
+        assertEquals(1, salva.getRateios().size());
+
+        ArgumentCaptor<DespesaUsuario> captor = ArgumentCaptor.forClass(DespesaUsuario.class);
+        verify(despesaUsuarioRepository).save(captor.capture());
+        DespesaUsuario rateioSalvo = captor.getValue();
+        assertEquals(new BigDecimal("150.00"), rateioSalvo.getValor());
+        assertEquals(contato, rateioSalvo.getContato());
+    }
+
+    @Test
     @DisplayName("RN08 - Editar despesa não-MANUAL preserva conta/cartão original")
     void editar_despesaImportada_preservaContaOriginal() {
         Conta cOriginal = contaAtiva(10L, 1L);
@@ -828,5 +862,287 @@ class DespesaServiceTest {
 
         assertThrows(RegraNegocioException.class, () ->
                 despesaService.atualizarFormaPagamento(10L, "CARTAO", 99L, null, null, 1L, "autor"));
+    }
+
+    @Test
+    @DisplayName("DespesaGridDTO - Despesa sem rateio tem valorUsuario igual ao valor total e valorRateado zero")
+    void despesaGridDTO_semRateio_devePreencherValorUsuarioComValorTotal() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setValor(new BigDecimal("100.00"));
+
+        DespesaGridDTO dto = new DespesaGridDTO(d);
+
+        assertEquals(new BigDecimal("100.00"), dto.getValor());
+        assertEquals(new BigDecimal("100.00"), dto.getValorUsuario());
+        assertEquals(BigDecimal.ZERO, dto.getValorRateado());
+        assertFalse(dto.isTemRateio());
+    }
+
+    @Test
+    @DisplayName("DespesaGridDTO - Despesa com rateio parcial deduz as fatias dos contatos da cota do titular")
+    void despesaGridDTO_comRateioParcial_deveDeduzirFatiaDosContatos() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setValor(new BigDecimal("100.00"));
+
+        DespesaUsuario du = new DespesaUsuario();
+        du.setValor(new BigDecimal("60.00"));
+        d.getRateios().add(du);
+
+        DespesaGridDTO dto = new DespesaGridDTO(d);
+
+        assertEquals(new BigDecimal("100.00"), dto.getValor());
+        assertEquals(new BigDecimal("40.00"), dto.getValorUsuario());
+        assertEquals(new BigDecimal("60.00"), dto.getValorRateado());
+        assertTrue(dto.isTemRateio());
+    }
+
+    @Test
+    @DisplayName("DespesaGridDTO - Despesa com rateio integral cota zerada atribui valorUsuario zero e valorRateado total")
+    void despesaGridDTO_comRateioIntegral_deveZerarValorUsuario() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setValor(new BigDecimal("100.00"));
+
+        DespesaUsuario du = new DespesaUsuario();
+        du.setValor(new BigDecimal("100.00"));
+        d.getRateios().add(du);
+
+        DespesaGridDTO dto = new DespesaGridDTO(d);
+
+        assertEquals(new BigDecimal("100.00"), dto.getValor());
+        assertEquals(new BigDecimal("0.00"), dto.getValorUsuario());
+        assertEquals(new BigDecimal("100.00"), dto.getValorRateado());
+        assertTrue(dto.isTemRateio());
+    }
+
+    @Test
+    @DisplayName("RN26 - Duplicar despesa como parcelada (base PARCELA) gera série com rateio clonado")
+    void duplicar_comoParcelada_comBaseParcelaERateio_deveGerarSerieEClonarRateio() {
+        Contato contato = new Contato();
+        contato.setId(2L);
+        contato.setNome("Contato Rateio");
+
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setNome("Compra Loja");
+        d.setValor(new BigDecimal("50.00"));
+        d.setDataLancamento(LocalDate.of(2026, 9, 1));
+        d.setDataVencimento(LocalDate.of(2026, 9, 10));
+        d.setCompetencia(YearMonth.of(2026, 9));
+        d.setOrigem(OrigemLancamento.MANUAL);
+        d.setStatusPagamento(StatusPagamento.NAO);
+
+        DespesaUsuario du = new DespesaUsuario();
+        du.setId(101L);
+        du.setDespesa(d);
+        du.setContato(contato);
+        du.setValor(new BigDecimal("20.00"));
+        du.setStatusPagamento(StatusPagamento.NAO);
+        d.getRateios().add(du);
+
+        when(despesaRepository.countPorIdsEUsuario(List.of(10L), 1L)).thenReturn(1L);
+        when(despesaRepository.buscarPorIdsEUsuario(List.of(10L), 1L)).thenReturn(List.of(d));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        List<Despesa> duplicadas = despesaService.duplicar(
+                List.of(10L), "2026-10", "PARCELADA", 3, "PARCELA", null, 1L, "autor");
+
+        assertEquals(3, duplicadas.size());
+
+        Despesa p1 = duplicadas.get(0);
+        assertTrue(p1.isParcelada());
+        assertEquals(1, p1.getNroParcela());
+        assertEquals(3, p1.getQtdParcelas());
+        assertNull(p1.getParcelaPai());
+        assertEquals(new BigDecimal("50.00"), p1.getValor());
+        assertEquals(new BigDecimal("150.00"), p1.getValorTotalCompra());
+        assertEquals(YearMonth.of(2026, 10), p1.getCompetencia());
+        assertEquals(LocalDate.of(2026, 10, 10), p1.getDataVencimento());
+
+        Despesa p2 = duplicadas.get(1);
+        assertTrue(p2.isParcelada());
+        assertEquals(2, p2.getNroParcela());
+        assertEquals(3, p2.getQtdParcelas());
+        assertEquals(p1, p2.getParcelaPai());
+        assertEquals(new BigDecimal("50.00"), p2.getValor());
+        assertEquals(YearMonth.of(2026, 11), p2.getCompetencia());
+        assertEquals(LocalDate.of(2026, 11, 10), p2.getDataVencimento());
+
+        Despesa p3 = duplicadas.get(2);
+        assertTrue(p3.isParcelada());
+        assertEquals(3, p3.getNroParcela());
+        assertEquals(p1, p3.getParcelaPai());
+        assertEquals(new BigDecimal("50.00"), p3.getValor());
+        assertEquals(YearMonth.of(2026, 12), p3.getCompetencia());
+
+        verify(despesaUsuarioRepository, times(3)).save(any(DespesaUsuario.class));
+    }
+
+    @Test
+    @DisplayName("RN26 - Duplicar despesa como parcelada (base TOTAL) divide valor entre parcelas")
+    void duplicar_comoParcelada_comBaseTotal_deveDividirValor() {
+        Despesa d = new Despesa();
+        d.setId(10L);
+        d.setNome("Compra Total");
+        d.setValor(new BigDecimal("100.00"));
+        d.setCompetencia(YearMonth.of(2026, 9));
+        d.setDataLancamento(LocalDate.of(2026, 9, 1));
+        d.setDataVencimento(LocalDate.of(2026, 9, 10));
+
+        when(despesaRepository.countPorIdsEUsuario(List.of(10L), 1L)).thenReturn(1L);
+        when(despesaRepository.buscarPorIdsEUsuario(List.of(10L), 1L)).thenReturn(List.of(d));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        List<Despesa> duplicadas = despesaService.duplicar(
+                List.of(10L), "2026-10", "PARCELADA", 3, "TOTAL", null, 1L, "autor");
+
+        assertEquals(3, duplicadas.size());
+        assertEquals(new BigDecimal("33.33"), duplicadas.get(0).getValor());
+        assertEquals(new BigDecimal("33.33"), duplicadas.get(1).getValor());
+        assertEquals(new BigDecimal("33.34"), duplicadas.get(2).getValor());
+        assertEquals(new BigDecimal("100.00"), duplicadas.get(0).getValorTotalCompra());
+    }
+
+    @Test
+    @DisplayName("RN26 - Duplicar despesa como recorrente gera série com rateio clonado")
+    void duplicar_comoRecorrente_comRateio_deveGerarSerieEClonarRateio() {
+        Contato contato = new Contato();
+        contato.setId(3L);
+        contato.setNome("Contato Recorrente");
+
+        Despesa d = new Despesa();
+        d.setId(20L);
+        d.setNome("Assinatura");
+        d.setValor(new BigDecimal("80.00"));
+        d.setDataLancamento(LocalDate.of(2026, 9, 5));
+        d.setDataVencimento(LocalDate.of(2026, 9, 15));
+        d.setCompetencia(YearMonth.of(2026, 9));
+
+        DespesaUsuario du = new DespesaUsuario();
+        du.setId(201L);
+        du.setDespesa(d);
+        du.setContato(contato);
+        du.setValor(new BigDecimal("30.00"));
+        d.getRateios().add(du);
+
+        when(despesaRepository.countPorIdsEUsuario(List.of(20L), 1L)).thenReturn(1L);
+        when(despesaRepository.buscarPorIdsEUsuario(List.of(20L), 1L)).thenReturn(List.of(d));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        List<Despesa> duplicadas = despesaService.duplicar(
+                List.of(20L), "2026-10", "RECORRENTE", null, "PARCELA", 4, 1L, "autor");
+
+        assertEquals(4, duplicadas.size());
+
+        Despesa r1 = duplicadas.get(0);
+        assertTrue(r1.isRecorrente());
+        assertNull(r1.getRecorrentePai());
+        assertEquals(new BigDecimal("80.00"), r1.getValor());
+        assertEquals(YearMonth.of(2026, 10), r1.getCompetencia());
+
+        Despesa r2 = duplicadas.get(1);
+        assertTrue(r2.isRecorrente());
+        assertEquals(r1, r2.getRecorrentePai());
+        assertEquals(new BigDecimal("80.00"), r2.getValor());
+        assertEquals(YearMonth.of(2026, 11), r2.getCompetencia());
+
+        Despesa r4 = duplicadas.get(3);
+        assertTrue(r4.isRecorrente());
+        assertEquals(r1, r4.getRecorrentePai());
+        assertEquals(YearMonth.of(2027, 1), r4.getCompetencia());
+
+        verify(despesaUsuarioRepository, times(4)).save(any(DespesaUsuario.class));
+    }
+
+    @Test
+    @DisplayName("RN26 - Editar despesa avulsa convertendo para parcelada gera parcelas filhas e rateio")
+    void editar_converterAvulsaParaParcelada_deveGerarParcelasFilhasERateio() {
+        Contato contato = new Contato();
+        contato.setId(2L);
+        when(contatoRepository.findById(2L)).thenReturn(Optional.of(contato));
+
+        Despesa existente = new Despesa();
+        existente.setId(50L);
+        existente.setNome("Compra Avulsa");
+        existente.setValor(new BigDecimal("100.00"));
+        existente.setCompetencia(YearMonth.of(2026, 9));
+        existente.setDataLancamento(LocalDate.of(2026, 9, 1));
+        existente.setDataVencimento(LocalDate.of(2026, 9, 10));
+        existente.setParcelada(false);
+        existente.setRecorrente(false);
+        existente.setOrigem(OrigemLancamento.MANUAL);
+
+        when(despesaRepository.buscarPorIdEUsuario(50L, 1L)).thenReturn(Optional.of(existente));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DespesaFormDTO dto = new DespesaFormDTO();
+        dto.setNome("Compra Avulsa Editada");
+        dto.setCompetencia("2026-09");
+        dto.setDataLancamento(LocalDate.of(2026, 9, 1));
+        dto.setDataVencimento(LocalDate.of(2026, 9, 10));
+        dto.setParcelada(true);
+        dto.setQtdParcelas(3);
+        dto.setValorTotalCompra(new BigDecimal("300.00"));
+        dto.setValor(new BigDecimal("100.00"));
+        dto.setRateio(List.of(new DespesaRateioDTO(2L, "Contato", new BigDecimal("60.00"), StatusPagamento.NAO, null)));
+
+        Despesa editada = despesaService.editar(50L, dto, 1L, "autor", true);
+
+        assertTrue(editada.isParcelada());
+        assertEquals(1, editada.getNroParcela());
+        assertEquals(3, editada.getQtdParcelas());
+        assertNull(editada.getParcelaPai());
+        assertEquals(new BigDecimal("100.00"), editada.getValor());
+        assertEquals(new BigDecimal("300.00"), editada.getValorTotalCompra());
+
+        // Deve salvar a mãe (existente) + 2 filhas = 3 chamadas a despesaRepository.save
+        verify(despesaRepository, times(3)).save(any(Despesa.class));
+        // Para cada parcela filha (2 filhas), rateio é salvo com fatia proporcional (60 / 3 = 20)
+        verify(despesaUsuarioRepository, atLeast(2)).save(any(DespesaUsuario.class));
+    }
+
+    @Test
+    @DisplayName("RN26 - Editar despesa avulsa convertendo para recorrente gera ocorrências filhas e rateio")
+    void editar_converterAvulsaParaRecorrente_deveGerarRecorrenciasFilhasERateio() {
+        Contato contato = new Contato();
+        contato.setId(2L);
+        when(contatoRepository.findById(2L)).thenReturn(Optional.of(contato));
+
+        Despesa existente = new Despesa();
+        existente.setId(50L);
+        existente.setNome("Mensalidade");
+        existente.setValor(new BigDecimal("120.00"));
+        existente.setCompetencia(YearMonth.of(2026, 9));
+        existente.setDataLancamento(LocalDate.of(2026, 9, 1));
+        existente.setDataVencimento(LocalDate.of(2026, 9, 10));
+        existente.setParcelada(false);
+        existente.setRecorrente(false);
+        existente.setOrigem(OrigemLancamento.MANUAL);
+
+        when(despesaRepository.buscarPorIdEUsuario(50L, 1L)).thenReturn(Optional.of(existente));
+        when(despesaRepository.save(any(Despesa.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        DespesaFormDTO dto = new DespesaFormDTO();
+        dto.setNome("Mensalidade Recorrente");
+        dto.setCompetencia("2026-09");
+        dto.setDataLancamento(LocalDate.of(2026, 9, 1));
+        dto.setDataVencimento(LocalDate.of(2026, 9, 10));
+        dto.setRecorrente(true);
+        dto.setQtdMesesRecorrencia(3);
+        dto.setValor(new BigDecimal("120.00"));
+        dto.setRateio(List.of(new DespesaRateioDTO(2L, "Contato", new BigDecimal("40.00"), StatusPagamento.NAO, null)));
+
+        Despesa editada = despesaService.editar(50L, dto, 1L, "autor", true);
+
+        assertTrue(editada.isRecorrente());
+        assertNull(editada.getRecorrentePai());
+        assertEquals(new BigDecimal("120.00"), editada.getValor());
+
+        // Deve salvar a geradora + 2 filhas = 3 chamadas a despesaRepository.save
+        verify(despesaRepository, times(3)).save(any(Despesa.class));
+        // Para cada filha (2 filhas), rateio é salvo com fatia integral (40)
+        verify(despesaUsuarioRepository, atLeast(2)).save(any(DespesaUsuario.class));
     }
 }
