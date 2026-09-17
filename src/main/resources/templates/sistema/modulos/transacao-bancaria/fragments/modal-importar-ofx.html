@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalImportarOfx" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="formImportarOfx" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{transacao.importar.titulo}">Importar extrato bancário OFX</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaImportarOfx" class="alert alert-danger" style="display:none;" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" for="importarContaId" th:text="#{transacao.importar.campo.conta.label}">Conta bancária de destino</label>
+                        <select class="form-select" id="importarContaId" name="contaId" required>
+                        </select>
+                        <div class="invalid-feedback" id="erroImportarContaId"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" for="importarArquivoOfx" th:text="#{transacao.importar.campo.arquivo.label}">Arquivo (.ofx)</label>
+                        <input type="file" class="form-control" id="importarArquivoOfx" name="arquivo" accept=".ofx" required>
+                        <small class="form-hint" th:text="#{transacao.importar.ajuda}">Extratos no formato Open Financial Exchange (.ofx). Transações já existentes com o mesmo identificador bancário serão ignoradas automaticamente.</small>
+                        <div class="invalid-feedback" id="erroImportarArquivo"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" th:text="#{transacao.form.botao.cancelar}">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnEnviarOfx">
+                        <i class="ph ph-upload-simple me-1" aria-hidden="true"></i>
+                        <span th:text="#{transacao.importar.botao.enviar}">Processar arquivo</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

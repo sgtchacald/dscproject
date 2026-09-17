@@ -192,7 +192,7 @@ public class CartaoCreditoService {
 
     private void desvincularTabela(String tabela, Long cartaoId) {
         try {
-            String sql = "UPDATE " + tabela + " SET CACR_ID = NULL WHERE CACR_ID = ?";
+            String sql = "UPDATE " + tabela.toLowerCase() + " SET CACR_ID = NULL WHERE CACR_ID = ?";
             jdbcTemplate.update(sql, cartaoId);
         } catch (Exception ignored) {
         }
@@ -246,7 +246,7 @@ public class CartaoCreditoService {
 
     private long contarEmTabela(String tabela, Long cartaoId) {
         try {
-            String sql = "SELECT COUNT(*) FROM " + tabela + " WHERE CACR_ID = ? AND audit_data_exclusao IS NULL";
+            String sql = "SELECT COUNT(*) FROM " + tabela.toLowerCase() + " WHERE CACR_ID = ? AND audit_data_exclusao IS NULL";
             Long count = jdbcTemplate.queryForObject(sql, Long.class, cartaoId);
             return count != null ? count : 0L;
         } catch (Exception e) {

@@ -133,8 +133,8 @@ class CartaoCreditoServiceTest {
         cartao.setUsuario(criarUsuario(1L));
 
         when(cartaoCreditoRepository.listarPorUsuario(1L)).thenReturn(List.of(cartao));
-        when(jdbcTemplate.queryForObject(contains("FATURAS_CARTAO"), eq(Long.class), eq(3L))).thenReturn(1L);
-        when(jdbcTemplate.queryForObject(contains("DESPESAS"), eq(Long.class), eq(3L))).thenReturn(2L);
+        when(jdbcTemplate.queryForObject(contains("faturas_cartao"), eq(Long.class), eq(3L))).thenReturn(1L);
+        when(jdbcTemplate.queryForObject(contains("despesas"), eq(Long.class), eq(3L))).thenReturn(2L);
 
         CartaoCreditoGridDTO dto = service.listarParaGrid(1L).get(0);
         assertEquals(3L, dto.getQtdVinculos());
@@ -270,7 +270,7 @@ class CartaoCreditoServiceTest {
         cartao.setUsuario(criarUsuario(1L));
 
         when(cartaoCreditoRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(50L, 1L)).thenReturn(Optional.of(cartao));
-        when(jdbcTemplate.queryForObject(contains("FATURAS_CARTAO"), eq(Long.class), eq(50L))).thenReturn(1L);
+        when(jdbcTemplate.queryForObject(contains("faturas_cartao"), eq(Long.class), eq(50L))).thenReturn(1L);
 
         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> service.excluir(50L, 1L, "user1"));
         assertEquals("msg.cartao.em-uso.bloqueada", ex.getMessage());
@@ -285,8 +285,8 @@ class CartaoCreditoServiceTest {
         cartao.setUsuario(criarUsuario(1L));
 
         when(cartaoCreditoRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(50L, 1L)).thenReturn(Optional.of(cartao));
-        when(jdbcTemplate.queryForObject(contains("FATURAS_CARTAO"), eq(Long.class), eq(50L))).thenReturn(0L);
-        when(jdbcTemplate.queryForObject(contains("DESPESAS"), eq(Long.class), eq(50L))).thenReturn(2L);
+        when(jdbcTemplate.queryForObject(contains("faturas_cartao"), eq(Long.class), eq(50L))).thenReturn(0L);
+        when(jdbcTemplate.queryForObject(contains("despesas"), eq(Long.class), eq(50L))).thenReturn(2L);
 
         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> service.excluir(50L, 1L, "user1"));
         assertEquals("msg.cartao.em-uso.bloqueada", ex.getMessage());
@@ -304,15 +304,15 @@ class CartaoCreditoServiceTest {
         parametro.setValor("false");
 
         when(cartaoCreditoRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(50L, 1L)).thenReturn(Optional.of(cartao));
-        when(jdbcTemplate.queryForObject(contains("FATURAS_CARTAO"), eq(Long.class), eq(50L))).thenReturn(0L);
-        when(jdbcTemplate.queryForObject(contains("DESPESAS"), eq(Long.class), eq(50L))).thenReturn(2L);
+        when(jdbcTemplate.queryForObject(contains("faturas_cartao"), eq(Long.class), eq(50L))).thenReturn(0L);
+        when(jdbcTemplate.queryForObject(contains("despesas"), eq(Long.class), eq(50L))).thenReturn(2L);
         when(parametroGlobalRepository.findByCodigo("CARTAO_EXCLUSAO_BLOQUEIA_EM_USO")).thenReturn(Optional.of(parametro));
         when(cartaoCreditoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.excluir(50L, 1L, "user1");
 
         assertTrue(cartao.isExcluido());
-        verify(jdbcTemplate).update(contains("UPDATE DESPESAS"), eq(50L));
+        verify(jdbcTemplate).update(contains("UPDATE despesas"), eq(50L));
         verify(cartaoCreditoRepository).save(cartao);
     }
 

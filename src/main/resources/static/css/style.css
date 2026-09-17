@@ -245,3 +245,110 @@ tr.drag-over-bottom {
     border-right: 2px solid currentColor;
     border-bottom: 2px solid currentColor;
 }
+
+/* Botão de maximizar/restaurar no cabeçalho das modais */
+.btn-modal-maximize {
+    background: transparent;
+    border: none;
+    padding: 0.25rem 0.35rem;
+    line-height: 1;
+    color: var(--tblr-muted, #6c7a91);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    margin-right: 0.35rem;
+    font-size: 1.15rem;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.btn-modal-maximize:hover {
+    color: var(--tblr-body-color, #1e293b);
+    background-color: rgba(var(--tblr-body-color-rgb, 30, 41, 59), 0.08);
+}
+
+/* Modais Maximizadas e Redimensionadas: layout flex fluido */
+.modal-dialog.is-maximized {
+    max-width: none !important;
+    margin: 0 !important;
+}
+
+.modal-dialog.is-maximized .modal-content {
+    height: 100% !important;
+    max-height: none !important;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-dialog.is-maximized .modal-content > form,
+.modal-content.is-resized > form {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+}
+
+.modal-dialog.is-maximized .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* Seletor de Permissões e Perfis */
+#modalPerfil .modal-body {
+    display: flex;
+    flex-direction: column;
+}
+
+#modalPerfil .seletor-permissoes-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+#seletorPermissoes {
+    min-height: 280px;
+    max-height: 420px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+    align-items: start;
+    background-color: var(--tblr-bg-surface, #ffffff);
+}
+
+.modal-dialog.is-maximized #modalPerfil .modal-body {
+    overflow: hidden !important;
+}
+
+.modal-dialog.is-maximized #seletorPermissoes,
+.modal-content.is-resized #seletorPermissoes {
+    max-height: none !important;
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+}
+
+.modal-dialog.is-maximized #modalCatalogo .modal-body,
+.modal-content.is-resized #modalCatalogo .modal-body {
+    max-height: none !important;
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+.grupo-modulo-permissoes {
+    background-color: var(--tblr-bg-surface-secondary, #f8fafc);
+    border: 1px solid var(--tblr-border-color, #e6e8ea);
+    border-radius: 6px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.grupo-modulo-permissoes:hover {
+    border-color: var(--tblr-primary-subtle, #bfe0f9);
+}

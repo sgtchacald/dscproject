@@ -305,10 +305,108 @@ function dividirRateioIgualmente() {
     renderizarRateios();
 }
 
+function limparRateio() {
+    itensRateio = [];
+    const switchRateio = document.getElementById('despesaHabilitarRateio');
+    if (switchRateio) switchRateio.checked = false;
+
+    const conteudo = document.getElementById('conteudoRateio');
+    if (conteudo) conteudo.style.display = 'none';
+
+    const blocoItens = document.getElementById('blocoItensRateio');
+    if (blocoItens) blocoItens.style.display = 'none';
+
+    const btnDividir = document.getElementById('btnDividirIgualmenteRateio');
+    if (btnDividir) btnDividir.style.display = 'none';
+
+    const corpo = document.getElementById('corpoTabelaRateio');
+    if (corpo) corpo.innerHTML = '';
+
+    const buscaInput = document.getElementById('buscaUsuarioRateio');
+    if (buscaInput) buscaInput.value = '';
+
+    const dataList = document.getElementById('listaUsuariosRateio');
+    if (dataList) dataList.innerHTML = '';
+
+    contatoSelecionadoAtual = null;
+    contatosBuscadosCache.clear();
+
+    const inputMinhaCota = document.getElementById('despesaMinhaCota');
+    if (inputMinhaCota) definirValorMoeda(inputMinhaCota, 0);
+
+    const resumoTotal = document.getElementById('resumoTotalDespesa');
+    if (resumoTotal) resumoTotal.textContent = 'R$ 0,00';
+
+    const resumoFatias = document.getElementById('resumoFatiasContatos');
+    if (resumoFatias) resumoFatias.textContent = 'R$ 0,00';
+
+    const badgeZerada = document.getElementById('badgeCotaZerada');
+    if (badgeZerada) badgeZerada.style.display = 'none';
+
+    const infoStatus = document.getElementById('infoStatusRateio');
+    if (infoStatus) infoStatus.textContent = '';
+
+    const erroRateio = document.getElementById('erroRateio');
+    if (erroRateio) {
+        erroRateio.textContent = '';
+        erroRateio.classList.remove('d-block');
+    }
+
+    const detalheParcela = document.getElementById('despesaDetalheParcelaRateio');
+    if (detalheParcela) {
+        detalheParcela.style.display = 'none';
+        detalheParcela.textContent = '';
+    }
+
+    const cardNovoContatoRateio = document.getElementById('cardNovoContatoRateio');
+    if (cardNovoContatoRateio) {
+        const bs = window.bootstrap || window.tabler;
+        if (bs && bs.Collapse) {
+            const collapse = bs.Collapse.getInstance(cardNovoContatoRateio);
+            if (collapse) collapse.hide();
+        } else {
+            cardNovoContatoRateio.classList.remove('show');
+        }
+    }
+    const nomeInput = document.getElementById('novoContatoNome');
+    if (nomeInput) nomeInput.value = '';
+    const emailInput = document.getElementById('novoContatoEmail');
+    if (emailInput) emailInput.value = '';
+    const telInput = document.getElementById('novoContatoTelefone');
+    if (telInput) telInput.value = '';
+    const pixInput = document.getElementById('novoContatoPix');
+    if (pixInput) pixInput.value = '';
+    const alertaContatoRapido = document.getElementById('alertaContatoRapido');
+    if (alertaContatoRapido) {
+        alertaContatoRapido.style.display = 'none';
+        alertaContatoRapido.textContent = '';
+    }
+}
+
 function renderizarRateios() {
     const corpo = document.getElementById('corpoTabelaRateio');
+    const blocoItens = document.getElementById('blocoItensRateio');
+    const btnDividir = document.getElementById('btnDividirIgualmenteRateio');
     if (!corpo) return;
     corpo.innerHTML = '';
+
+    if (itensRateio.length === 0) {
+        if (blocoItens) blocoItens.style.display = 'none';
+        if (btnDividir) btnDividir.style.display = 'none';
+        const inputMinhaCota = document.getElementById('despesaMinhaCota');
+        if (inputMinhaCota) definirValorMoeda(inputMinhaCota, 0);
+        const detalheParcela = document.getElementById('despesaDetalheParcelaRateio');
+        if (detalheParcela) {
+            detalheParcela.style.display = 'none';
+            detalheParcela.textContent = '';
+        }
+        const resumoFatias = document.getElementById('resumoFatiasContatos');
+        if (resumoFatias) resumoFatias.textContent = 'R$ 0,00';
+        return;
+    }
+
+    if (blocoItens) blocoItens.style.display = 'block';
+    if (btnDividir) btnDividir.style.display = '';
 
     const parcelada = document.getElementById('despesaParcelada')?.checked;
     const n = parseInt(document.getElementById('despesaQtdParcelas')?.value, 10) || 1;
@@ -365,9 +463,9 @@ export async function abrirNovo() {
     if (!f) return;
     f.reset();
     limparErros();
+    limparRateio();
     modoEdicao = false;
     origemAtual = 'MANUAL';
-    itensRateio = [];
 
     await carregarOpcoes();
 
@@ -413,22 +511,14 @@ export async function abrirNovo() {
     document.getElementById('secaoParcelamentoRecorrencia').style.display = 'block';
     document.getElementById('grupoCamposParcelamento').style.display = 'none';
     document.getElementById('grupoCamposRecorrencia').style.display = 'none';
-    const inputMinhaCota = document.getElementById('despesaMinhaCota');
-    if (inputMinhaCota) definirValorMoeda(inputMinhaCota, 0);
-    const detalheParcela = document.getElementById('despesaDetalheParcelaRateio');
-    if (detalheParcela) {
-        detalheParcela.style.display = 'none';
-        detalheParcela.textContent = '';
-    }
 
-    renderizarRateios();
     abrirModal('modalDespesa');
 }
 
 export async function abrirEdicao(id, focarRateio = false) {
     limparErros();
+    limparRateio();
     modoEdicao = true;
-    itensRateio = [];
 
     await carregarOpcoes();
 
@@ -505,7 +595,19 @@ export async function abrirEdicao(id, focarRateio = false) {
         }
 
         // Rateio
-        if (d.rateio && Array.isArray(d.rateio)) {
+        const temRateio = d.rateio && Array.isArray(d.rateio) && d.rateio.length > 0;
+        const switchRateio = document.getElementById('despesaHabilitarRateio');
+        const conteudoRateio = document.getElementById('conteudoRateio');
+
+        if (temRateio || focarRateio) {
+            if (switchRateio) switchRateio.checked = true;
+            if (conteudoRateio) conteudoRateio.style.display = 'block';
+        } else {
+            if (switchRateio) switchRateio.checked = false;
+            if (conteudoRateio) conteudoRateio.style.display = 'none';
+        }
+
+        if (temRateio) {
             itensRateio = d.rateio.map(r => ({
                 id: r.contatoId || r.usuarioId,
                 nome: r.contatoNome || r.usuarioNome,
@@ -515,6 +617,8 @@ export async function abrirEdicao(id, focarRateio = false) {
                 statusPagamento: r.statusPagamento || 'NAO',
                 dataAcerto: r.dataAcerto
             }));
+        } else {
+            itensRateio = [];
         }
         renderizarRateios();
 
@@ -613,6 +717,22 @@ export function inicializarForm() {
             labelValor.textContent = 'Valor';
         }
     });
+
+    // Rateio switch
+    const switchRateio = document.getElementById('despesaHabilitarRateio');
+    if (switchRateio) {
+        switchRateio.addEventListener('change', function () {
+            const conteudo = document.getElementById('conteudoRateio');
+            if (this.checked) {
+                if (conteudo) conteudo.style.display = 'block';
+                const buscaInput = document.getElementById('buscaUsuarioRateio');
+                if (buscaInput) setTimeout(() => buscaInput.focus(), 150);
+            } else {
+                if (conteudo) conteudo.style.display = 'none';
+                limparRateio();
+            }
+        });
+    }
 
     document.getElementById('despesaValor').addEventListener('input', atualizarValorParcelaCalculada);
     document.getElementById('despesaQtdParcelas').addEventListener('input', atualizarValorParcelaCalculada);
@@ -988,6 +1108,11 @@ export function inicializarForm() {
         const recorrente = document.getElementById('despesaRecorrente').checked;
         const valorInformado = parseDecimal(document.getElementById('despesaValor').value);
 
+        const habilitarRateio = document.getElementById('despesaHabilitarRateio')?.checked;
+        if (!habilitarRateio) {
+            itensRateio = [];
+        }
+
         // Validação client-side de rateio
         if (itensRateio.length > 0) {
             const itemInvalido = itensRateio.find(item => !item.valor || Number(item.valor) <= 0);
@@ -1102,4 +1227,22 @@ export function inicializarForm() {
         e.preventDefault();
         abrirNovo();
     });
+
+    const modalEl = document.getElementById('modalDespesa');
+    if (modalEl) {
+        modalEl.addEventListener('hidden.bs.modal', function () {
+            limparRateio();
+            limparErros();
+            form()?.reset();
+            const avisoImp = document.getElementById('avisoDespesaImportada');
+            if (avisoImp) avisoImp.style.display = 'none';
+            const grpPg = document.getElementById('grupoDataPagamento');
+            if (grpPg) grpPg.style.display = 'none';
+            const grpParc = document.getElementById('grupoCamposParcelamento');
+            if (grpParc) grpParc.style.display = 'none';
+            const grpRec = document.getElementById('grupoCamposRecorrencia');
+            if (grpRec) grpRec.style.display = 'none';
+            modoEdicao = false;
+        });
+    }
 }

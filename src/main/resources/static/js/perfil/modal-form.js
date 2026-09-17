@@ -18,6 +18,11 @@ function limparForm() {
     f.querySelectorAll('.invalid-feedback').forEach((el) => (el.textContent = ''));
     document.getElementById('alertaFormPerfil').style.display = 'none';
     document.getElementById('perfCodigo').disabled = false;
+    const filtroInput = document.getElementById('filtroPermissoes');
+    if (filtroInput) {
+        filtroInput.value = '';
+        aplicarFiltroPermissoes('');
+    }
 }
 
 async function garantirCatalogo() {
@@ -43,23 +48,25 @@ function renderSeletor(marcadas) {
 
     agrupadoPorModulo(catalogo).forEach((permissoes, modulo) => {
         const grupo = document.createElement('div');
-        grupo.className = 'mb-3';
+        grupo.className = 'grupo-modulo-permissoes mb-0';
         grupo.dataset.modulo = modulo;
 
         const cabecalho = document.createElement('label');
-        cabecalho.className = 'form-check fw-bold';
-        cabecalho.innerHTML = '<input class="form-check-input" type="checkbox" data-marcar-todos>'
-            + '<span class="form-check-label">' + modulo + ' — ' + (cfg().labelMarcarTodos || 'marcar todos') + '</span>';
+        cabecalho.className = 'form-check fw-bold border-bottom pb-1 mb-2 d-flex align-items-center';
+        cabecalho.innerHTML = '<input class="form-check-input me-2" type="checkbox" data-marcar-todos>'
+            + '<span class="form-check-label text-primary flex-grow-1">' + modulo + '</span>'
+            + '<span class="text-muted fw-normal small ms-1" style="font-size:0.75rem;">(' + (cfg().labelMarcarTodos || 'marcar todos') + ')</span>';
         grupo.appendChild(cabecalho);
 
         permissoes.forEach((p) => {
             const linha = document.createElement('label');
-            linha.className = 'form-check ms-3';
+            linha.className = 'form-check mb-1 item-permissao';
+            linha.dataset.termoBusca = (modulo + ' ' + p.nome + ' ' + p.codigo).toLowerCase();
             const marcada = marcadasSet.has(p.codigo);
             // órfã: editável só quando o perfil já a concede (permite desmarcar/remover, nunca marcar de novo)
             const desabilitada = p.orfa && !marcada;
-            const selos = (p.orfa ? ' <span class="text-warning">' + (cfg().labelOrfa || '(órfã)') + '</span>' : '')
-                + (p.concedivelPorPlano ? ' <span class="badge bg-azure-lt">' + (cfg().labelPorPlano || 'concedível por plano') + '</span>' : '');
+            const selos = (p.orfa ? ' <span class="text-warning small">' + (cfg().labelOrfa || '(órfã)') + '</span>' : '')
+                + (p.concedivelPorPlano ? ' <span class="badge bg-azure-lt ms-1" style="font-size: 0.68rem;">' + (cfg().labelPorPlano || 'concedível por plano') + '</span>' : '');
             linha.innerHTML = '<input class="form-check-input" type="checkbox"'
                 + ' data-codigo="' + p.codigo + '"'
                 + (p.orfa ? ' data-orfa="true"' : '')
@@ -76,8 +83,11 @@ function renderSeletor(marcadas) {
         cb.addEventListener('change', function () {
             const grupo = cb.closest('[data-modulo]');
             // "marcar todos" nunca reativa uma permissão órfã
-            grupo.querySelectorAll('input[data-codigo]:not([data-orfa])').forEach((item) => {
-                item.checked = cb.checked;
+            grupo.querySelectorAll('input[data-codigo]:not([data-orfa]):not(:disabled)').forEach((item) => {
+                const linha = item.closest('.item-permissao');
+                if (!linha || linha.style.display !== 'none') {
+                    item.checked = cb.checked;
+                }
             });
             atualizarContador();
         });
@@ -91,6 +101,61 @@ function renderSeletor(marcadas) {
         });
     });
 
+    alvo.querySelectorAll('[data-modulo]').forEach(sincronizarMarcarTodos);
+    atualizarContador();
+
+    const filtroInput = document.getElementById('filtroPermissoes');
+    if (filtroInput && filtroInput.value) {
+        aplicarFiltroPermissoes(filtroInput.value);
+    }
+}
+
+function aplicarFiltroPermissoes(termo) {
+    const termoNormalizado = (termo || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const grupos = seletor().querySelectorAll('[data-modulo]');
+
+    grupos.forEach((grupo) => {
+        const moduloNome = (grupo.dataset.modulo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const itens = grupo.querySelectorAll('.item-permissao');
+        let visiveisNoGrupo = 0;
+
+        itens.forEach((item) => {
+            const busca = (item.dataset.termoBusca || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            if (!termoNormalizado || moduloNome.includes(termoNormalizado) || busca.includes(termoNormalizado)) {
+                item.style.display = '';
+                visiveisNoGrupo++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        grupo.style.display = (visiveisNoGrupo > 0 || !termoNormalizado) ? '' : 'none';
+    });
+}
+
+function marcarTodas() {
+    const alvo = seletor();
+    alvo.querySelectorAll('input[data-codigo]:not([data-orfa]):not(:disabled)').forEach((item) => {
+        const linha = item.closest('.item-permissao');
+        if (!linha || linha.style.display !== 'none') {
+            item.checked = true;
+        }
+    });
+    alvo.querySelectorAll('[data-modulo]').forEach(sincronizarMarcarTodos);
+    atualizarContador();
+}
+
+function desmarcarTodas() {
+    const alvo = seletor();
+    alvo.querySelectorAll('input[data-codigo]:not(:disabled)').forEach((item) => {
+        const linha = item.closest('.item-permissao');
+        if (!linha || linha.style.display !== 'none') {
+            if (item.checked) {
+                item.checked = false;
+                aplicarTravaProprioPerfil(item);
+            }
+        }
+    });
     alvo.querySelectorAll('[data-modulo]').forEach(sincronizarMarcarTodos);
     atualizarContador();
 }
@@ -204,3 +269,24 @@ document.getElementById('perfCodigo').addEventListener('input', function () {
 });
 
 form().addEventListener('submit', submeter);
+
+const filtroInput = document.getElementById('filtroPermissoes');
+if (filtroInput) {
+    filtroInput.addEventListener('input', (e) => aplicarFiltroPermissoes(e.target.value));
+}
+
+const btnTodas = document.getElementById('btnMarcarTodasPermissoes');
+if (btnTodas) {
+    btnTodas.addEventListener('click', (e) => {
+        e.preventDefault();
+        marcarTodas();
+    });
+}
+
+const btnNenhuma = document.getElementById('btnDesmarcarTodasPermissoes');
+if (btnNenhuma) {
+    btnNenhuma.addEventListener('click', (e) => {
+        e.preventDefault();
+        desmarcarTodas();
+    });
+}
