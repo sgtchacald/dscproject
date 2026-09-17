@@ -286,7 +286,7 @@ class ContaServiceTest {
         conta.setUsuario(criarUsuario(1L, "user1"));
 
         when(contaRepository.findByIdAndUsuarioIdAndDataExclusaoIsNull(50L, 1L)).thenReturn(Optional.of(conta));
-        when(jdbcTemplate.queryForObject(contains("RECEITAS"), eq(Long.class), eq(50L))).thenReturn(2L);
+        when(jdbcTemplate.queryForObject(contains("receitas"), eq(Long.class), eq(50L))).thenReturn(2L);
 
         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> contaService.excluir(50L, 1L, "user1"));
         assertEquals("msg.conta.em-uso.bloqueada", ex.getMessage());

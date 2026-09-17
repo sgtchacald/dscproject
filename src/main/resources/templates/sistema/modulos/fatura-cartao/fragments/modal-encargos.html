@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalEncargosFatura" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="formEncargosFatura" novalidate>
+                <input type="hidden" id="encargosFaturaId">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloModalEncargos" th:text="#{fatura.encargos.titulo}">Ajustar Encargos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaFormEncargos" class="alert alert-danger" style="display:none;" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" for="encargosValorEncargos" th:text="#{fatura.fechar.campo.encargos.label}">Encargos / Juros / IOF</label>
+                        <input type="text" class="form-control mascara-moeda" id="encargosValorEncargos" name="valorEncargos" data-mascara="moeda" placeholder="0,00" required>
+                        <div class="invalid-feedback" id="erroEncargosValorEncargos"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="encargosValorMinimo" th:text="#{fatura.encargos.campo.valorMinimo.label}">Pagamento mínimo</label>
+                        <input type="text" class="form-control mascara-moeda" id="encargosValorMinimo" name="valorMinimo" data-mascara="moeda" placeholder="0,00">
+                        <div class="invalid-feedback" id="erroEncargosValorMinimo"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" th:text="#{comum.botao.cancelar}">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnConfirmarEncargos" th:text="#{fatura.encargos.botao.salvar}">Salvar Encargos</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

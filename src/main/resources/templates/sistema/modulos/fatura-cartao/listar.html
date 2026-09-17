@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{sistema/template-admin/layout}">
+<head>
+    <title th:text="#{fatura.lista.titulo}">Faturas de Cartão</title>
+</head>
+<body>
+
+<div layout:fragment="cabecalho">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <h2 class="page-title" th:text="#{fatura.lista.cabecalho}">Faturas de Cartão</h2>
+            <br><br>
+            <nav aria-label="Breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a th:href="@{/}">
+                            <i class="ph ph-house" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item" th:text="#{fatura.lista.breadcrumb.pai}">Finanças</li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="#{fatura.lista.titulo}">Faturas de Cartão</li>
+                </ol>
+            </nav>
+            <br>
+            <div class="text-secondary mt-1" th:text="#{fatura.lista.descricao}">
+                Gerencie os ciclos de fatura dos seus cartões de crédito, visualize despesas vinculadas, consolide encargos e liquide pagamentos.
+            </div>
+        </div>
+    </div>
+</div>
+
+<section layout:fragment="corpo">
+    <!-- Filtros Superiores: Cartão de Crédito e Busca por Competência -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6 col-lg-4">
+                    <label class="form-label required" for="selectCartaoFatura" th:text="#{fatura.filtro.campo.cartao.label}">Cartão de crédito</label>
+                    <select class="form-select" id="selectCartaoFatura">
+                        <option value="" th:if="${#lists.isEmpty(cartoes)}">Nenhum cartão cadastrado</option>
+                        <option th:each="c : ${cartoes}" th:value="${c.id}"
+                                th:text="${c.descricao + (c.finalCartao != null ? ' (**** ' + c.finalCartao + ')' : '')}">
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <label class="form-label" for="buscaCompetenciaFatura" th:text="#{fatura.col.competencia}">Competência</label>
+                    <div class="input-group">
+                        <input type="month" class="form-control" id="buscaCompetenciaFatura" placeholder="AAAA-MM" aria-label="Buscar competência">
+                        <button class="btn btn-outline-secondary btn-icon" type="button" id="btnLimparBuscaCompetencia" title="Limpar busca de competência">
+                            <i class="ph ph-x" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela Principal de Faturas -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-hover" id="tabelaFaturasCartao">
+                <thead>
+                <tr>
+                    <th data-col="competencia" class="sortable" role="button" th:text="#{fatura.col.competencia}">Competência</th>
+                    <th data-col="vencimento" class="sortable" role="button" th:text="#{fatura.col.vencimento}">Vencimento</th>
+                    <th data-col="fechamento" class="sortable" role="button" th:text="#{fatura.col.fechamento}">Fechamento</th>
+                    <th data-col="totalCompras" class="sortable text-end" role="button" th:text="#{fatura.col.valorCompras}">Compras</th>
+                    <th data-col="valorEncargos" class="sortable text-end" role="button" th:text="#{fatura.col.encargos}">Encargos</th>
+                    <th data-col="valorTotal" class="sortable text-end" role="button" th:text="#{fatura.col.valorTotal}">Total</th>
+                    <th data-col="valorPago" class="sortable text-end" role="button" th:text="#{fatura.col.valorPago}">Valor Pago</th>
+                    <th data-col="status" class="sortable" role="button" th:text="#{fatura.col.status}">Status</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{fatura.col.acoes}">Ações</th>
+                </tr>
+                </thead>
+                <tbody id="corpoTabelaFaturas"></tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex align-items-center">
+            <p class="m-0 text-secondary" id="rodapeContagemFaturas"></p>
+        </div>
+    </div>
+
+    <!-- Modais Fragmentados -->
+    <div th:replace="~{sistema/modulos/fatura-cartao/fragments/modal-compras :: modal}"></div>
+    <div th:replace="~{sistema/modulos/fatura-cartao/fragments/modal-fechar :: modal}"></div>
+    <div th:replace="~{sistema/modulos/fatura-cartao/fragments/modal-pagar :: modal}"></div>
+    <div th:replace="~{sistema/modulos/fatura-cartao/fragments/modal-encargos :: modal}"></div>
+
+    <div id="toastArea" class="position-fixed bottom-0 end-0 p-3" style="z-index:1100;"></div>
+
+    <!-- Metadados de Permissão -->
+    <span sec:authorize="hasAuthority('PERM_FATURAS_LISTAR')" data-perm="listar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_FATURAS_FECHAR')" data-perm="fechar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_FATURAS_REABRIR')" data-perm="reabrir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_FATURAS_PAGAR')" data-perm="pagar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_FATURAS_EDITAR')" data-perm="editar" hidden></span>
+
+    <!-- Configurações e URLs -->
+    <div id="dadosTelaFatura"
+         th:data-url-dados="@{/faturas-cartao/dados}"
+         th:data-url-base="@{/faturas-cartao}"
+         th:data-url-contas-opcoes="@{/contas/opcoes}"
+         th:data-msg-filtro-vazio="#{msg.fatura.filtro.vazio}"
+         th:data-msg-confirma-reabertura="#{fatura.reabrir.aviso}"
+         th:data-label-aberta="#{fatura.status.aberta}"
+         th:data-label-fechada="#{fatura.status.fechada}"
+         th:data-label-paga="#{fatura.status.paga}"
+         th:data-label-paga-parcial="#{fatura.status.pagaParcial}"
+         hidden></div>
+</section>
+
+<th:block layout:fragment="js">
+    <script type="module" th:src="@{/js/fatura-cartao/listar.js}"></script>
+</th:block>
+</body>
+</html>

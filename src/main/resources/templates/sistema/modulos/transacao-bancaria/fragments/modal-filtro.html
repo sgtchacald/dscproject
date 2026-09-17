@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalFiltroTransacao" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="formFiltroTransacao">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{transacao.filtro.titulo}">Filtrar transações</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="filtroTransacaoBusca" th:text="#{transacao.filtro.campo.busca.label}">Descrição</label>
+                        <input type="text" class="form-control" id="filtroTransacaoBusca"
+                               th:placeholder="#{transacao.filtro.campo.busca.placeholder}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="filtroCompetenciaInicio" th:text="#{transacao.filtro.campo.competenciaInicio.label}">Competência inicial</label>
+                            <input type="month" class="form-control" id="filtroCompetenciaInicio">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="filtroCompetenciaFim" th:text="#{transacao.filtro.campo.competenciaFim.label}">Competência final</label>
+                            <input type="month" class="form-control" id="filtroCompetenciaFim">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="filtroTransacaoContaId" th:text="#{transacao.filtro.campo.conta.label}">Conta</label>
+                            <select class="form-select" id="filtroTransacaoContaId">
+                                <option value="" th:text="#{transacao.filtro.opcao.todas}">Todas as contas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" for="filtroTransacaoNatureza" th:text="#{transacao.filtro.campo.natureza.label}">Natureza</label>
+                            <select class="form-select" id="filtroTransacaoNatureza">
+                                <option value="" th:text="#{transacao.filtro.opcao.todasNaturezas}">Todas</option>
+                                <option value="CREDITO" th:text="#{transacao.natureza.credito}">Crédito</option>
+                                <option value="DEBITO" th:text="#{transacao.natureza.debito}">Débito</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="filtroTransacaoCategoriaId" th:text="#{transacao.filtro.campo.categoria.label}">Categoria</label>
+                        <select class="form-select" id="filtroTransacaoCategoriaId">
+                            <option value="" th:text="#{transacao.filtro.opcao.todasCategorias}">Todas as categorias</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary me-auto" id="btnLimparFiltros" th:text="#{transacao.filtro.botao.limpar}">Limpar</button>
+                    <button type="button" class="btn btn-primary" id="btnAplicarFiltros" th:text="#{transacao.filtro.botao.aplicar}">Aplicar filtros</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

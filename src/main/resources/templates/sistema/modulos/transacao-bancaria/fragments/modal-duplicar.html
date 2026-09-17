@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalDuplicarTransacao" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="formDuplicarTransacao">
+                <input type="hidden" id="duplicarTransacaoId">
+                <div class="modal-header">
+                    <h5 class="modal-title" th:text="#{transacao.duplicar.titulo}">Duplicar transação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaDuplicarTransacao" class="alert alert-danger" style="display:none;" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" for="duplicarNovaCompetencia" th:text="#{transacao.duplicar.campo.competencia.label}">Nova competência</label>
+                        <input type="month" class="form-control" id="duplicarNovaCompetencia" required>
+                        <div class="invalid-feedback" id="erroDuplicarCompetencia"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="duplicarNovaData" th:text="#{transacao.duplicar.campo.dataLancamento.label}">Nova data de lançamento (opcional)</label>
+                        <input type="date" class="form-control" id="duplicarNovaData">
+                        <small class="form-hint" th:text="#{transacao.duplicar.campo.dataLancamento.ajuda}">Se não informada, mantém o mesmo dia da transação original.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" th:text="#{transacao.form.botao.cancelar}">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnConfirmarDuplicar" th:text="#{transacao.duplicar.botao.confirmar}">Duplicar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

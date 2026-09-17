@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalPagarFatura" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="formPagarFatura" novalidate>
+                <input type="hidden" id="pagarFaturaId">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloModalPagar" th:text="#{fatura.pagar.titulo}">Registrar Pagamento de Fatura</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaFormPagar" class="alert alert-danger" style="display:none;" role="alert"></div>
+
+                    <div class="mb-3 text-center">
+                        <span class="text-secondary d-block" th:text="#{fatura.pagar.campo.valorFatura.label}">Valor da fatura</span>
+                        <span class="display-6 fw-bold text-primary" id="pagarValorFaturaExibicao">R$ 0,00</span>
+                        <div id="avisoSaldoRestante" class="text-warning small mt-1" style="display:none;"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" for="pagarContaId" th:text="#{fatura.pagar.campo.contaDebito.label}">Conta bancária para débito</label>
+                        <select class="form-select" id="pagarContaId" name="contaId" required>
+                            <option value="">Selecione a conta...</option>
+                            <option th:each="cta : ${contas}" th:value="${cta.id}"
+                                    th:text="${cta.descricao}">
+                            </option>
+                        </select>
+                        <div class="invalid-feedback" id="erroPagarContaId"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" for="pagarDataPagamento" th:text="#{fatura.pagar.campo.dataPagamento.label}">Data do pagamento</label>
+                        <input type="date" class="form-control" id="pagarDataPagamento" name="dataPagamento" required>
+                        <div class="invalid-feedback" id="erroPagarDataPagamento"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" for="pagarValorPago" th:text="#{fatura.pagar.campo.valorPago.label}">Valor pago (R$)</label>
+                        <input type="text" class="form-control mascara-moeda fw-bold text-success fs-3" id="pagarValorPago" name="valorPago" data-mascara="moeda" placeholder="0,00" required>
+                        <div class="invalid-feedback" id="erroPagarValorPago"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" th:text="#{fatura.pagar.botao.cancelar}">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnConfirmarPagar" th:text="#{fatura.pagar.botao.confirmar}">Registrar Pagamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

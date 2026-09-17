@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalTransacao" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="formTransacao" novalidate>
+                <input type="hidden" id="transacaoId" name="id">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloModalTransacao" th:text="#{transacao.form.titulo.novo}">Nova transação</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaFormTransacao" class="alert alert-danger" style="display:none;" role="alert"></div>
+
+                    <div class="alert alert-warning align-items-center mb-3" id="avisoTransacaoFatura" style="display:none;" role="alert">
+                        <i class="ph ph-warning-circle alert-icon me-2" aria-hidden="true"></i>
+                        <span th:text="#{transacao.form.aviso.fatura}">Esta transação foi gerada para pagamento de fatura de cartão. A conta e o valor são imutáveis por esta tela.</span>
+                    </div>
+
+                    <div class="alert alert-info align-items-center mb-3" id="avisoTransacaoOpenFinance" style="display:none;" role="alert">
+                        <i class="ph ph-info alert-icon me-2" aria-hidden="true"></i>
+                        <span th:text="#{transacao.form.aviso.openFinance}">Esta transação é oriunda do Open Finance. A conta e a origem são protegidas contra alteração.</span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required" for="transacaoCompetencia" th:text="#{transacao.form.campo.competencia.label}">Competência</label>
+                            <input type="month" class="form-control" id="transacaoCompetencia" name="competencia" required>
+                            <div class="invalid-feedback" id="erroCompetencia"></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required" for="transacaoDataLancamento" th:text="#{transacao.form.campo.dataLancamento.label}">Data de lançamento</label>
+                            <input type="date" class="form-control" id="transacaoDataLancamento" name="dataLancamento" required>
+                            <div class="invalid-feedback" id="erroDataLancamento"></div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required" for="transacaoContaId" th:text="#{transacao.form.campo.conta.label}">Conta bancária</label>
+                            <select class="form-select" id="transacaoContaId" name="contaId" required>
+                            </select>
+                            <div class="invalid-feedback" id="erroContaId"></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required" for="transacaoNatureza" th:text="#{transacao.form.campo.natureza.label}">Natureza do movimento</label>
+                            <select class="form-select" id="transacaoNatureza" name="natureza" required>
+                                <option value="CREDITO" th:text="#{transacao.natureza.credito}">Crédito (Entrada)</option>
+                                <option value="DEBITO" th:text="#{transacao.natureza.debito}">Débito (Saída)</option>
+                            </select>
+                            <div class="invalid-feedback" id="erroNatureza"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="transacaoCategoriaId" th:text="#{transacao.form.campo.categoria.label}">Categoria</label>
+                        <select class="form-select" id="transacaoCategoriaId" name="categoriaId">
+                            <option value="" th:text="#{transacao.form.campo.categoria.semCategoria}">Sem categoria</option>
+                        </select>
+                        <div class="invalid-feedback" id="erroCategoriaId"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" for="transacaoDescricao" th:text="#{transacao.form.campo.descricao.label}">Descrição</label>
+                        <input type="text" class="form-control" id="transacaoDescricao" name="descricao" maxlength="512"
+                               th:placeholder="#{transacao.form.campo.descricao.placeholder}" required>
+                        <div class="invalid-feedback" id="erroDescricao"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" for="transacaoValor" th:text="#{transacao.form.campo.valor.label}">Valor</label>
+                        <input type="text" class="form-control mascara-moeda" id="transacaoValor" name="valor" data-mascara="moeda"
+                               th:placeholder="#{transacao.form.campo.valor.placeholder}" required>
+                        <div class="invalid-feedback" id="erroValor"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" th:text="#{transacao.form.botao.cancelar}">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnSalvarTransacao" th:text="#{transacao.form.botao.salvar}">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
