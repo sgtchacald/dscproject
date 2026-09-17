@@ -206,7 +206,7 @@ class InstituicaoFinanceiraServiceTest {
         comum.setSistema(false);
 
         when(instituicaoFinanceiraRepository.findById(2L)).thenReturn(Optional.of(comum));
-        when(jdbcTemplate.queryForObject(contains("CONTAS"), eq(Long.class), eq(2L))).thenReturn(3L);
+        when(jdbcTemplate.queryForObject(contains("contas"), eq(Long.class), eq(2L))).thenReturn(3L);
 
         RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> instituicaoFinanceiraService.excluir(2L, "ADMIN"));
         assertEquals("msg.instituicao.em-uso.bloqueada", ex.getMessage());

@@ -2,8 +2,8 @@
 ## Módulo Usuário — ADMIN — Manter Perfil e Permissões
 
 **Gerado em:** 06/09/2026  
-**Atualizado em:** 11/09/2026  
-**Versão:** 1.4  
+**Atualizado em:** 15/09/2026  
+**Versão:** 1.5  
 **Status:** Homologado  
 **Projeto:** `dscproject-spring-mvc` (geração 2)  
 
@@ -31,6 +31,7 @@
 | 1.2 | 07/09/2026 | Diego dos Santos Cordeiro | RN05 (anti-lockout do próprio perfil) passa a retornar `MSG05` tanto na tela quanto no serviço; `MSG06` fica restrita ao anti-lockout global (RN06). RT04 ajustada. Alinhado durante a implementação |
 | 1.3 | 11/09/2026 | Diego dos Santos Cordeiro | Decomposição atômica de permissões: eliminação mandatória do agregador `PERFIS_MANTER`, desmembrado em quatro permissões atômicas — `PERFIS_INSERIR`, `PERFIS_EDITAR`, `PERFIS_EXCLUIR` e `PERFIS_VINCULAR_PERMISSAO`. Ajuste das travas anti-lockout (focadas em `PERFIS_VINCULAR_PERMISSAO`), regras de tela, endpoints e matriz de permissões. |
 | 1.4 | 12/09/2026 | Diego dos Santos Cordeiro | Padronização visual do sistema: explicitação do alinhamento à esquerda para a coluna de Ações no grid de Perfis (QUADRO_DESCRITIVO_1). |
+| 1.5 | 15/09/2026 | Diego dos Santos Cordeiro | Maximização de Modal e Visualização Panorâmica de Permissões: inclusão do botão de maximizar/restaurar (`.btn-modal-maximize`) no cabeçalho das modais globais e suporte a atalho de duplo clique. Otimização do modal de perfil (`#modalPerfil`) com layout flex expansivo e reestruturação do seletor de permissões (`#seletorPermissoes`) em grade responsiva multi-colunas (`display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))`), módulos agrupados em cards visuais (`.grupo-modulo-permissoes`), eliminação do teto de altura fixa quando maximizado (`height: 100%`) para exibição simultânea máxima de permissões na tela sem rolagem. Inclusão de toolbar com campo de busca/filtro instantâneo e botões de atalho rápido 'Todas' e 'Nenhuma' (QUADRO_DESCRITIVO_2 itens 1, 5, 5a, 5b, 6, 7; RT03; RT09). |
 
 ---
 
@@ -206,13 +207,15 @@ Wireframes gerados de `prototipo/manter-perfil-permissao-prototipo.drawio`. Os n
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
-| <a id="qdd2-1"></a>1 | TÍTULO | Tipo: Texto<br>Texto: Novo perfil / Editar perfil | Varia conforme o modo. |
+| <a id="qdd2-1"></a>1 | TÍTULO E BOTÃO MAXIMIZAR | Tipo: Texto e Botão de Ação (`.btn-modal-maximize`)<br>Texto: Novo perfil / Editar perfil | Varia conforme o modo. O botão de maximizar alterna a modal entre dimensões padrão e tela cheia / maximizado (`100vw - 20px` e `100vh - 20px`), também acessível por duplo clique no cabeçalho ([RT09](#rt09)). |
 | <a id="qdd2-2"></a>2 | CAMPO – CÓDIGO | Tipo: Input Text<br>Tamanho: 30<br>Obrigatório: Sim | Grava `PERF_CODIGO`. Em maiúsculas ([RT08](#rt08)). Único ([RN03](#rn03)). **Desabilitado** em edição de perfil de sistema ([RN02](#rn02)). |
 | <a id="qdd2-3"></a>3 | CAMPO – NOME | Tipo: Input Text<br>Tamanho: 100<br>Obrigatório: Sim | Grava `PERF_NOME`. |
 | <a id="qdd2-4"></a>4 | CAMPO – DESCRIÇÃO | Tipo: Textarea<br>Tamanho: 255<br>Obrigatório: Não | Grava `PERF_DESCRICAO`. |
-| <a id="qdd2-5"></a>5 | SELETOR DE PERMISSÕES | Tipo: Lista agrupada de checkboxes<br>Endpoint: [EDP04](#edp04) (catálogo) + [EDP03](#edp03) (marcadas) | Executar [RT03](#rt03). Agrupado por `PERM_MODULO`. |
+| <a id="qdd2-5"></a>5 | SELETOR DE PERMISSÕES | Tipo: Grade responsiva multi-colunas de módulos (`display: grid`)<br>Endpoint: [EDP04](#edp04) (catálogo) + [EDP03](#edp03) (marcadas) | Executar [RT03](#rt03) e [RT09](#rt09). Organizado em cards visuais independentes por `PERM_MODULO`. Ao maximizar a modal, expande para 100% da altura disponível (`height: 100%`) e distribui os módulos em 4 a 6 colunas paralelas, permitindo visualizar todas as permissões simultaneamente. |
+| <a id="qdd2-5a"></a>5a | CAMPO – FILTRAR PERMISSÕES | Tipo: Input Search<br>Obrigatório: Não | Filtro instantâneo em tempo real que oculta módulos e permissões que não contenham o termo digitado. |
+| <a id="qdd2-5b"></a>5b | BOTÕES – SELEÇÃO RÁPIDA | Tipo: Botões (Todas / Nenhuma) | 'Todas' marca todas as permissões ativas visíveis; 'Nenhuma' desmarca todas as permissões (respeitando a trava anti-lockout [RN05](#rn05)). |
 | <a id="qdd2-6"></a>6 | GRUPO – "MARCAR TODOS" | Tipo: Checkbox (tri-state) por módulo | Marca/desmarca todas as permissões não-órfãs do módulo. |
-| <a id="qdd2-7"></a>7 | CONTADOR | Tipo: Texto<br>Texto: "{n} de {total} permissões selecionadas" | Atualiza ao marcar/desmarcar. |
+| <a id="qdd2-7"></a>7 | CONTADOR | Tipo: Texto / Badge<br>Texto: "{n} de {total} permissões selecionadas" | Atualiza ao marcar/desmarcar. |
 | <a id="qdd2-8"></a>8 | BOTÃO SALVAR | Tipo: Botão (primário)<br>Endpoint: [EDP05](#edp05) (criação) / [EDP06](#edp06) (edição) | Ao clicar, executar [RT04](#rt04). |
 | <a id="qdd2-9"></a>9 | BOTÃO CANCELAR | Tipo: Botão | Fecha sem salvar. |
 
@@ -220,12 +223,12 @@ Wireframes gerados de `prototipo/manter-perfil-permissao-prototipo.drawio`. Os n
 
 ![Prototipo - Catalogo de Permissoes](images/mpp-tela-3.png)
 
-> OBSERVAÇÕES: Só exibe. Uma linha por permissão, agrupada por módulo.
+> OBSERVAÇÕES: Só exibe. Uma linha por permissão, agrupada por módulo. Disponibiliza botão de maximizar no cabeçalho.
 
 | ID | NOME | PROPRIEDADES | OBSERVAÇÕES |
 |---|---|---|---|
-| <a id="qdd3-1"></a>1 | TÍTULO | Tipo: Texto<br>Texto: Catálogo de Permissões | — |
-| <a id="qdd3-2"></a>2 | LISTA | Tipo: Tabela agrupada<br>Endpoint: [EDP04](#edp04) | Colunas: Código, Nome, Módulo, Concedível por plano (Sim/Não), Situação (Ativa / Órfã). |
+| <a id="qdd3-1"></a>1 | TÍTULO E BOTÃO MAXIMIZAR | Tipo: Texto e Botão (`.btn-modal-maximize`)<br>Texto: Catálogo de Permissões | Permite maximizar o catálogo para visualização de tabela ampla em tela cheia. |
+| <a id="qdd3-2"></a>2 | LISTA | Tipo: Tabela agrupada<br>Endpoint: [EDP04](#edp04) | Colunas: Código, Nome, Módulo, Concedível por plano (Sim/Não), Situação (Ativa / Órfã). Ao maximizar, remove o limite de 60vh ocupando a altura total. |
 | <a id="qdd3-3"></a>3 | BOTÃO SINCRONIZAR CATÁLOGO | Tipo: Botão<br>Endpoint: [EDP08](#edp08) | Visível a quem tem [PERM06](#perm06). Ao clicar, executar [RT07](#rt07). |
 | <a id="qdd3-4"></a>4 | BOTÃO FECHAR | Tipo: Botão | Fecha o modal. |
 
@@ -241,6 +244,7 @@ Wireframes gerados de `prototipo/manter-perfil-permissao-prototipo.drawio`. Os n
 | <a id="rt06"></a>RT06 | Ao clicar em "Catálogo de permissões" ([ID3](#qdd1-3)), abrir o [QUADRO_DESCRITIVO_3](#quadro-descritivo-3) e carregar a lista por [EDP04](#edp04). O botão "Sincronizar catálogo" dentro do modal só aparece com [PERM06](#perm06). |
 | <a id="rt07"></a>RT07 | Ao clicar em "Sincronizar catálogo" ([ID3](#qdd3-3)) — visível só com [PERM06](#perm06) —, chamar [EDP08](#edp08). Ao concluir, exibir [MSG11](#msg11) com o resumo (n inseridas, n marcadas como órfãs) e recarregar a lista. |
 | <a id="rt08"></a>RT08 | Ao digitar no campo Código ([ID2](#qdd2-2)), converter o texto para maiúsculas automaticamente. |
+| <a id="rt09"></a>RT09 | **Maximização de Modal e Visualização Ampla de Permissões:** O cabeçalho do modal de Perfil e do Catálogo disponibiliza o botão de maximizar/restaurar ([ID1](#qdd2-1)), além de atalho por duplo clique. Ao maximizar, o modal ocupa a viewport quase total (`100vw - 20px` e `100vh - 20px`), o formulário expande verticalmente e o seletor de permissões ([ID5](#qdd2-5)) expande para 100% da altura útil, organizando os módulos em múltiplas colunas paralelas responsivas (`display: grid`). O usuário pode digitar no campo de filtro ([ID5a](#qdd2-5a)) para filtrar dinamicamente as permissões exibidas e utilizar os atalhos de seleção rápida 'Todas' e 'Nenhuma' ([ID5b](#qdd2-5b)). |
 
 ---
 

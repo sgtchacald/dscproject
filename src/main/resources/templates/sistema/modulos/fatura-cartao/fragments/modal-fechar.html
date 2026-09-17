@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalFecharFatura" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form id="formFecharFatura" novalidate>
+                <input type="hidden" id="fecharFaturaId">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloModalFechar" th:text="#{fatura.fechar.titulo}">Fechar Fatura</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaFormFechar" class="alert alert-danger" style="display:none;" role="alert"></div>
+
+                    <div class="alert alert-info mb-3">
+                        <i class="ph ph-info me-1" aria-hidden="true"></i>
+                        <span th:text="#{fatura.fechar.aviso}">Ao fechar a fatura, os valores das despesas do ciclo serão consolidados e não poderão mais ser alterados sem reabertura.</span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required" for="fecharDataFechamento" th:text="#{fatura.col.fechamento}">Data de fechamento</label>
+                            <input type="date" class="form-control" id="fecharDataFechamento" name="dataFechamento" required>
+                            <div class="invalid-feedback" id="erroFecharDataFechamento"></div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label required" for="fecharDataVencimento" th:text="#{fatura.col.vencimento}">Data de vencimento</label>
+                            <input type="date" class="form-control" id="fecharDataVencimento" name="dataVencimento" required>
+                            <div class="invalid-feedback" id="erroFecharDataVencimento"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="fecharValorCompras" th:text="#{fatura.fechar.campo.valorCompras.label}">Valor total das compras</label>
+                        <input type="text" class="form-control" id="fecharValorCompras" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="fecharValorEncargos" th:text="#{fatura.fechar.campo.encargos.label}">Encargos / Juros / IOF</label>
+                        <input type="text" class="form-control mascara-moeda" id="fecharValorEncargos" name="valorEncargos" data-mascara="moeda" placeholder="0,00">
+                        <div class="invalid-feedback" id="erroFecharValorEncargos"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-primary" for="fecharValorTotal" th:text="#{fatura.fechar.campo.totalFinal.label}">Total consolidado da fatura</label>
+                        <input type="text" class="form-control fw-bold fs-3 text-primary" id="fecharValorTotal" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="fecharValorMinimo" th:text="#{fatura.fechar.campo.valorMinimo.label}">Pagamento mínimo (opcional)</label>
+                        <input type="text" class="form-control mascara-moeda" id="fecharValorMinimo" name="valorMinimo" data-mascara="moeda" placeholder="0,00">
+                        <div class="invalid-feedback" id="erroFecharValorMinimo"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" th:text="#{fatura.fechar.botao.cancelar}">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnConfirmarFechar" th:text="#{fatura.fechar.botao.confirmar}">Fechar Fatura</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

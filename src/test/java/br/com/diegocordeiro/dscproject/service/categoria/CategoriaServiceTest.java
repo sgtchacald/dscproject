@@ -170,7 +170,7 @@ class CategoriaServiceTest {
         comum.setSistema(false);
 
         when(categoriaRepository.findById(2L)).thenReturn(Optional.of(comum));
-        when(jdbcTemplate.queryForObject(contains("RECEITAS"), eq(Long.class), eq(2L))).thenReturn(2L);
+        when(jdbcTemplate.queryForObject(contains("receitas"), eq(Long.class), eq(2L))).thenReturn(2L);
 
         ParametroGlobal param = new ParametroGlobal();
         param.setCodigo(ParametrosCategoriaCatalogo.CATEGORIA_EXCLUSAO_BLOQUEIA_EM_USO.getCodigo());

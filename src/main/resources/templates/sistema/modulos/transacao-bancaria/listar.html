@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{sistema/template-admin/layout}">
+<head>
+    <title th:text="#{transacao.lista.titulo}">Transações Bancárias</title>
+</head>
+<body>
+
+<div layout:fragment="cabecalho">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <h2 class="page-title" th:text="#{transacao.lista.cabecalho}">Transações Bancárias</h2>
+            <br><br>
+            <nav aria-label="Breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a th:href="@{/}">
+                            <i class="ph ph-house" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item" th:text="#{transacao.lista.breadcrumb.pai}">Finanças</li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="#{transacao.lista.titulo}">Transações Bancárias</li>
+                </ol>
+            </nav>
+            <br>
+            <div class="text-secondary mt-1" th:text="#{transacao.lista.descricao}">
+                Acompanhe as movimentações de crédito e débito das suas contas e importe extratos OFX.
+            </div>
+        </div>
+        <div class="col-auto ms-auto d-flex gap-2">
+            <button class="btn" id="btnFiltrar" data-bs-toggle="modal" data-bs-target="#modalFiltroTransacao">
+                <i class="ph ph-funnel" aria-hidden="true"></i>
+                <span th:text="#{transacao.lista.botao.filtrar}">Filtrar</span>
+            </button>
+            <button class="btn btn-outline-secondary" id="btnImportarOfx" sec:authorize="hasAuthority('PERM_TRANSACOES_IMPORTAR')"
+                    data-bs-toggle="modal" data-bs-target="#modalImportarOfx">
+                <i class="ph ph-file-arrow-up" aria-hidden="true"></i>
+                <span th:text="#{transacao.lista.botao.importar}">Importar OFX</span>
+            </button>
+            <button class="btn btn-primary" id="btnNovaTransacao" sec:authorize="hasAuthority('PERM_TRANSACOES_INSERIR')"
+                    data-bs-toggle="modal" data-bs-target="#modalTransacao">
+                <i class="ph ph-plus" aria-hidden="true"></i>
+                <span th:text="#{transacao.lista.botao.novo}">Nova transação</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<section layout:fragment="corpo">
+    <!-- Cards Totalizadores (exibidos em competência única) -->
+    <div class="row row-cards mb-3" id="cardTotalizadorTransacao" style="display: none;">
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-green text-white avatar">
+                                <i class="ph ph-arrow-up-right" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{transacao.totalizador.creditos}">Créditos (Entradas)</div>
+                            <div class="text-secondary fw-bold text-success" id="totalTransacaoCreditos">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-red text-white avatar">
+                                <i class="ph ph-arrow-down-left" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{transacao.totalizador.debitos}">Débitos (Saídas)</div>
+                            <div class="text-secondary fw-bold text-danger" id="totalTransacaoDebitos">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-blue text-white avatar">
+                                <i class="ph ph-scales" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium" th:text="#{transacao.totalizador.liquido}">Saldo Líquido</div>
+                            <div class="text-secondary fw-bold" id="totalTransacaoLiquido">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela Principal -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-hover" id="tabelaTransacoes">
+                <thead>
+                <tr>
+                    <th data-col="competencia" class="sortable" role="button" th:text="#{transacao.col.competencia}">Competência</th>
+                    <th data-col="dataLancamento" class="sortable" role="button" th:text="#{transacao.col.dataLancamento}">Data</th>
+                    <th data-col="descricao" class="sortable" role="button" th:text="#{transacao.col.descricao}">Descrição</th>
+                    <th data-col="conta" class="sortable" role="button" th:text="#{transacao.col.conta}">Conta</th>
+                    <th data-col="categoria" class="sortable" role="button" th:text="#{transacao.col.categoria}">Categoria</th>
+                    <th data-col="natureza" class="sortable" role="button" th:text="#{transacao.col.natureza}">Natureza</th>
+                    <th data-col="valor" class="sortable text-end" role="button" th:text="#{transacao.col.valor}">Valor</th>
+                    <th data-col="fatura" class="sortable" role="button" th:text="#{transacao.col.fatura}">Fatura</th>
+                    <th data-col="origem" class="sortable" role="button" th:text="#{transacao.col.origem}">Origem</th>
+                    <th class="w-1 col-acoes text-start" th:text="#{transacao.col.acoes}">Ações</th>
+                </tr>
+                </thead>
+                <tbody id="corpoTabelaTransacoes"></tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex align-items-center">
+            <p class="m-0 text-secondary" id="rodapeContagemTransacoes"></p>
+        </div>
+    </div>
+
+    <!-- Modais Fragmentados -->
+    <div th:replace="~{sistema/modulos/transacao-bancaria/fragments/modal-filtro :: modal}"></div>
+    <div th:replace="~{sistema/modulos/transacao-bancaria/fragments/modal-transacao :: modal}"></div>
+    <div th:replace="~{sistema/modulos/transacao-bancaria/fragments/modal-importar-ofx :: modal}"></div>
+    <div th:replace="~{sistema/modulos/transacao-bancaria/fragments/modal-duplicar :: modal}"></div>
+
+    <div id="toastArea" class="position-fixed bottom-0 end-0 p-3" style="z-index:1100;"></div>
+
+    <!-- Metadados de Permissão -->
+    <span sec:authorize="hasAuthority('PERM_TRANSACOES_INSERIR')" data-perm="inserir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_TRANSACOES_EDITAR')" data-perm="editar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_TRANSACOES_EXCLUIR')" data-perm="excluir" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_TRANSACOES_IMPORTAR')" data-perm="importar" hidden></span>
+
+    <!-- Configurações e URLs -->
+    <div id="dadosTelaTransacao"
+         th:data-competencia-padrao="${competenciaPadrao}"
+         th:data-url-dados="@{/transacoes-bancarias/listar-dados}"
+         th:data-url-buscar="@{/transacoes-bancarias/buscar}"
+         th:data-url-inserir="@{/transacoes-bancarias/inserir}"
+         th:data-url-editar="@{/transacoes-bancarias/editar}"
+         th:data-url-excluir="@{/transacoes-bancarias/excluir}"
+         th:data-url-duplicar="@{/transacoes-bancarias/duplicar}"
+         th:data-url-importar-ofx="@{/transacoes-bancarias/importar-ofx}"
+         th:data-url-contas-opcoes="@{/contas/opcoes}"
+         th:data-url-categorias-opcoes="@{/categorias/opcoes}"
+         th:data-msg-filtro-vazio="#{msg.transacao.filtro.vazio}"
+         th:data-msg-confirma-exclusao="#{msg.transacao.confirma.exclusao}"
+         th:data-label-credito="#{transacao.natureza.credito}"
+         th:data-label-debito="#{transacao.natureza.debito}"
+         th:data-label-origem-manual="#{transacao.origem.manual}"
+         th:data-label-origem-importacao="#{transacao.origem.importacao}"
+         th:data-label-origem-open-finance="#{transacao.origem.openFinance}"
+         th:data-label-pagamento-fatura="#{transacao.badge.pagamentoFatura}"
+         th:data-label-novo="#{transacao.form.titulo.novo}"
+         th:data-label-editar="#{transacao.form.titulo.editar}"
+         hidden></div>
+</section>
+
+<th:block layout:fragment="js">
+    <script type="module" th:src="@{/js/transacao-bancaria/listar.js}"></script>
+</th:block>
+</body>
+</html>

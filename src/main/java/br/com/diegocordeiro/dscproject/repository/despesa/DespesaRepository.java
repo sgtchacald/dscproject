@@ -71,4 +71,30 @@ public interface DespesaRepository extends JpaRepository<Despesa, Long> {
           AND d.dataExclusao IS NULL
         """)
     List<Despesa> buscarPorIdsEUsuario(@Param("ids") List<Long> ids, @Param("usuarioId") Long usuarioId);
+
+    @Query("""
+        SELECT d FROM Despesa d
+        LEFT JOIN FETCH d.categoria cat
+        WHERE d.cartao.id = :cartaoId
+          AND d.competencia = :competencia
+          AND d.dataExclusao IS NULL
+        ORDER BY d.dataVencimento ASC, d.id ASC
+        """)
+    List<Despesa> listarPorCartaoECompetencia(@Param("cartaoId") Long cartaoId, @Param("competencia") java.time.YearMonth competencia);
+
+    @Query("""
+        SELECT COALESCE(SUM(d.valor), 0) FROM Despesa d
+        WHERE d.cartao.id = :cartaoId
+          AND d.competencia = :competencia
+          AND d.dataExclusao IS NULL
+        """)
+    java.math.BigDecimal somarPorCartaoECompetencia(@Param("cartaoId") Long cartaoId, @Param("competencia") java.time.YearMonth competencia);
+
+    @Query("""
+        SELECT DISTINCT d.competencia FROM Despesa d
+        WHERE d.cartao.id = :cartaoId
+          AND d.dataExclusao IS NULL
+        ORDER BY d.competencia ASC
+        """)
+    List<java.time.YearMonth> listarCompetenciasPorCartao(@Param("cartaoId") Long cartaoId);
 }

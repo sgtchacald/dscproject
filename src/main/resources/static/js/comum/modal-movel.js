@@ -44,7 +44,82 @@ function inicializarModal(modalEl) {
         configurarRedimensionamento(dialog, content, handleSE, 'se');
     }
 
+    // Injeta botão de maximizar/restaurar no cabeçalho se ainda não existir
+    let btnMaximize = header.querySelector('.btn-modal-maximize');
+    if (!btnMaximize) {
+        btnMaximize = document.createElement('button');
+        btnMaximize.type = 'button';
+        btnMaximize.className = 'btn-modal-maximize';
+        btnMaximize.setAttribute('aria-label', 'Maximizar');
+        btnMaximize.title = 'Maximizar';
+        btnMaximize.innerHTML = '<i class="ph ph-corners-out"></i>';
+
+        const btnClose = header.querySelector('.btn-close');
+        if (btnClose) {
+            header.insertBefore(btnMaximize, btnClose);
+        } else {
+            header.appendChild(btnMaximize);
+        }
+
+        btnMaximize.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            alternarMaximizacao(dialog, content, header);
+        });
+    }
+
     configurarArrasto(dialog, content, header);
+}
+
+function alternarMaximizacao(dialog, content, header) {
+    const btnMax = header ? header.querySelector('.btn-modal-maximize') : dialog.querySelector('.btn-modal-maximize');
+
+    if (dialog.classList.contains('is-maximized')) {
+        // Restaurar
+        const salvo = dialog.dataset.restaurarRect ? JSON.parse(dialog.dataset.restaurarRect) : null;
+        dialog.classList.remove('is-maximized');
+        if (salvo) {
+            dialog.style.left = `${salvo.left}px`;
+            dialog.style.top = `${salvo.top}px`;
+            dialog.style.width = `${salvo.width}px`;
+            dialog.style.height = '';
+            content.style.height = `${salvo.height}px`;
+        } else {
+            resetarModal(dialog, content);
+        }
+        if (btnMax) {
+            btnMax.setAttribute('aria-label', 'Maximizar');
+            btnMax.title = 'Maximizar';
+            btnMax.innerHTML = '<i class="ph ph-corners-out"></i>';
+        }
+    } else {
+        // Maximizar
+        const rect = dialog.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        dialog.dataset.restaurarRect = JSON.stringify({
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: contentRect.height
+        });
+
+        dialog.style.margin = '0';
+        dialog.style.position = 'absolute';
+        dialog.style.left = '10px';
+        dialog.style.top = '10px';
+        dialog.style.width = 'calc(100vw - 20px)';
+        dialog.style.height = 'calc(100vh - 20px)';
+        dialog.style.maxWidth = 'none';
+        content.style.height = '100%';
+        content.style.maxHeight = 'none';
+        dialog.classList.add('is-maximized');
+
+        if (btnMax) {
+            btnMax.setAttribute('aria-label', 'Restaurar');
+            btnMax.title = 'Restaurar';
+            btnMax.innerHTML = '<i class="ph ph-corners-in"></i>';
+        }
+    }
 }
 
 function resetarModal(dialog, content) {
@@ -61,8 +136,16 @@ function resetarModal(dialog, content) {
     content.style.width = '';
     content.style.height = '';
     content.style.maxHeight = '';
+    content.classList.remove('is-resized');
 
     delete dialog.dataset.restaurarRect;
+
+    const btnMax = dialog.querySelector('.btn-modal-maximize');
+    if (btnMax) {
+        btnMax.setAttribute('aria-label', 'Maximizar');
+        btnMax.title = 'Maximizar';
+        btnMax.innerHTML = '<i class="ph ph-corners-out"></i>';
+    }
 }
 
 function configurarArrasto(dialog, content, header) {
@@ -73,8 +156,8 @@ function configurarArrasto(dialog, content, header) {
     let isDragging = false;
 
     header.addEventListener('pointerdown', (e) => {
-        // Ignora cliques em botões de fechar, inputs ou outros controles interativos
-        if (e.target.closest('.btn-close, button, input, select, textarea, a, .dropdown-menu')) {
+        // Ignora cliques em botões de fechar, maximizar, inputs ou outros controles interativos
+        if (e.target.closest('.btn-close, .btn-modal-maximize, button, input, select, textarea, a, .dropdown-menu')) {
             return;
         }
 
@@ -139,40 +222,8 @@ function configurarArrasto(dialog, content, header) {
 
     // Duplo clique no header maximiza / restaura
     header.addEventListener('dblclick', (e) => {
-        if (e.target.closest('.btn-close, button, input, select, a')) return;
-
-        if (dialog.classList.contains('is-maximized')) {
-            // Restaurar
-            const salvo = dialog.dataset.restaurarRect ? JSON.parse(dialog.dataset.restaurarRect) : null;
-            dialog.classList.remove('is-maximized');
-            if (salvo) {
-                dialog.style.left = `${salvo.left}px`;
-                dialog.style.top = `${salvo.top}px`;
-                dialog.style.width = `${salvo.width}px`;
-                content.style.height = `${salvo.height}px`;
-            } else {
-                resetarModal(dialog, content);
-            }
-        } else {
-            // Maximizar
-            const rect = dialog.getBoundingClientRect();
-            const contentRect = content.getBoundingClientRect();
-            dialog.dataset.restaurarRect = JSON.stringify({
-                left: rect.left,
-                top: rect.top,
-                width: rect.width,
-                height: contentRect.height
-            });
-
-            dialog.style.margin = '0';
-            dialog.style.position = 'absolute';
-            dialog.style.left = '10px';
-            dialog.style.top = '10px';
-            dialog.style.width = 'calc(100vw - 20px)';
-            dialog.style.maxWidth = 'none';
-            content.style.height = 'calc(100vh - 20px)';
-            dialog.classList.add('is-maximized');
-        }
+        if (e.target.closest('.btn-close, .btn-modal-maximize, button, input, select, a')) return;
+        alternarMaximizacao(dialog, content, header);
     });
 }
 
@@ -212,6 +263,7 @@ function configurarRedimensionamento(dialog, content, handle, direcao) {
                 const maxH = window.innerHeight - dialogRect.top - 15;
                 const newHeight = Math.max(ALTURA_MINIMA, Math.min(maxH, startHeight + deltaY));
                 content.style.height = `${newHeight}px`;
+                content.classList.add('is-resized');
             }
         }
 
