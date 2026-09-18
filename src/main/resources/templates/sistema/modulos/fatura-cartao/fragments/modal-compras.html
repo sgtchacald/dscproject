@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalComprasFatura" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModalCompras" th:text="#{fatura.compras.titulo}">Despesas da Fatura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-striped" id="tabelaComprasFatura">
+                        <thead>
+                        <tr>
+                            <th th:text="#{fatura.compras.col.data}">Data</th>
+                            <th th:text="#{fatura.compras.col.descricao}">Descrição</th>
+                            <th th:text="#{fatura.compras.col.categoria}">Categoria</th>
+                            <th th:text="#{fatura.compras.col.parcela}">Parcela</th>
+                            <th class="text-end" th:text="#{fatura.compras.col.valor}">Valor</th>
+                        </tr>
+                        </thead>
+                        <tbody id="corpoTabelaCompras"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <div>
+                    <span class="text-secondary me-2" th:text="#{fatura.compras.totalCompras}">Total de compras:</span>
+                    <strong class="text-primary fs-3" id="totalComprasModal">R$ 0,00</strong>
+                </div>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" th:text="#{fatura.compras.botao.fechar}">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

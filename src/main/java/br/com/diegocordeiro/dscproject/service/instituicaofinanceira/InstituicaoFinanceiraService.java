@@ -218,7 +218,7 @@ public class InstituicaoFinanceiraService {
 
     private long contarEmTabela(String tabela, Long id) {
         try {
-            String sql = "SELECT COUNT(*) FROM " + tabela + " WHERE INFI_ID = ? AND audit_data_exclusao IS NULL";
+            String sql = "SELECT COUNT(*) FROM " + tabela.toLowerCase() + " WHERE INFI_ID = ? AND audit_data_exclusao IS NULL";
             Long count = jdbcTemplate.queryForObject(sql, Long.class, id);
             return count != null ? count : 0L;
         } catch (Exception e) {
@@ -233,7 +233,7 @@ public class InstituicaoFinanceiraService {
 
     private void desvincularTabela(String tabela, Long id) {
         try {
-            String sql = "UPDATE " + tabela + " SET INFI_ID = NULL WHERE INFI_ID = ?";
+            String sql = "UPDATE " + tabela.toLowerCase() + " SET INFI_ID = NULL WHERE INFI_ID = ?";
             jdbcTemplate.update(sql, id);
         } catch (Exception ignored) {
         }

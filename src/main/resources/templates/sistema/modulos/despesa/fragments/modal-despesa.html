@@ -162,116 +162,127 @@
                     <!-- 5. RATEIO ENTRE USUÁRIOS -->
                     <div class="border-top pt-3 mt-3" id="secaoRateio" th:if="${podeRatear}">
                         <div class="d-flex align-items-center justify-content-between mb-2">
-                            <h6 class="m-0 fw-bold" th:text="#{despesa.rateio.titulo}">Divisão da despesa (Rateio)</h6>
+                            <label class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="despesaHabilitarRateio">
+                                <span class="form-check-label fw-bold" th:text="#{despesa.rateio.titulo}">Divisão da despesa (Rateio)</span>
+                            </label>
                             <div class="d-flex align-items-center gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnDividirIgualmenteRateio"
-                                        th:title="#{despesa.rateio.dividirIgualmente.tooltip}">
-                                    <i class="ph ph-equals me-1" aria-hidden="true"></i>
-                                    <span th:text="#{despesa.rateio.dividirIgualmente}">Dividir igualmente</span>
-                                </button>
                                 <span class="badge bg-blue-lt" th:text="#{despesa.rateio.badge.plano}">Recurso do Plano</span>
                             </div>
                         </div>
-                        <div class="table-responsive mb-2">
-                            <table class="table table-sm table-vcenter table-hover" id="tabelaRateio">
-                                <thead>
-                                <tr>
-                                    <th th:text="#{despesa.rateio.col.usuario}">Co-participante</th>
-                                    <th style="width: 140px;" th:text="#{despesa.rateio.col.valor}">Fatia (R$)</th>
-                                    <th style="width: 110px;" th:text="#{despesa.rateio.col.acerto}">Acerto</th>
-                                    <th style="width: 80px;" class="text-end" th:text="#{despesa.rateio.col.acoes}">Ações</th>
-                                </tr>
-                                </thead>
-                                <tbody id="corpoTabelaRateio"></tbody>
-                            </table>
-                        </div>
 
-                        <div class="row g-2 align-items-center mb-2">
-                            <div class="col">
-                                <input type="text" class="form-control form-control-sm" id="buscaUsuarioRateio"
-                                       list="listaUsuariosRateio" th:placeholder="#{despesa.rateio.busca.placeholder}">
-                                <datalist id="listaUsuariosRateio"></datalist>
-                            </div>
-                            <div class="col-auto">
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="btnAdicionarRateio">
-                                    <i class="ph ph-plus" aria-hidden="true"></i>
-                                    <span th:text="#{despesa.rateio.botao.adicionar}">Adicionar</span>
-                                </button>
-                            </div>
-                            <div class="col-auto">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnToggleNovoContato" data-bs-toggle="collapse" data-bs-target="#cardNovoContatoRateio" aria-expanded="false">
-                                    <i class="ph ph-user-plus" aria-hidden="true"></i>
-                                    <span th:text="#{despesa.rateio.botao.novoContato}">+ Novo Contato Externo</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Cadastro Rápido de Contato Externo (Inline) -->
-                        <div class="collapse mb-3" id="cardNovoContatoRateio">
-                            <div class="card card-body bg-light border p-3">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <strong class="small text-primary"><i class="ph ph-user-plus me-1"></i>Novo Contato Externo</strong>
-                                    <button type="button" class="btn-close btn-close-sm" id="btnFecharCardContato" aria-label="Close"></button>
+                        <div id="conteudoRateio" style="display:none;">
+                            <div class="row g-2 align-items-center mb-2" id="linhaAdicionarContatoRateio">
+                                <div class="col">
+                                    <input type="text" class="form-control form-control-sm" id="buscaUsuarioRateio"
+                                           list="listaUsuariosRateio" th:placeholder="#{despesa.rateio.busca.placeholder}">
+                                    <datalist id="listaUsuariosRateio"></datalist>
                                 </div>
-                                <div id="alertaContatoRapido" class="alert alert-danger py-1 px-2 small mb-2" style="display:none;" role="alert"></div>
-                                <div class="row g-2">
-                                    <div class="col-md-6">
-                                        <label class="form-label form-label-sm required mb-1" for="novoContatoNome">Nome</label>
-                                        <input type="text" class="form-control form-control-sm" id="novoContatoNome" maxlength="150" placeholder="Nome do contato">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label form-label-sm mb-1" for="novoContatoEmail">E-mail</label>
-                                        <input type="email" class="form-control form-control-sm" id="novoContatoEmail" maxlength="100" placeholder="email@exemplo.com">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label form-label-sm mb-1" for="novoContatoTelefone">Telefone / Celular</label>
-                                        <input type="text" class="form-control form-control-sm" id="novoContatoTelefone" maxlength="20" placeholder="(11) 99999-9999">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label form-label-sm mb-1" for="novoContatoPix">Chave PIX</label>
-                                        <input type="text" class="form-control form-control-sm" id="novoContatoPix" maxlength="100" placeholder="Chave PIX (opcional)">
-                                    </div>
+                                <div class="col-auto">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnAdicionarRateio">
+                                        <i class="ph ph-plus" aria-hidden="true"></i>
+                                        <span th:text="#{despesa.rateio.botao.adicionar}">Adicionar</span>
+                                    </button>
                                 </div>
-                                <div class="mt-2 text-end">
-                                    <button type="button" class="btn btn-sm btn-primary" id="btnSalvarNovoContato">
-                                        <i class="ph ph-check me-1"></i>Salvar e Incluir no Rateio
+                                <div class="col-auto">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnToggleNovoContato" data-bs-toggle="collapse" data-bs-target="#cardNovoContatoRateio" aria-expanded="false">
+                                        <i class="ph ph-user-plus" aria-hidden="true"></i>
+                                        <span th:text="#{despesa.rateio.botao.novoContato}">+ Novo Contato Externo</span>
                                     </button>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Painel Interativo de Minha Cota (Você - Titular) -->
-                        <div class="card bg-light border p-2 mb-2">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="avatar avatar-xs bg-primary-lt rounded-circle">
-                                        <i class="ph ph-user"></i>
-                                    </span>
-                                    <div>
-                                        <div class="fw-bold small" th:text="#{despesa.rateio.minhaCota.label}">Minha cota (Você - Titular)</div>
-                                        <div class="text-muted" style="font-size: 0.75rem;" id="infoStatusRateio" th:text="#{despesa.rateio.minhaCota.ajuda}">Parte da despesa sob sua responsabilidade</div>
+                            <!-- Cadastro Rápido de Contato Externo (Inline) -->
+                            <div class="collapse mb-3" id="cardNovoContatoRateio">
+                                <div class="card card-body bg-light border p-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <strong class="small text-primary"><i class="ph ph-user-plus me-1"></i>Novo Contato Externo</strong>
+                                        <button type="button" class="btn-close btn-close-sm" id="btnFecharCardContato" aria-label="Close"></button>
+                                    </div>
+                                    <div id="alertaContatoRapido" class="alert alert-danger py-1 px-2 small mb-2" style="display:none;" role="alert"></div>
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label form-label-sm required mb-1" for="novoContatoNome">Nome</label>
+                                            <input type="text" class="form-control form-control-sm" id="novoContatoNome" maxlength="150" placeholder="Nome do contato">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label form-label-sm mb-1" for="novoContatoEmail">E-mail</label>
+                                            <input type="email" class="form-control form-control-sm" id="novoContatoEmail" maxlength="100" placeholder="email@exemplo.com">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label form-label-sm mb-1" for="novoContatoTelefone">Telefone / Celular</label>
+                                            <input type="text" class="form-control form-control-sm" id="novoContatoTelefone" maxlength="20" placeholder="(11) 99999-9999">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label form-label-sm mb-1" for="novoContatoPix">Chave PIX</label>
+                                            <input type="text" class="form-control form-control-sm" id="novoContatoPix" maxlength="100" placeholder="Chave PIX (opcional)">
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 text-end">
+                                        <button type="button" class="btn btn-sm btn-primary" id="btnSalvarNovoContato">
+                                            <i class="ph ph-check me-1"></i>Salvar e Incluir no Rateio
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div style="width: 130px;">
-                                        <input type="text" class="form-control form-control-sm mascara-moeda text-end"
-                                               id="despesaMinhaCota" placeholder="R$ 0,00" title="Digite sua cota ou zere para transferir o total ao contato">
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnZerarMinhaCota"
-                                            th:title="#{despesa.rateio.minhaCota.zerar.tooltip}">
-                                        <i class="ph ph-arrow-counter-clockwise me-1" aria-hidden="true"></i>
-                                        <span th:text="#{despesa.rateio.minhaCota.zerar}">Zerar (R$ 0,00)</span>
+                            </div>
+
+                            <!-- Bloco de Itens do Rateio (Tabela e Minha Cota) - só visível quando houver rateio (itensRateio.length > 0) -->
+                            <div id="blocoItensRateio" style="display:none;">
+                                <div class="d-flex justify-content-end mb-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnDividirIgualmenteRateio"
+                                            th:title="#{despesa.rateio.dividirIgualmente.tooltip}">
+                                        <i class="ph ph-equals me-1" aria-hidden="true"></i>
+                                        <span th:text="#{despesa.rateio.dividirIgualmente}">Dividir igualmente</span>
                                     </button>
                                 </div>
+                                <div class="table-responsive mb-2">
+                                    <table class="table table-sm table-vcenter table-hover" id="tabelaRateio">
+                                        <thead>
+                                        <tr>
+                                            <th th:text="#{despesa.rateio.col.usuario}">Co-participante</th>
+                                            <th style="width: 140px;" th:text="#{despesa.rateio.col.valor}">Fatia (R$)</th>
+                                            <th style="width: 110px;" th:text="#{despesa.rateio.col.acerto}">Acerto</th>
+                                            <th style="width: 80px;" class="text-end" th:text="#{despesa.rateio.col.acoes}">Ações</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="corpoTabelaRateio"></tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Painel Interativo de Minha Cota (Você - Titular) -->
+                                <div class="card bg-light border p-2 mb-2" id="painelMinhaCota">
+                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="avatar avatar-xs bg-primary-lt rounded-circle">
+                                                <i class="ph ph-user"></i>
+                                            </span>
+                                            <div>
+                                                <div class="fw-bold small" th:text="#{despesa.rateio.minhaCota.label}">Minha cota (Você - Titular)</div>
+                                                <div class="text-muted" style="font-size: 0.75rem;" id="infoStatusRateio" th:text="#{despesa.rateio.minhaCota.ajuda}">Parte da despesa sob sua responsabilidade</div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div style="width: 130px;">
+                                                <input type="text" class="form-control form-control-sm mascara-moeda text-end"
+                                                       id="despesaMinhaCota" placeholder="R$ 0,00" title="Digite sua cota ou zere para transferir o total ao contato">
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnZerarMinhaCota"
+                                                    th:title="#{despesa.rateio.minhaCota.zerar.tooltip}">
+                                                <i class="ph ph-arrow-counter-clockwise me-1" aria-hidden="true"></i>
+                                                <span th:text="#{despesa.rateio.minhaCota.zerar}">Zerar (R$ 0,00)</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top small" id="barraResumoRateio">
+                                        <span class="text-muted">Total despesa: <strong id="resumoTotalDespesa">R$ 0,00</strong> | Fatias contatos: <strong id="resumoFatiasContatos">R$ 0,00</strong></span>
+                                        <span id="badgeCotaZerada" class="badge bg-green-lt" style="display:none;">
+                                            <i class="ph ph-check me-1"></i><span th:text="#{despesa.rateio.minhaCota.zerada.badge}">100% repassado aos contatos (sua cota: R$ 0,00)</span>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top small" id="barraResumoRateio">
-                                <span class="text-muted">Total despesa: <strong id="resumoTotalDespesa">R$ 0,00</strong> | Fatias contatos: <strong id="resumoFatiasContatos">R$ 0,00</strong></span>
-                                <span id="badgeCotaZerada" class="badge bg-green-lt" style="display:none;">
-                                    <i class="ph ph-check me-1"></i><span th:text="#{despesa.rateio.minhaCota.zerada.badge}">100% repassado aos contatos (sua cota: R$ 0,00)</span>
-                                </span>
-                            </div>
+                            <div class="invalid-feedback d-block" id="erroRateio"></div>
                         </div>
-                        <div class="invalid-feedback d-block" id="erroRateio"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
