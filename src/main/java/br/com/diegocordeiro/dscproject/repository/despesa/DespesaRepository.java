@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
@@ -71,4 +73,15 @@ public interface DespesaRepository extends JpaRepository<Despesa, Long> {
           AND d.dataExclusao IS NULL
         """)
     List<Despesa> buscarPorIdsEUsuario(@Param("ids") List<Long> ids, @Param("usuarioId") Long usuarioId);
+
+    @Query("""
+        SELECT COALESCE(SUM(d.valor - COALESCE((SELECT SUM(du.valor) FROM DespesaUsuario du WHERE du.despesa = d AND du.dataExclusao IS NULL), 0)), 0)
+        FROM Despesa d
+        LEFT JOIN d.conta c
+        LEFT JOIN d.cartao cc
+        WHERE (c.usuario.id = :usuarioId OR cc.usuario.id = :usuarioId)
+          AND d.competencia = :competencia
+          AND d.dataExclusao IS NULL
+    """)
+    BigDecimal somarCotaLiquidaPorCompetenciaEUsuario(@Param("competencia") YearMonth competencia, @Param("usuarioId") Long usuarioId);
 }

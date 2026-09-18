@@ -1041,4 +1041,9 @@ public class DespesaService {
                 .map(UsuarioRateioDTO::new)
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public BigDecimal somarCotaLiquidaPorCompetencia(YearMonth competencia, Long usuarioId) {
+        return despesaRepository.somarCotaLiquidaPorCompetenciaEUsuario(competencia, usuarioId);
+    }
 }
