@@ -4,7 +4,7 @@ import br.com.diegocordeiro.dscproject.dto.categoriaprovedor.CategoriaProvedorFo
 import br.com.diegocordeiro.dscproject.dto.categoriaprovedor.CategoriaProvedorGridDTO;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaProvedorRepository;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import br.com.diegocordeiro.dscproject.service.categoria.CategoriaProvedorService;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegraNegocioException;
 import br.com.diegocordeiro.dscproject.web.sistema.validator.categoria.CategoriaProvedorValidator;
@@ -35,14 +35,14 @@ public class CategoriaProvedorController {
     private final CategoriaProvedorService categoriaProvedorService;
     private final CategoriaProvedorRepository categoriaProvedorRepository;
     private final CategoriaRepository categoriaRepository;
-    private final OpfiProvedorRepository opfiProvedorRepository;
+    private final OpenFinanceProvedorRepository openFinanceProvedorRepository;
     private final MessageSource messageSource;
 
-    public CategoriaProvedorController(CategoriaProvedorService categoriaProvedorService, CategoriaProvedorRepository categoriaProvedorRepository, CategoriaRepository categoriaRepository, OpfiProvedorRepository opfiProvedorRepository, MessageSource messageSource) {
+    public CategoriaProvedorController(CategoriaProvedorService categoriaProvedorService, CategoriaProvedorRepository categoriaProvedorRepository, CategoriaRepository categoriaRepository, OpenFinanceProvedorRepository openFinanceProvedorRepository, MessageSource messageSource) {
         this.categoriaProvedorService = categoriaProvedorService;
         this.categoriaProvedorRepository = categoriaProvedorRepository;
         this.categoriaRepository = categoriaRepository;
-        this.opfiProvedorRepository = opfiProvedorRepository;
+        this.openFinanceProvedorRepository = openFinanceProvedorRepository;
         this.messageSource = messageSource;
     }
 
@@ -62,7 +62,7 @@ public class CategoriaProvedorController {
 
     @PostMapping("/categorias-provedor/inserir")
     public String inserir(@Valid @ModelAttribute("vinculoForm") CategoriaProvedorFormDTO form, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model, Locale locale) {
-        new CategoriaProvedorValidator(categoriaProvedorRepository, categoriaRepository, opfiProvedorRepository, messageSource, locale)
+        new CategoriaProvedorValidator(categoriaProvedorRepository, categoriaRepository, openFinanceProvedorRepository, messageSource, locale)
             .validate(form, bindingResult);
 
         if (bindingResult.hasErrors()) {
@@ -94,7 +94,7 @@ public class CategoriaProvedorController {
                          Model model,
                          Locale locale) {
         form.setId(id);
-        new CategoriaProvedorValidator(categoriaProvedorRepository, categoriaRepository, opfiProvedorRepository, messageSource, locale)
+        new CategoriaProvedorValidator(categoriaProvedorRepository, categoriaRepository, openFinanceProvedorRepository, messageSource, locale)
             .validate(form, bindingResult);
 
         if (bindingResult.hasErrors()) {
@@ -130,8 +130,8 @@ public class CategoriaProvedorController {
     private void carregarDadosListagem(Long provedorId, Model model) {
         List<CategoriaProvedorGridDTO> vinculos = categoriaProvedorService.listar(provedorId);
         model.addAttribute("vinculos", vinculos);
-        model.addAttribute("provedores", opfiProvedorRepository.findByAtivoTrueAndDataExclusaoIsNullOrderByNomeAsc());
-        model.addAttribute("todosProvedores", opfiProvedorRepository.findByDataExclusaoIsNullOrderByNomeAsc());
+        model.addAttribute("provedores", openFinanceProvedorRepository.findByAtivoTrueAndDataExclusaoIsNullOrderByNomeAsc());
+        model.addAttribute("todosProvedores", openFinanceProvedorRepository.findByDataExclusaoIsNullOrderByNomeAsc());
         model.addAttribute("categorias", categoriaRepository.findByAtivoTrueAndDataExclusaoIsNullOrderByNomeAsc());
         model.addAttribute("provedorIdFiltro", provedorId);
     }

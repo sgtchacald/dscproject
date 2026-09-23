@@ -25,7 +25,7 @@ import org.hibernate.envers.Audited;
 @Entity
 @Audited
 @Table(name = "OPFI_INSTITUICAO_PROVEDOR")
-public class OpfiInstituicaoProvedor extends AbstractAuditoria {
+public class OpenFinanceInstituicaoProvedor extends AbstractAuditoria {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,5 +41,5 @@ public class OpfiInstituicaoProvedor extends AbstractAuditoria {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "OFPV_ID", nullable = false)
-    private OpfiProvedor provedor;
+    private OpenFinanceProvedor provedor;
 }

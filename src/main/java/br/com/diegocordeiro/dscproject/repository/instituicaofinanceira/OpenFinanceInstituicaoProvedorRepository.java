@@ -1,6 +1,6 @@
 package br.com.diegocordeiro.dscproject.repository.instituicaofinanceira;
 
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiInstituicaoProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceInstituicaoProvedor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,16 +10,18 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface OpfiInstituicaoProvedorRepository extends JpaRepository<OpfiInstituicaoProvedor, Long> {
+public interface OpenFinanceInstituicaoProvedorRepository extends JpaRepository<OpenFinanceInstituicaoProvedor, Long> {
 
-    Optional<OpfiInstituicaoProvedor> findByIdAndDataExclusaoIsNull(Long id);
+    Optional<OpenFinanceInstituicaoProvedor> findByIdAndDataExclusaoIsNull(Long id);
 
-    List<OpfiInstituicaoProvedor> findByInstituicaoIdAndDataExclusaoIsNull(Long instituicaoId);
+    List<OpenFinanceInstituicaoProvedor> findByInstituicaoIdAndDataExclusaoIsNull(Long instituicaoId);
+
+    Optional<OpenFinanceInstituicaoProvedor> findByProvedorIdAndIdExternoAndDataExclusaoIsNull(Long provedorId, String idExterno);
 
     long countByInstituicaoIdAndDataExclusaoIsNull(Long instituicaoId);
 
     @Query("""
-        SELECT COUNT(m) FROM OpfiInstituicaoProvedor m
+        SELECT COUNT(m) FROM OpenFinanceInstituicaoProvedor m
         WHERE m.dataExclusao IS NULL
           AND m.instituicao.id = :instituicaoId
           AND m.provedor.id = :provedorId
@@ -28,7 +30,7 @@ public interface OpfiInstituicaoProvedorRepository extends JpaRepository<OpfiIns
     long contarPorInstituicaoEProvedor(@Param("instituicaoId") Long instituicaoId, @Param("provedorId") Long provedorId, @Param("idAtual") Long idAtual);
 
     @Query("""
-        SELECT COUNT(m) FROM OpfiInstituicaoProvedor m
+        SELECT COUNT(m) FROM OpenFinanceInstituicaoProvedor m
         WHERE m.dataExclusao IS NULL
           AND m.provedor.id = :provedorId
           AND m.idExterno = :idExterno
@@ -37,11 +39,11 @@ public interface OpfiInstituicaoProvedorRepository extends JpaRepository<OpfiIns
     long contarPorProvedorEIdExterno(@Param("provedorId") Long provedorId, @Param("idExterno") String idExterno, @Param("idAtual") Long idAtual);
 
     @Query("""
-        SELECT m FROM OpfiInstituicaoProvedor m
+        SELECT m FROM OpenFinanceInstituicaoProvedor m
         JOIN FETCH m.provedor p
         JOIN FETCH m.instituicao i
         WHERE m.dataExclusao IS NULL
         ORDER BY p.nome ASC, i.nome ASC
         """)
-    List<OpfiInstituicaoProvedor> listarParaGrid();
+    List<OpenFinanceInstituicaoProvedor> listarParaGrid();
 }

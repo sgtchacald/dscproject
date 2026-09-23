@@ -28,12 +28,16 @@ public class SecurityConfig {
     private static final String[] PUBLICO_POST = {
         "/usuarios/cadastrar-site",
         "/usuarios/recuperar-senha/solicitar",
-        "/usuarios/recuperar-senha/confirmar"
+        "/usuarios/recuperar-senha/confirmar",
+        "/api/open-finance/webhook/**"
     };
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, @Value("${app.remember-me.key}") String rememberMeKey) throws Exception {
         http
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/open-finance/webhook/**")
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET, PUBLICO_GET).permitAll()
                 .requestMatchers(HttpMethod.POST, PUBLICO_POST).permitAll()
@@ -223,6 +227,22 @@ public class SecurityConfig {
                     .hasAuthority("PERM_FATURAS_PAGAR")
                 .requestMatchers(HttpMethod.PUT, "/faturas-cartao/*/encargos")
                     .hasAuthority("PERM_FATURAS_EDITAR")
+
+                // Open Finance (Finanças > Conexões Open Finance)
+                .requestMatchers(HttpMethod.GET, "/open-finance/conexoes", "/open-finance/dados", "/open-finance/provedores/ativos", "/open-finance/conexoes/*/historico", "/open-finance/conexoes/*/contas")
+                    .hasAuthority("PERM_OPEN_FINANCE_LISTAR")
+                .requestMatchers(HttpMethod.POST, "/open-finance/connect-token", "/open-finance/conexoes/callback")
+                    .hasAuthority("PERM_OPEN_FINANCE_CONECTAR")
+                .requestMatchers(HttpMethod.PUT, "/open-finance/contas-externas/*/vincular")
+                    .hasAuthority("PERM_OPEN_FINANCE_CONECTAR")
+                .requestMatchers(HttpMethod.POST, "/open-finance/conexoes/*/sincronizar")
+                    .hasAuthority("PERM_OPEN_FINANCE_SINCRONIZAR")
+                .requestMatchers(HttpMethod.DELETE, "/open-finance/conexoes/*")
+                    .hasAuthority("PERM_OPEN_FINANCE_DESCONECTAR")
+                .requestMatchers(HttpMethod.GET, "/open-finance/credenciais")
+                    .hasAuthority("PERM_OPEN_FINANCE_CONFIGURAR_CREDENCIAL")
+                .requestMatchers(HttpMethod.POST, "/open-finance/credenciais", "/open-finance/credenciais/testar")
+                    .hasAuthority("PERM_OPEN_FINANCE_CONFIGURAR_CREDENCIAL")
 
                 .anyRequest().authenticated()
             )

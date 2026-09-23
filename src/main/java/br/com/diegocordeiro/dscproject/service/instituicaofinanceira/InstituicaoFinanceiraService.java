@@ -6,10 +6,10 @@ import br.com.diegocordeiro.dscproject.dto.instituicaofinanceira.InstituicaoFina
 import br.com.diegocordeiro.dscproject.dto.instituicaofinanceira.InstituicaoFinanceiraOpcaoDTO;
 import br.com.diegocordeiro.dscproject.enums.TipoInstituicaoFinanceira;
 import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.InstituicaoFinanceira;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiInstituicaoProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceInstituicaoProvedor;
 import br.com.diegocordeiro.dscproject.config.parametro.ParametrosInstituicaoCatalogo;
 import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.InstituicaoFinanceiraRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiInstituicaoProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceInstituicaoProvedorRepository;
 import br.com.diegocordeiro.dscproject.repository.parametro.ParametroGlobalRepository;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegistroNaoEncontradoException;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegraNegocioException;
@@ -27,15 +27,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InstituicaoFinanceiraService {
 
     private final InstituicaoFinanceiraRepository instituicaoFinanceiraRepository;
-    private final OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository;
+    private final OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository;
     private final ParametroGlobalRepository parametroGlobalRepository;
     private final JdbcTemplate jdbcTemplate;
 
     private final Map<String, List<InstituicaoFinanceiraOpcaoDTO>> cacheOpcoes = new ConcurrentHashMap<>();
 
-    public InstituicaoFinanceiraService(InstituicaoFinanceiraRepository instituicaoFinanceiraRepository, OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository, ParametroGlobalRepository parametroGlobalRepository, JdbcTemplate jdbcTemplate) {
+    public InstituicaoFinanceiraService(InstituicaoFinanceiraRepository instituicaoFinanceiraRepository, OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository, ParametroGlobalRepository parametroGlobalRepository, JdbcTemplate jdbcTemplate) {
         this.instituicaoFinanceiraRepository = instituicaoFinanceiraRepository;
-        this.opfiInstituicaoProvedorRepository = opfiInstituicaoProvedorRepository;
+        this.openFinanceInstituicaoProvedorRepository = openFinanceInstituicaoProvedorRepository;
         this.parametroGlobalRepository = parametroGlobalRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -50,7 +50,7 @@ public class InstituicaoFinanceiraService {
                 .codigo(i.getCodigo())
                 .tipo(i.getTipo())
                 .qtdUso(contarUso(i.getId()))
-                .qtdProvedores(opfiInstituicaoProvedorRepository.countByInstituicaoIdAndDataExclusaoIsNull(i.getId()))
+                .qtdProvedores(openFinanceInstituicaoProvedorRepository.countByInstituicaoIdAndDataExclusaoIsNull(i.getId()))
                 .sistema(i.isSistema())
                 .ativo(i.isAtivo())
                 .excluido(i.isExcluido())
@@ -169,11 +169,11 @@ public class InstituicaoFinanceiraService {
         }
 
         // RN12: cascatear exclusão lógica dos vínculos de provedor
-        List<OpfiInstituicaoProvedor> vinculos = opfiInstituicaoProvedorRepository.findByInstituicaoIdAndDataExclusaoIsNull(id);
-        for (OpfiInstituicaoProvedor v : vinculos) {
+        List<OpenFinanceInstituicaoProvedor> vinculos = openFinanceInstituicaoProvedorRepository.findByInstituicaoIdAndDataExclusaoIsNull(id);
+        for (OpenFinanceInstituicaoProvedor v : vinculos) {
             v.setDataExclusao(Instant.now());
             v.setExcluidoPor(usuarioLogado);
-            opfiInstituicaoProvedorRepository.save(v);
+            openFinanceInstituicaoProvedorRepository.save(v);
         }
 
         entity.setDataExclusao(Instant.now());

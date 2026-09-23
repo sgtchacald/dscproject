@@ -93,8 +93,8 @@
                 </li>
 
                 <li class="nav-item dropdown"
-                    sec:authorize="hasAuthority('PERM_CATEGORIAS_PROVEDOR_LISTAR') or hasAuthority('PERM_INSTITUICOES_PROVEDOR_LISTAR')"
-                    th:with="grupoAtivo=${#strings.startsWith(uri, '/categorias-provedor/') or #strings.startsWith(uri, '/instituicoes-provedor/')}"
+                    sec:authorize="hasAuthority('PERM_OPEN_FINANCE_LISTAR') or hasAuthority('PERM_CATEGORIAS_PROVEDOR_LISTAR') or hasAuthority('PERM_INSTITUICOES_PROVEDOR_LISTAR')"
+                    th:with="grupoAtivo=${#strings.startsWith(uri, '/open-finance/') or #strings.startsWith(uri, '/categorias-provedor/') or #strings.startsWith(uri, '/instituicoes-provedor/')}"
                     th:classappend="${grupoAtivo} ? 'active'">
                     <a class="nav-link dropdown-toggle" href="#navbar-open-finance" data-bs-toggle="dropdown"
                        data-bs-auto-close="false" role="button" aria-expanded="false"
@@ -105,6 +105,12 @@
                         <span class="nav-link-title" th:text="#{menu.open-finance}">Open Finance</span>
                     </a>
                     <div class="dropdown-menu" th:classappend="${grupoAtivo} ? 'show'">
+                        <a class="dropdown-item" th:href="@{/open-finance/conexoes}"
+                           sec:authorize="hasAuthority('PERM_OPEN_FINANCE_LISTAR')"
+                           th:classappend="${#strings.startsWith(uri, '/open-finance/')} ? 'active'">
+                            <i class="ph ph-bank dropdown-item-icon" aria-hidden="true"></i>
+                            <span th:text="#{menu.open-finance.conexoes}">Conexões Bancárias</span>
+                        </a>
                         <a class="dropdown-item" th:href="@{/instituicoes-provedor/listar}"
                            sec:authorize="hasAuthority('PERM_INSTITUICOES_PROVEDOR_LISTAR')"
                            th:classappend="${#strings.startsWith(uri, '/instituicoes-provedor/')} ? 'active'">
