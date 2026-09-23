@@ -5,11 +5,11 @@ import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.InstituicaoProved
 import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.InstituicaoProvedorGridDTO;
 import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.ProvedorOpcaoDTO;
 import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.InstituicaoFinanceira;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiInstituicaoProvedor;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceInstituicaoProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.InstituicaoFinanceiraRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiInstituicaoProvedorRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceInstituicaoProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import br.com.diegocordeiro.dscproject.service.perfil.AutorizacaoService;
 import br.com.diegocordeiro.dscproject.service.instituicaofinanceira.InstituicaoProvedorService;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,13 +45,13 @@ class InstituicaoProvedorControllerTest {
     private InstituicaoProvedorService instituicaoProvedorService;
 
     @MockitoBean
-    private OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository;
+    private OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository;
 
     @MockitoBean
     private InstituicaoFinanceiraRepository instituicaoFinanceiraRepository;
 
     @MockitoBean
-    private OpfiProvedorRepository opfiProvedorRepository;
+    private OpenFinanceProvedorRepository openFinanceProvedorRepository;
 
     @MockitoBean
     private AutorizacaoService autorizacaoService;
@@ -128,18 +128,18 @@ class InstituicaoProvedorControllerTest {
     @DisplayName("Inserir vínculo com sucesso")
     @WithMockUser(authorities = "PERM_INSTITUICOES_PROVEDOR_INSERIR")
     void inserir_comDadosValidos_deveRetornarOk() throws Exception {
-        when(opfiInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(0L);
-        when(opfiInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "pluggy_nubank", null)).thenReturn(0L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(0L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "pluggy_nubank", null)).thenReturn(0L);
 
         InstituicaoFinanceira inst = new InstituicaoFinanceira();
         inst.setAtivo(true);
         when(instituicaoFinanceiraRepository.findByIdAndDataExclusaoIsNull(10L)).thenReturn(Optional.of(inst));
 
-        OpfiProvedor prov = new OpfiProvedor();
+        OpenFinanceProvedor prov = new OpenFinanceProvedor();
         prov.setAtivo(true);
-        when(opfiProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
+        when(openFinanceProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
 
-        when(instituicaoProvedorService.inserir(any())).thenReturn(new OpfiInstituicaoProvedor());
+        when(instituicaoProvedorService.inserir(any())).thenReturn(new OpenFinanceInstituicaoProvedor());
 
         mockMvc.perform(post("/instituicoes-provedor/inserir")
                         .with(csrf())
@@ -156,16 +156,16 @@ class InstituicaoProvedorControllerTest {
     @DisplayName("Inserir vínculo com par duplicado retorna 422")
     @WithMockUser(authorities = "PERM_INSTITUICOES_PROVEDOR_INSERIR")
     void inserir_quandoParDuplicado_deveRetornar422() throws Exception {
-        when(opfiInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(1L);
-        when(opfiInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "pluggy_nubank", null)).thenReturn(0L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(1L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "pluggy_nubank", null)).thenReturn(0L);
 
         InstituicaoFinanceira inst = new InstituicaoFinanceira();
         inst.setAtivo(true);
         when(instituicaoFinanceiraRepository.findByIdAndDataExclusaoIsNull(10L)).thenReturn(Optional.of(inst));
 
-        OpfiProvedor prov = new OpfiProvedor();
+        OpenFinanceProvedor prov = new OpenFinanceProvedor();
         prov.setAtivo(true);
-        when(opfiProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
+        when(openFinanceProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
 
         mockMvc.perform(post("/instituicoes-provedor/inserir")
                         .with(csrf())
@@ -183,16 +183,16 @@ class InstituicaoProvedorControllerTest {
     @DisplayName("Editar vínculo com sucesso")
     @WithMockUser(authorities = "PERM_INSTITUICOES_PROVEDOR_EDITAR")
     void editar_comDadosValidos_deveRetornarOk() throws Exception {
-        when(opfiInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, 2L)).thenReturn(0L);
-        when(opfiInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "pluggy_nubank_v2", 2L)).thenReturn(0L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, 2L)).thenReturn(0L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "pluggy_nubank_v2", 2L)).thenReturn(0L);
 
         InstituicaoFinanceira inst = new InstituicaoFinanceira();
         inst.setAtivo(true);
         when(instituicaoFinanceiraRepository.findByIdAndDataExclusaoIsNull(10L)).thenReturn(Optional.of(inst));
 
-        OpfiProvedor prov = new OpfiProvedor();
+        OpenFinanceProvedor prov = new OpenFinanceProvedor();
         prov.setAtivo(true);
-        when(opfiProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
+        when(openFinanceProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
 
         mockMvc.perform(put("/instituicoes-provedor/editar/2")
                         .with(csrf())

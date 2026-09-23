@@ -2,10 +2,10 @@ package br.com.diegocordeiro.dscproject.web.sistema.validator.instituicaofinance
 
 import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.InstituicaoProvedorFormDTO;
 import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.InstituicaoFinanceira;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.InstituicaoFinanceiraRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiInstituicaoProvedorRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceInstituicaoProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,13 +29,13 @@ import static org.mockito.Mockito.when;
 class InstituicaoProvedorValidatorTest {
 
     @Mock
-    private OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository;
+    private OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository;
 
     @Mock
     private InstituicaoFinanceiraRepository instituicaoFinanceiraRepository;
 
     @Mock
-    private OpfiProvedorRepository opfiProvedorRepository;
+    private OpenFinanceProvedorRepository openFinanceProvedorRepository;
 
     @Mock
     private MessageSource messageSource;
@@ -45,9 +45,9 @@ class InstituicaoProvedorValidatorTest {
     @BeforeEach
     void setUp() {
         validator = new InstituicaoProvedorValidator(
-                opfiInstituicaoProvedorRepository,
+                openFinanceInstituicaoProvedorRepository,
                 instituicaoFinanceiraRepository,
-                opfiProvedorRepository,
+                openFinanceProvedorRepository,
                 messageSource,
                 Locale.getDefault()
         );
@@ -56,11 +56,11 @@ class InstituicaoProvedorValidatorTest {
     @Test
     @DisplayName("Validação: par (instituicao, provedor) duplicado adiciona erro")
     void validate_quandoParDuplicado_deveAdicionarErro() {
-        when(opfiInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(1L);
-        when(opfiInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "ext_1", null)).thenReturn(0L);
-        OpfiProvedor prov = new OpfiProvedor();
+        when(openFinanceInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(1L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "ext_1", null)).thenReturn(0L);
+        OpenFinanceProvedor prov = new OpenFinanceProvedor();
         prov.setAtivo(true);
-        when(opfiProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
+        when(openFinanceProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
         when(messageSource.getMessage(eq("msg.instituicaoprovedor.instituicao.duplicada"), any(), any()))
                 .thenReturn("Esta instituição já está vinculada a este provedor.");
 
@@ -78,14 +78,14 @@ class InstituicaoProvedorValidatorTest {
     @Test
     @DisplayName("Validação: ID externo duplicado adiciona erro")
     void validate_quandoIdExternoDuplicado_deveAdicionarErro() {
-        when(opfiInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(0L);
-        when(opfiInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "ext_1", null)).thenReturn(1L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(0L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "ext_1", null)).thenReturn(1L);
         InstituicaoFinanceira inst = new InstituicaoFinanceira();
         inst.setAtivo(true);
         when(instituicaoFinanceiraRepository.findByIdAndDataExclusaoIsNull(10L)).thenReturn(Optional.of(inst));
-        OpfiProvedor prov = new OpfiProvedor();
+        OpenFinanceProvedor prov = new OpenFinanceProvedor();
         prov.setAtivo(true);
-        when(opfiProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
+        when(openFinanceProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
         when(messageSource.getMessage(eq("msg.instituicaoprovedor.idexterno.duplicado"), any(), any()))
                 .thenReturn("Este identificador já está em uso para este provedor.");
 
@@ -103,14 +103,14 @@ class InstituicaoProvedorValidatorTest {
     @Test
     @DisplayName("Validação: dados válidos não adicionam erro")
     void validate_quandoValido_naoDeveAdicionarErro() {
-        when(opfiInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(0L);
-        when(opfiInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "ext_1", null)).thenReturn(0L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(10L, 1L, null)).thenReturn(0L);
+        when(openFinanceInstituicaoProvedorRepository.contarPorProvedorEIdExterno(1L, "ext_1", null)).thenReturn(0L);
         InstituicaoFinanceira inst = new InstituicaoFinanceira();
         inst.setAtivo(true);
         when(instituicaoFinanceiraRepository.findByIdAndDataExclusaoIsNull(10L)).thenReturn(Optional.of(inst));
-        OpfiProvedor prov = new OpfiProvedor();
+        OpenFinanceProvedor prov = new OpenFinanceProvedor();
         prov.setAtivo(true);
-        when(opfiProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
+        when(openFinanceProvedorRepository.findById(1L)).thenReturn(Optional.of(prov));
 
         InstituicaoProvedorFormDTO dto = new InstituicaoProvedorFormDTO();
         dto.setProvedorId(1L);

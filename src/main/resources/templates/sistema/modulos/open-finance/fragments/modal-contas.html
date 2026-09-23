@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalContasExternas" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ph ph-cards me-2 text-primary"></i>
+                    <span id="modalContasTitulo">Contas e Cartões Detectados</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContasLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <div class="table-responsive d-none" id="containerTabelaContasExternas">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                        <tr>
+                            <th th:text="#{openfinance.modal.contas.col.tipo}">Tipo</th>
+                            <th th:text="#{openfinance.modal.contas.col.descricao}">Identificação / Número</th>
+                            <th class="text-end" th:text="#{openfinance.modal.contas.col.saldo}">Saldo Atual</th>
+                            <th th:text="#{openfinance.modal.contas.col.vinculo}">Vínculo no Sistema</th>
+                            <th class="w-1">Ação</th>
+                        </tr>
+                        </thead>
+                        <tbody id="corpoTabelaContasExternas"></tbody>
+                    </table>
+                </div>
+                <div id="modalContasVazio" class="text-center py-4 d-none">
+                    <p class="text-secondary">Nenhuma conta externa detectada para esta conexão ainda.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

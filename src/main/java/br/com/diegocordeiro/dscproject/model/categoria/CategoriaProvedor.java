@@ -1,7 +1,7 @@
 package br.com.diegocordeiro.dscproject.model.categoria;
 
 import br.com.diegocordeiro.dscproject.model.comum.AbstractAuditoria;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -41,5 +41,5 @@ public class CategoriaProvedor extends AbstractAuditoria {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "OFPV_ID", nullable = false)
-    private OpfiProvedor provedor;
+    private OpenFinanceProvedor provedor;
 }

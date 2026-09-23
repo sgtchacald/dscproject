@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      layout:decorate="~{sistema/template-admin/layout}">
+<head>
+    <title th:text="#{openfinance.titulo}">Conexões Open Finance</title>
+</head>
+<body>
+
+<div layout:fragment="cabecalho">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <h2 class="page-title" th:text="#{openfinance.titulo}">Conexões Open Finance</h2>
+            <br><br>
+            <nav aria-label="Breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a th:href="@{/}">
+                            <i class="ph ph-house" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item" th:text="#{openfinance.breadcrumb.pai}">Finanças</li>
+                    <li class="breadcrumb-item active" aria-current="page" th:text="#{openfinance.breadcrumb.atual}">Conexões Open Finance</li>
+                </ol>
+            </nav>
+            <br>
+            <div class="text-secondary mt-1" th:text="#{openfinance.descricao}">
+                Conecte suas contas bancárias para sincronização automatizada de extratos e faturas.
+            </div>
+        </div>
+        <div class="col-auto ms-auto d-flex gap-2">
+            <button class="btn btn-outline-primary" id="btnConfigurarCredenciais"
+                    sec:authorize="hasAuthority('PERM_OPEN_FINANCE_CONFIGURAR_CREDENCIAL')">
+                <i class="ph ph-key me-1" aria-hidden="true"></i>
+                <span th:text="#{openfinance.btn.credenciais}">Configurar Credenciais</span>
+            </button>
+            <button class="btn btn-primary" id="btnNovaConexao"
+                    sec:authorize="hasAuthority('PERM_OPEN_FINANCE_CONECTAR')">
+                <i class="ph ph-plus me-1" aria-hidden="true"></i>
+                <span th:text="#{openfinance.btn.novaConexao}">Nova Conexão</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<section layout:fragment="corpo">
+    <!-- Card de status das credenciais -->
+    <div class="card mb-3" id="cardStatusCredencial">
+        <div class="card-status-top bg-azure" id="barraStatusCredencial"></div>
+        <div class="card-body d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <span class="avatar avatar-md bg-azure-lt me-3" id="avatarStatusCredencial">
+                    <i class="ph ph-plugs-connected fs-2"></i>
+                </span>
+                <div>
+                    <h4 class="card-title m-0" id="tituloStatusCredencial">Provedor Open Finance: Pluggy</h4>
+                    <div class="text-secondary small mt-1" id="subtituloStatusCredencial">
+                        Carregando informações de credencial...
+                    </div>
+                </div>
+            </div>
+            <div id="badgeStatusCredencialContainer">
+                <span class="badge bg-secondary-lt" id="badgeStatusCredencial">Consultando</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de conexões -->
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-hover" id="tabelaConexoes">
+                <thead>
+                <tr>
+                    <th th:text="#{openfinance.tabela.col.instituicao}">Instituição Financeira</th>
+                    <th th:text="#{openfinance.tabela.col.provedor}">Provedor</th>
+                    <th th:text="#{openfinance.tabela.col.contas}">Contas Detectadas</th>
+                    <th th:text="#{openfinance.tabela.col.status}">Status</th>
+                    <th th:text="#{openfinance.tabela.col.consentimento}">Consentimento</th>
+                    <th th:text="#{openfinance.tabela.col.ultimaSincronizacao}">Última Sincronização</th>
+                    <th class="w-1 text-center" th:text="#{openfinance.tabela.col.acoes}">Ações</th>
+                </tr>
+                </thead>
+                <tbody id="corpoTabelaConexoes">
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-secondary">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        Carregando conexões Open Finance...
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer d-flex align-items-center">
+            <p class="m-0 text-secondary" id="rodapeContagemConexoes"></p>
+        </div>
+    </div>
+
+    <!-- Modais do Módulo -->
+    <div th:replace="~{sistema/modulos/open-finance/fragments/modal-credenciais :: modal}"></div>
+    <div th:replace="~{sistema/modulos/open-finance/fragments/modal-conectar :: modal}"></div>
+    <div th:replace="~{sistema/modulos/open-finance/fragments/modal-contas :: modal}"></div>
+    <div th:replace="~{sistema/modulos/open-finance/fragments/modal-historico :: modal}"></div>
+
+    <!-- Área de Toasts -->
+    <div id="toastArea" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;"></div>
+
+    <!-- Permissões atômicas para o frontend -->
+    <span sec:authorize="hasAuthority('PERM_OPEN_FINANCE_LISTAR')" data-perm="listar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_OPEN_FINANCE_CONECTAR')" data-perm="conectar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_OPEN_FINANCE_SINCRONIZAR')" data-perm="sincronizar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_OPEN_FINANCE_DESCONECTAR')" data-perm="desconectar" hidden></span>
+    <span sec:authorize="hasAuthority('PERM_OPEN_FINANCE_CONFIGURAR_CREDENCIAL')" data-perm="configurar-credencial" hidden></span>
+
+    <!-- Metadados e URLs para o JavaScript -->
+    <div id="dadosTelaOpenFinance"
+         th:data-url-dados="@{/open-finance/dados}"
+         th:data-url-credenciais="@{/open-finance/credenciais}"
+         th:data-url-testar-credenciais="@{/open-finance/credenciais/testar}"
+         th:data-url-connect-token="@{/open-finance/connect-token}"
+         th:data-url-callback="@{/open-finance/conexoes/callback}"
+         th:data-url-sincronizar="@{/open-finance/conexoes/{id}/sincronizar}"
+         th:data-url-desconectar="@{/open-finance/conexoes/{id}}"
+         th:data-url-historico="@{/open-finance/conexoes/{id}/historico}"
+         th:data-url-contas="@{/open-finance/conexoes/{id}/contas}"
+         th:data-url-vincular="@{/open-finance/contas-externas/{id}/vincular}"
+         th:data-url-contas-opcoes="@{/contas/opcoes}"
+         th:data-url-cartoes-opcoes="@{/cartoes/opcoes}"
+         th:data-msg-confirma-desconectar="#{openfinance.conexao.confirma-desconectar}"
+         th:data-msg-sem-credenciais="#{openfinance.credencial.nao-configurada}"
+         hidden></div>
+</section>
+
+<th:block layout:fragment="js">
+    <!-- SDK oficial Pluggy Connect para autenticação em iframe seguro -->
+    <script src="https://cdn.pluggy.ai/pluggy-connect/v2.8.2/pluggy-connect.js"></script>
+    <script type="module" th:src="@{/js/open-finance/listar.js}"></script>
+</th:block>
+</body>
+</html>

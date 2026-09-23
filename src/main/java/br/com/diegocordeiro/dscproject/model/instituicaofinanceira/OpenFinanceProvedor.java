@@ -21,7 +21,7 @@ import org.hibernate.envers.Audited;
 @Entity
 @Audited
 @Table(name = "OPFI_PROVEDORES")
-public class OpfiProvedor extends AbstractAuditoria {
+public class OpenFinanceProvedor extends AbstractAuditoria {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

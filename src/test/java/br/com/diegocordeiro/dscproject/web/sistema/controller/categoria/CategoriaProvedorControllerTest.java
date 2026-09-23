@@ -4,10 +4,10 @@ import br.com.diegocordeiro.dscproject.config.SecurityConfig;
 import br.com.diegocordeiro.dscproject.dto.categoriaprovedor.CategoriaProvedorGridDTO;
 import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
 import br.com.diegocordeiro.dscproject.model.categoria.CategoriaProvedor;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaProvedorRepository;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import br.com.diegocordeiro.dscproject.service.perfil.AutorizacaoService;
 import br.com.diegocordeiro.dscproject.service.categoria.CategoriaProvedorService;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +53,7 @@ class CategoriaProvedorControllerTest {
     private CategoriaRepository categoriaRepository;
 
     @MockitoBean
-    private OpfiProvedorRepository opfiProvedorRepository;
+    private OpenFinanceProvedorRepository openFinanceProvedorRepository;
 
     @MockitoBean
     private AutorizacaoService autorizacaoService;
@@ -106,10 +106,10 @@ class CategoriaProvedorControllerTest {
         c.setAtivo(true);
         when(categoriaRepository.findById(10L)).thenReturn(Optional.of(c));
 
-        OpfiProvedor p = new OpfiProvedor();
+        OpenFinanceProvedor p = new OpenFinanceProvedor();
         p.setId(1L);
         p.setAtivo(true);
-        when(opfiProvedorRepository.findById(1L)).thenReturn(Optional.of(p));
+        when(openFinanceProvedorRepository.findById(1L)).thenReturn(Optional.of(p));
 
         when(categoriaProvedorService.inserir(any())).thenReturn(new CategoriaProvedor());
 
@@ -136,10 +136,10 @@ class CategoriaProvedorControllerTest {
         c.setAtivo(true);
         when(categoriaRepository.findById(10L)).thenReturn(Optional.of(c));
 
-        OpfiProvedor p = new OpfiProvedor();
+        OpenFinanceProvedor p = new OpenFinanceProvedor();
         p.setId(1L);
         p.setAtivo(true);
-        when(opfiProvedorRepository.findById(1L)).thenReturn(Optional.of(p));
+        when(openFinanceProvedorRepository.findById(1L)).thenReturn(Optional.of(p));
 
         when(categoriaProvedorService.editar(eq(5L), any())).thenReturn(new CategoriaProvedor());
 
