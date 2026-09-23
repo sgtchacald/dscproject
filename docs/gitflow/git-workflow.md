@@ -1,17 +1,25 @@
 # Fluxo de Commits e Merges
 
 Guia passo a passo para o fluxo de desenvolvimento, release e deploy em produção.
+Todos os passos são executados manualmente com `git`.
+
+```
+feature/... ──► release/X.Y.Z ──► homologacao ──► (aprovação) ──► tag vX.Y.Z + merge main
+```
 
 ---
 
 ## 1. Trabalho Normal (Feature Branch)
 
-Crie a branch a partir da `main` seguindo a convenção de nomenclatura:
+Crie a branch a partir da `main` atualizada:
 
 ```bash
 git checkout main
-git checkout -b feature/nome_funcionalidade+breve-descricao+DDMMAAAAHHMM
+git pull origin main
+git checkout -b feature/nome_funcionalidade-breve-descricao-DDMMAAAAHHMM
 ```
+
+As partes do nome são separadas por hífen (`-`), nunca por `+`. Ex.: `feature/open-finance-conectar-conta-230920261751`.
 
 **Convenção do timestamp no nome da branch:**
 
@@ -23,163 +31,114 @@ git checkout -b feature/nome_funcionalidade+breve-descricao+DDMMAAAAHHMM
 | `HH`     | Hora        |
 | `MM`     | Minuto      |
 
-Faça seus commits e suba a branch normalmente:
+Commite em Conventional Commits PT-BR (um commit por assunto) e suba a branch:
 
 ```bash
-git add .
-git commit -m "feat: minha alteração"
-git push origin feature/minha-feature
+git add <arquivos>
+git commit -m "feat(modulo): minha alteração"
+git push -u origin feature/nome_funcionalidade-breve-descricao-DDMMAAAAHHMM
 ```
 
 ---
 
-## 2. Criar a Release
+## 2. Calcular a Versão
 
-A partir da branch da tarefa, crie a branch de release com o próximo número de versão após a última release:
-
-```bash
-git checkout -b release/1.0.0
-```
-
-### Atualizar a versão nos arquivos do projeto
-
-**Back-end — `pom.xml`:**
-```xml
-<version>1.0.0-SNAPSHOT</version>
-```
-
-**Back-end — `lgpd.portal.utils.AppVersao.java`:**
-```java
-public static String VERSAO = "1.0.0";
-```
-
-**Front-end — `package.json`:**
-```json
-"version": "1.0.0"
-```
-
-Commite e suba a branch de release:
+Parta da **última tag** e dos commits desde ela:
 
 ```bash
-git add .
-git commit -m "chore: Atualizando o número de versão para 1.0.0"
-git push origin release/1.0.0
+git tag --sort=-v:refname | head -5
+git log vX.Y.Z..HEAD --oneline
+```
+
+| Commits desde a última tag | Bump |
+|---|---|
+| `BREAKING CHANGE` ou `tipo!:` | MAJOR (`2.0.0`) |
+| algum `feat:` | MINOR (`1.12.0`) |
+| só `fix:` / `perf:` | PATCH (`1.11.2`) |
+| só `docs:` / `test:` / `chore:` / `refactor:` | PATCH conservador |
+
+> A release anterior precisa estar com a tag criada. Sem ela, a conta parte de uma
+> versão antiga e repete um número que já foi para produção.
+
+---
+
+## 3. Criar a Release
+
+Se a `main` avançou depois que a feature saiu dela, traga a `main` para a feature
+antes (evita conflito na linha `<version>` do `pom.xml`):
+
+```bash
+git checkout feature/...
+git merge --no-ff origin/main -m "chore: Merge main em feature/..."
+git push origin feature/...
+```
+
+Crie a release a partir da feature e atualize a versão **só no `pom.xml`**
+(`app.version` no `application.properties` lê `@project.version@`):
+
+```bash
+git checkout -b release/X.Y.Z
+# pom.xml: <version>X.Y.Z</version>
+git add pom.xml
+git commit -m "chore: Atualizando o número de versão para X.Y.Z"
+git push -u origin release/X.Y.Z
 ```
 
 ---
 
-## 3. Merge da Release para Homologação
+## 4. Merge da Release para Homologação
 
 ```bash
 git checkout homologacao
-git merge release/1.0.0
+git pull origin homologacao
+git merge --no-ff release/X.Y.Z -m "chore: Merge release/X.Y.Z em homologacao"
 git push origin homologacao
 ```
 
 > Faça o deploy para homologação e aguarde a aprovação.
 
----
+### Novos commits com a release ainda pendente
 
-## 4. Aprovado — Criar Tag de Produção
-
-Com a release aprovada em homologação, crie a tag de produção a partir da branch de release:
+Commite na mesma feature e incorpore na release existente (sem nova versão):
 
 ```bash
-git checkout release/1.0.0
-```
-
-Verifique a última tag criada:
-
-```bash
-git tag --sort=-v:refname | head -5
-```
-
-Crie a nova tag:
-
-```bash
-git tag -a v1.0.0 -m "Release 1.0.0"
-git push origin v1.0.0
+git checkout release/X.Y.Z
+git merge --no-ff feature/... -m "chore: Incorporando commits de feature/... em release/X.Y.Z"
+git push origin release/X.Y.Z
+# repetir o passo 4
 ```
 
 ---
 
-## 5. Merge da Release para Main
+## 5. Aprovado — Tag de Produção e Merge na Main
 
 ```bash
+git checkout release/X.Y.Z
+git tag -a vX.Y.Z -m "Release X.Y.Z"
+git push origin vX.Y.Z
+
 git checkout main
-git merge release/1.0.0
+git pull origin main
+git merge --no-ff release/X.Y.Z -m "chore: Merge release/X.Y.Z em main"
 git push origin main
 ```
 
----
-
-## Resumo do Fluxo
-
-```
-feature/... ──► release/x.x.x ──► homologacao ──► (aprovação) ──► tag vx.x.x + merge main
-```
+> Faça o deploy em produção a partir da `main` (ou da tag `vX.Y.Z`).
 
 ---
 
-## Automação via Script (Recomendado)
+## 6. Limpeza
 
-O script divide o fluxo em duas fases independentes, executadas em momentos diferentes.
-
-### Fase 1 — Criar e enviar a release para homologação
-
-Execute a partir da branch de feature:
+Com a tag criada e a release na `main`, as branches `release/X.Y.Z` e `feature/...`
+podem ser apagadas (local e remota) — a tag guarda o ponto exato da release.
+Confira antes que não há commit fora da `main`:
 
 ```bash
-./scripts/gitflow.sh
+git rev-list --count origin/main..origin/release/X.Y.Z   # tem de dar 0
+git branch -d release/X.Y.Z feature/...
+git push origin --delete release/X.Y.Z feature/...
+git fetch --prune origin
 ```
 
-O script:
-1. Verifica que você está em uma branch de feature (bloqueia `main`, `homologacao` e `release/*`)
-2. Calcula a próxima versão pelos Conventional Commits:
-   - `feat:` → MINOR | `fix:` / `perf:` → PATCH | `BREAKING CHANGE` → MAJOR
-   - Primeira release (sem tags anteriores): sempre `1.0.0`
-3. Cria a branch `release/X.Y.Z` a partir da feature, atualiza o `pom.xml` e commita
-4. Faz push da release e merge em `homologacao`
-5. Encerra exibindo o comando para a fase 2
-
-Ao final, faça o deploy em homologação e aguarde a aprovação.
-
-#### Re-execução com novos commits (release pendente)
-
-Se a release ainda não foi aprovada e você fez novos commits na feature, execute o script novamente da mesma branch. Ele detecta que `release/X.Y.Z` já existe e incorpora os novos commits sem criar uma nova release:
-
-```bash
-# novos commits feitos na feature branch
-./scripts/gitflow.sh
-# → mergeia os commits novos na release existente e reenvia para homologacao
-```
-
-> **Atenção:** enquanto a tag `vX.Y.Z` não for criada (fase 2 pendente), qualquer outra feature branch que rodar `./scripts/gitflow.sh` também será incorporada à mesma release, pois a versão calculada será idêntica.
-
----
-
-### Fase 2 — Aprovar: criar tag e mergear em main
-
-Após a aprovação em homologação, execute de qualquer branch:
-
-```bash
-./scripts/gitflow.sh aprovar X.Y.Z
-```
-
-O script:
-1. Verifica que `release/X.Y.Z` existe no remoto e está mergeada em `homologacao`
-2. Cria a tag anotada `vX.Y.Z` e faz push
-3. Mergeia `release/X.Y.Z` em `main` e faz push
-4. Pergunta se deve deletar a branch de release (local e remota)
-
----
-
-### Resumo dos comandos
-
-| Momento | Comando |
-|---|---|
-| Após concluir a feature | `./scripts/gitflow.sh` |
-| Novos commits na feature (release pendente) | `./scripts/gitflow.sh` (mesma branch) |
-| Após aprovação em homologação | `./scripts/gitflow.sh aprovar X.Y.Z` |
-
-**Pré-requisito:** A branch `homologacao` deve existir no repositório remoto.
+Se precisar da branch de novo: `git checkout -b release/X.Y.Z vX.Y.Z`.
+**Nunca apague as tags.**
