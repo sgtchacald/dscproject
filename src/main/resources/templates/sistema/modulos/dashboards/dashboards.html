@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{sistema/template-admin/layout}">
+<head>
+    <title>Dashboard Financeiro</title>
+    <!-- Importação do teu CSS externo limpo -->
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <!-- Importação do ApexCharts via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+</head>
+<body>
+
+<div layout:fragment="cabecalho">
+    <div th:replace="~{sistema/modulos/dashboards/fragments/cabecalho :: cabecalho(titulo='Dashboard', tipoAtivo='FINANCEIRO')}"></div>
+</div>
+
+<section layout:fragment="corpo" class="dashboard-container">
+    <div class="row row-deck row-cards">
+        <!-- LINHA 1: Saldo Consolidado, Saldo por conta, Limite por cartão -->
+        <div class="col-lg-3 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card1-saldo-consolidado :: card}"></th:block>
+        </div>
+        <div class="col-lg-5 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card2-saldo-conta :: card}"></th:block>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card7-limite-cartao :: card}"></th:block>
+        </div>
+
+        <!-- LINHA 2: Receitas x Despesas, Pagas x Pendentes -->
+        <div class="col-lg-6 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card3-receitas-despesas :: card}"></th:block>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card5-pagas-pendentes :: card}"></th:block>
+        </div>
+
+        <!-- LINHA 3: Despesas por categoria, Total Rateado -->
+        <div class="col-lg-6 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card4-despesas-categoria :: card}"></th:block>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card6-total-rateado :: card}"></th:block>
+        </div>
+
+        <!-- LINHA 4: Evolução Anual (Largura Total) -->
+        <div class="col-12 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card8-evolucao :: card}"></th:block>
+        </div>
+
+    </div>
+</section>
+
+<!-- Ponte JS passa os dados do Spring para o JS-->
+<th:block layout:fragment="js">
+    <script th:inline="javascript">
+        window.dashboardData = {
+            rotulos: /*[[${dashboard.rotulosGrafico}]]*/ [],
+            receitas: /*[[${dashboard.receitasGrafico}]]*/ [],
+            despesas: /*[[${dashboard.despesasGrafico}]]*/ []
+        };
+    </script>
+    <script th:src="@{/js/dashboard/dashboard.js}"></script>
+</th:block>
+
+</body>
+</html>

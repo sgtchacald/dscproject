@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,4 +44,11 @@ public interface ContaRepository extends JpaRepository<Conta, Long> {
         ORDER BY c.descricao ASC
         """)
     List<Conta> listarAtivasPorUsuario(@Param("usuarioId") Long usuarioId);
+
+
+    @Query("SELECT COALESCE(SUM(c.saldo), 0) FROM Conta c WHERE c.usuario.id = :usuId AND c.consideraSaldo = true AND c.ativo = true AND c.dataExclusao IS NULL")
+    BigDecimal calcularSaldoConsolidado(@Param("usuId") Long usuId);
+
+    @Query("SELECT c FROM Conta c WHERE c.usuario.id = :usuId AND c.ativo = true AND c.dataExclusao IS NULL ORDER BY c.descricao ASC")
+    List<Conta> listarContasParaDashboard(@Param("usuId") Long usuId);
 }

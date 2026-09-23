@@ -1,0 +1,48 @@
+<div th:fragment="card" class="card h-100" xmlns:th="http://www.thymeleaf.org">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Total rateado no mês, por pessoa</h3>
+        </div>
+        <div class="card-body">
+
+            <!-- Estado Vazio (MSG04) -->
+            <div th:if="${#lists.isEmpty(dashboard.rateioPorContato)}"
+                 class="empty-box" style="padding:34px 12px;text-align:center;color:#69747f;">
+                <i class="ph ph-users" aria-hidden="true" style="font-size:1.8rem;color:#c7cfd8;display:block;margin-bottom:6px"></i>
+                Nenhum rateio registrado nesta competência.
+            </div>
+
+            <!-- Conteúdo com a lista de pessoas e barras roxas -->
+            <div th:unless="${#lists.isEmpty(dashboard.rateioPorContato)}">
+
+                <div id="rateioLista">
+                    <!-- Iteração do Thymeleaf. Limitamos a 5 itens para respeitar a regra de paginação (RN07) -->
+                    <div class="rateio-row"
+                         th:each="rateio, iterStat : ${dashboard.rateioPorContato}"
+                         th:if="${iterStat.index < 5}">
+
+                        <!-- Nome do Contato -->
+                        <span class="nome" th:text="${rateio.nome}" th:title="${rateio.nome}">Nome da Pessoa</span>
+
+                        <!-- Barra Roxa Calculada no Java -->
+                        <span class="barh">
+                            <span th:style="|width: ${rateio.percentual}%; background: #8b5cf6;|"></span>
+                        </span>
+
+                        <!-- Valor em R$ -->
+                        <span class="val" th:text="${#numbers.formatCurrency(rateio.total)}">R$ 0,00</span>
+
+                    </div>
+                </div>
+
+                <!-- Paginador visual (Renderizado apenas se a lista tiver mais de 5 pessoas) -->
+                <div class="pagn" th:if="${#lists.size(dashboard.rateioPorContato) > 5}">
+                    <button type="button" disabled><i class="ph ph-caret-left" aria-hidden="true"></i></button>
+                    <span>Página 1</span>
+                    <button type="button"><i class="ph ph-caret-right" aria-hidden="true"></i></button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

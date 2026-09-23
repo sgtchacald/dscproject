@@ -1,0 +1,23 @@
+<div th:fragment="cabecalho(titulo, tipoAtivo)" class="row g-2 align-items-center" xmlns:th="http://www.thymeleaf.org">
+  <div class="col">
+    <h2 class="page-title" th:text="${titulo}">Dashboard</h2>
+  </div>
+
+  <!-- 2. Futuro Seletor de Tipo de Dashboard (Documento 13) -->
+  <!-- Este bloco está preparado para receber o combobox quando tivermos mais de 1 tipo cadastrado -->
+  <div class="col-auto ms-auto">
+    <!-- Espaço reservado para o Select: Financeiro, Investimentos, etc. -->
+  </div>
+
+  <!-- 3. Filtros Específicos baseados no Tipo Ativo -->
+  <!-- Este filtro de Competência SÓ será renderizado se o dashboard ativo for o FINANCEIRO -->
+  <div class="col-auto ms-auto" th:if="${tipoAtivo == 'FINANCEIRO'}">
+    <form method="get" th:action="@{/dashboards}" class="filtro-global">
+      <label class="form-label mb-0 text-secondary small">Competência</label>
+      <div class="input-icon" style="width: 170px;">
+        <input type="month" name="competencia" class="form-control" th:value="${competencia}" onchange="this.form.submit()">
+      </div>
+    </form>
+  </div>
+
+</div>

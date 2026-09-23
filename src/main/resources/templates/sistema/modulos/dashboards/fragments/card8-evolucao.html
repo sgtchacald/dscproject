@@ -1,0 +1,46 @@
+<div th:fragment="card" class="card h-100" xmlns:th="http://www.thymeleaf.org">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h3 class="card-title mb-0">Evolução: Receitas × Despesas</h3>
+
+            <!-- Filtros Próprios de Ano (RN13) -->
+            <div class="card-actions">
+                <form method="get" th:action="@{/dashboards}" id="formEvolucao" class="d-flex gap-2 align-items-center mb-0">
+                    <!-- Mantém a competência global ativa ao trocar o ano -->
+                    <input type="hidden" name="competencia" th:value="${competencia}">
+
+                    <div style="width: 100px;">
+                        <select name="anoInicio" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option th:each="ano : ${dashboard.anosDisponiveis}"
+                                    th:value="${ano}"
+                                    th:text="${ano}"
+                                    th:selected="${ano == dashboard.anoInicioSelecionado}"></option>
+                        </select>
+                    </div>
+                    <span class="text-secondary text-sm">até</span>
+                    <div style="width: 100px;">
+                        <select name="anoFim" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option th:each="ano : ${dashboard.anosDisponiveis}"
+                                    th:value="${ano}"
+                                    th:text="${ano}"
+                                    th:selected="${ano == dashboard.anoFimSelecionado}"></option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- Estado Vazio (MSG01) -->
+            <div th:if="${#lists.isEmpty(dashboard.anosDisponiveis)}"
+                 class="empty-box" style="padding:34px 12px;text-align:center;color:#69747f;">
+                <i class="ph ph-chart-line" aria-hidden="true" style="font-size:1.8rem;color:#c7cfd8;display:block;margin-bottom:6px"></i>
+                Sem dados de evolução histórica no período.
+            </div>
+
+            <!-- Container do Gráfico -->
+            <div th:unless="${#lists.isEmpty(dashboard.anosDisponiveis)}">
+                <div id="graficoEvolucao" style="height: 280px;"></div>
+            </div>
+        </div>
+    </div>
+</div>

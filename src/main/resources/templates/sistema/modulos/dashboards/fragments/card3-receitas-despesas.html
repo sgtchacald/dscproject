@@ -1,0 +1,40 @@
+<div th:fragment="card" class="card h-100">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Receitas × despesas do mês</h3>
+        </div>
+        <div class="card-body">
+
+            <!-- Estado Vazio (Exibido se os dois totais forem zero) -->
+            <div th:if="${dashboard.totalReceitas == 0 and dashboard.totalDespesas == 0}"
+                 style="padding:34px 12px;text-align:center;color:#69747f;">
+                <i class="ph ph-chart-bar" aria-hidden="true" style="font-size:1.8rem;color:#c7cfd8;display:block;margin-bottom:6px"></i>
+                Sem dados no período selecionado.
+            </div>
+
+            <!-- Gráfico Visual (Mock do protótipo) -->
+            <div th:unless="${dashboard.totalReceitas == 0 and dashboard.totalDespesas == 0}"
+                 class="d-flex align-items-end gap-4" style="height:150px">
+
+                <!-- Coluna Verde: Receitas -->
+                <div class="text-center flex-fill">
+                    <div style="height:120px;display:flex;align-items:flex-end;justify-content:center">
+                        <div style="width:56px;border-radius:6px 6px 0 0;background:#2fb344;height:100%"></div>
+                    </div>
+                    <div class="mt-2 fw-bold" th:text="${#numbers.formatCurrency(dashboard.totalReceitas)}">R$ 0,00</div>
+                    <div class="text-secondary small">Receitas</div>
+                </div>
+
+                <!-- Coluna Laranja: Despesas -->
+                <div class="text-center flex-fill">
+                    <div style="height:120px;display:flex;align-items:flex-end;justify-content:center">
+                        <div style="width:56px;border-radius:6px 6px 0 0;background:#f59f00;height:70%"></div>
+                    </div>
+                    <div class="mt-2 fw-bold" th:text="${#numbers.formatCurrency(dashboard.totalDespesas)}">R$ 0,00</div>
+                    <div class="text-secondary small">Despesas (cota líquida)</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

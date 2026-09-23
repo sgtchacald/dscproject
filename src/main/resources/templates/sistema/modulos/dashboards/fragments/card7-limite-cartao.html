@@ -1,0 +1,73 @@
+<div th:fragment="card" class="card h-100" xmlns:th="http://www.thymeleaf.org">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Limite usado × disponível por cartão</h3>
+    </div>
+    <div class="card-body">
+
+      <!-- Estado Vazio (MSG03) -->
+      <div th:if="${#lists.isEmpty(dashboard.cartoesLimite)}"
+           class="empty-box" style="padding:34px 12px;text-align:center;color:#69747f;">
+        <i class="ph ph-credit-card" aria-hidden="true" style="font-size:1.8rem;color:#c7cfd8;display:block;margin-bottom:6px"></i>
+        Nenhum cartão de crédito ativo cadastrado.
+      </div>
+
+      <!-- Lista de Cartões -->
+      <div th:unless="${#lists.isEmpty(dashboard.cartoesLimite)}" class="d-flex flex-column gap-3">
+
+        <div th:each="cartao : ${dashboard.cartoesLimite}" class="border-bottom pb-2">
+
+          <!-- Cabeçalho do Cartão: Nome e Valores principais -->
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold" th:text="${cartao.descricao}">Nome do Cartão</span>
+            <div class="small text-end">
+              <span class="text-secondary">Usado: </span>
+              <b th:text="${#numbers.formatCurrency(cartao.usado)}">R$ 0,00</b>
+
+              <!-- Exibe o disponível se o limite existir -->
+              <span th:if="${cartao.faixaCor != 'nulo'}">
+                                <span class="text-secondary ms-2">Disponível: </span>
+                                <b th:classappend="${cartao.limiteEstourado} ? 'text-danger fw-bold' : ''"
+                                   th:text="${#numbers.formatCurrency(cartao.disponivel)}">R$ 0,00</b>
+                            </span>
+            </div>
+          </div>
+
+          <!-- CENÁRIO A: Cartão com Limite Nulo (Apenas texto informativo) -->
+          <div th:if="${cartao.faixaCor == 'nulo'}" class="text-secondary small fst-italic">
+            Limite não definido (somente acompanhamento de gastos).
+          </div>
+
+          <!-- CENÁRIO B: Cartão com Limite Definido (Barra de Progresso com Cores) -->
+          <div th:unless="${cartao.faixaCor == 'nulo'}">
+            <div class="barh">
+              <!-- Barra Verde (< 70%) -->
+              <span th:if="${cartao.faixaCor == 'verde'}"
+                    th:style="|width: ${cartao.percentualUso}%; background: #2fb344;|"
+                    th:title="'Uso: ' + ${cartao.percentualUso} + '%'"></span>
+
+              <!-- Barra Amarela (70% a 99%) -->
+              <span th:if="${cartao.faixaCor == 'amarelo'}"
+                    th:style="|width: ${cartao.percentualUso}%; background: #f59f00;|"
+                    th:title="'Uso: ' + ${cartao.percentualUso} + '%'"></span>
+
+              <!-- Barra Vermelha (>= 100% ou Estourado) -->
+              <span th:if="${cartao.faixaCor == 'vermelho'}"
+                    th:style="|width: 100%; background: #d63939;|"
+                    title="Limite Estourado!"></span>
+            </div>
+
+            <!-- Legenda de percentual e limite total -->
+            <div class="d-flex justify-content-between text-secondary small mt-1">
+              <span th:text="'Limite total: ' + ${#numbers.formatCurrency(cartao.limite)}">R$ 0,00</span>
+              <span th:text="${cartao.percentualUso} + '% usado'">0% usado</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>

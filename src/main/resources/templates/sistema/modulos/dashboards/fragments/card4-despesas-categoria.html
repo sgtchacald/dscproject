@@ -1,0 +1,34 @@
+<div th:fragment="card" class="card h-100">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Despesas por categoria</h3>
+        </div>
+        <div class="card-body">
+
+            <!-- Estado Vazio -->
+            <div th:if="${#lists.isEmpty(dashboard.despesasPorCategoria)}" class="empty-box" style="padding:34px 12px;text-align:center;color:#69747f;">
+                <i class="ph ph-chart-donut" aria-hidden="true" style="font-size:1.8rem;color:#c7cfd8;display:block;margin-bottom:6px"></i>
+                Sem dados no período selecionado.
+            </div>
+
+            <!-- Conteúdo com o Gráfico de Rosca e Legenda -->
+            <div th:unless="${#lists.isEmpty(dashboard.despesasPorCategoria)}" class="d-flex align-items-center gap-4">
+
+                <!-- Gráfico de Rosca (Mini Donut com conic-gradient dinâmico) -->
+                <div class="mini-donut" th:style="'background: ' + ${dashboard.conicGradientDespesas}"></div>
+
+                <!-- Legenda detalhada -->
+                <div class="small flex-fill">
+                    <div th:each="cat : ${dashboard.despesasPorCategoria}" class="d-flex justify-content-between mb-1 align-items-center">
+                                <span>
+                                    <span class="legend-dot" th:style="'background:' + ${cat.cor}"></span>
+                                    <span th:text="${cat.categoria}">Categoria</span>
+                                </span>
+                        <b th:text="${#numbers.formatCurrency(cat.total)}">R$ 0,00</b>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
@@ -73,6 +75,17 @@ public interface DespesaRepository extends JpaRepository<Despesa, Long> {
     List<Despesa> buscarPorIdsEUsuario(@Param("ids") List<Long> ids, @Param("usuarioId") Long usuarioId);
 
     @Query("""
+        SELECT COALESCE(SUM(d.valor), 0) 
+        FROM Despesa d
+        LEFT JOIN d.conta c
+        LEFT JOIN d.cartao cc
+        WHERE (c.usuario.id = :usuarioId OR cc.usuario.id = :usuarioId)
+          AND d.competencia = :competencia
+          AND d.dataExclusao IS NULL
+    """)
+    BigDecimal somarCotaLiquidaPorCompetenciaEUsuario(@Param("competencia") YearMonth competencia, @Param("usuarioId") Long usuarioId);
+
+    @Query("""
         SELECT d FROM Despesa d
         LEFT JOIN FETCH d.categoria cat
         WHERE d.cartao.id = :cartaoId
@@ -97,4 +110,75 @@ public interface DespesaRepository extends JpaRepository<Despesa, Long> {
         ORDER BY d.competencia ASC
         """)
     List<java.time.YearMonth> listarCompetenciasPorCartao(@Param("cartaoId") Long cartaoId);
+
+    @Query("""
+        SELECT COALESCE(cat.nome, 'Sem categoria') AS categoria, 
+               cat.cor AS cor,
+               COALESCE(SUM(d.valor - COALESCE((SELECT SUM(du.valor) FROM DespesaUsuario du WHERE du.despesa = d AND du.dataExclusao IS NULL), 0)), 0) AS total
+        FROM Despesa d
+        LEFT JOIN d.conta c
+        LEFT JOIN d.cartao cc
+        LEFT JOIN d.categoria cat
+        WHERE (c.usuario.id = :usuarioId OR cc.usuario.id = :usuarioId)
+          AND d.competencia = :competencia
+          AND d.dataExclusao IS NULL
+        GROUP BY cat.id, cat.nome, cat.cor
+        ORDER BY total DESC
+    """)
+    List<Object[]> somarPorCategoriaECompetencia(@Param("competencia") YearMonth competencia, @Param("usuarioId") Long usuarioId);
+
+    @Query("""
+        SELECT COALESCE(d.statusPagamento, 'NAO_SE_APLICA') AS status,
+               COALESCE(SUM(d.valor - COALESCE((SELECT SUM(du.valor) FROM DespesaUsuario du WHERE du.despesa = d AND du.dataExclusao IS NULL), 0)), 0) AS total
+        FROM Despesa d
+        LEFT JOIN d.conta c
+        LEFT JOIN d.cartao cc
+        WHERE (c.usuario.id = :usuarioId OR cc.usuario.id = :usuarioId)
+          AND d.competencia = :competencia
+          AND d.dataExclusao IS NULL
+        GROUP BY status
+    """)
+    List<Object[]> somarPorStatusPagamentoECompetencia(@Param("competencia") YearMonth competencia, @Param("usuarioId") Long usuarioId);
+
+    @Query("""
+        SELECT SUBSTRING(d.competencia, 6, 2) AS mes, COALESCE(SUM(d.valor), 0) AS total
+        FROM Despesa d
+        LEFT JOIN d.conta c
+        LEFT JOIN d.cartao cc
+        WHERE (c.usuario.id = :usuarioId OR cc.usuario.id = :usuarioId)
+          AND SUBSTRING(d.competencia, 1, 4) = :ano
+          AND d.dataExclusao IS NULL
+        GROUP BY mes
+        ORDER BY mes ASC
+    """)
+    List<Object[]> somarDespesasPorMesEAnual(@Param("usuarioId") Long usuarioId, @Param("ano") String ano);
+
+    @Query("""
+        SELECT SUBSTRING(d.competencia, 1, 4) AS ano, COALESCE(SUM(d.valor), 0) AS total
+        FROM Despesa d
+        LEFT JOIN d.conta c
+        LEFT JOIN d.cartao cc
+        WHERE (c.usuario.id = :usuarioId OR cc.usuario.id = :usuarioId)
+          AND SUBSTRING(d.competencia, 1, 4) BETWEEN :anoInicio AND :anoFim
+          AND d.dataExclusao IS NULL
+        GROUP BY ano
+        ORDER BY ano ASC
+    """)
+    List<Object[]> somarDespesasPorIntervaloAnos(@Param("usuarioId") Long usuarioId, @Param("anoInicio") String anoInicio, @Param("anoFim") String anoFim);
+
+    @Query(value = """
+        SELECT DISTINCT ano FROM (
+          SELECT CAST(SUBSTRING(r.RECE_COMPETENCIA, 1, 4) AS UNSIGNED) AS ano
+            FROM RECEITAS r JOIN CONTAS c ON c.CTA_ID = r.CTA_ID
+            WHERE c.USU_ID = :usuarioId AND r.audit_data_exclusao IS NULL
+          UNION
+          SELECT CAST(SUBSTRING(d.DESP_COMPETENCIA, 1, 4) AS UNSIGNED) AS ano
+            FROM DESPESAS d
+            LEFT JOIN CONTAS c2          ON c2.CTA_ID  = d.CTA_ID
+            LEFT JOIN CARTOES_CREDITO cc ON cc.CACR_ID = d.CACR_ID
+            WHERE (c2.USU_ID = :usuarioId OR cc.USU_ID = :usuarioId) AND d.audit_data_exclusao IS NULL
+        ) anos
+        ORDER BY ano ASC
+    """, nativeQuery = true)
+    List<Integer> buscarAnosDisponiveisParaEvolucao(@Param("usuarioId") Long usuarioId);
 }
