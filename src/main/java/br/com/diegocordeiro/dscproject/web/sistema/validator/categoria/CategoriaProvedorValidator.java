@@ -2,10 +2,10 @@ package br.com.diegocordeiro.dscproject.web.sistema.validator.categoria;
 
 import br.com.diegocordeiro.dscproject.dto.categoriaprovedor.CategoriaProvedorFormDTO;
 import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaProvedorRepository;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import org.springframework.context.MessageSource;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -17,14 +17,14 @@ public class CategoriaProvedorValidator implements Validator {
 
     private final CategoriaProvedorRepository categoriaProvedorRepository;
     private final CategoriaRepository categoriaRepository;
-    private final OpfiProvedorRepository opfiProvedorRepository;
+    private final OpenFinanceProvedorRepository openFinanceProvedorRepository;
     private final MessageSource messageSource;
     private final Locale locale;
 
-    public CategoriaProvedorValidator(CategoriaProvedorRepository categoriaProvedorRepository, CategoriaRepository categoriaRepository, OpfiProvedorRepository opfiProvedorRepository, MessageSource messageSource, Locale locale) {
+    public CategoriaProvedorValidator(CategoriaProvedorRepository categoriaProvedorRepository, CategoriaRepository categoriaRepository, OpenFinanceProvedorRepository openFinanceProvedorRepository, MessageSource messageSource, Locale locale) {
         this.categoriaProvedorRepository = categoriaProvedorRepository;
         this.categoriaRepository = categoriaRepository;
-        this.opfiProvedorRepository = opfiProvedorRepository;
+        this.openFinanceProvedorRepository = openFinanceProvedorRepository;
         this.messageSource = messageSource;
         this.locale = locale;
     }
@@ -57,7 +57,7 @@ public class CategoriaProvedorValidator implements Validator {
         }
 
         if (dto.getProvedorId() != null && !errors.hasFieldErrors("provedorId")) {
-            Optional<OpfiProvedor> provOpt = opfiProvedorRepository.findById(dto.getProvedorId());
+            Optional<OpenFinanceProvedor> provOpt = openFinanceProvedorRepository.findById(dto.getProvedorId());
             if (provOpt.isEmpty() || !provOpt.get().isAtivo() || provOpt.get().isExcluido()) {
                 errors.rejectValue("provedorId", "Invalid.categoriaProvedorFormDTO.provedorId",
                     messageSource.getMessage("categoriaprovedor.provedor.invalido", null, locale));

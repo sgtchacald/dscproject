@@ -1799,9 +1799,9 @@ model/
   Perfil  Permissao  PerfilPermissao  ParametroGlobal
   Usuario  UsuarioRedeSocial  Contato  Categoria  CategoriaProvedor  InstituicaoFinanceira  Conta  CartaoCredito
   TransacaoBancaria  FaturaCartao  Receita  Despesa  DespesaUsuario  Investimento
-  opfi/
-    OpfiProvedor  OpfiInstituicaoProvedor  OpfiCredencial  OpfiConexao  OpfiConsentimento
-    OpfiContaExterna  OpfiTransacao  OpfiFatura  OpfiInvestimento  OpfiEventoWebhook  OpfiSincronizacao
+  openfinance/
+    OpenFinanceProvedor  OpenFinanceInstituicaoProvedor  OpenFinanceCredencial  OpenFinanceConexao  OpenFinanceConsentimento
+    OpenFinanceContaExterna  OpenFinanceTransacao  OpenFinanceFatura  OpenFinanceInvestimento  OpenFinanceEventoWebhook  OpenFinanceSincronizacao
 enums/
   Genero  TipoInstituicaoFinanceira  TipoConta  TipoLancamento  TipoParametro
   NaturezaMovimento  MeioPagamento  StatusPagamento  StatusFatura  TipoInvestimento  OrigemLancamento
@@ -1904,17 +1904,17 @@ Aplica-se às colunas `RECE_COMPETENCIA`, `DESP_COMPETENCIA`, `TRBA_COMPETENCIA`
 | `Despesa` | `DESPESAS` | `LancamentoFinanceiro` |
 | `DespesaUsuario` | `DESPESAS_USUARIO` | `AbstractAuditoria` (`@ManyToOne Despesa despesa`, `@ManyToOne Contato contato`) |
 | `Investimento` | `INVESTIMENTOS` | `AbstractAuditoria` |
-| `OpfiProvedor` | `OPFI_PROVEDORES` | `AbstractAuditoria` |
-| `OpfiInstituicaoProvedor` | `OPFI_INSTITUICAO_PROVEDOR` | `AbstractAuditoria` |
-| `OpfiCredencial` | `OPFI_CREDENCIAIS` | `AbstractAuditoria` |
-| `OpfiConexao` | `OPFI_CONEXOES` | `AbstractAuditoria` |
-| `OpfiConsentimento` | `OPFI_CONSENTIMENTOS` | `AbstractAuditoria` |
-| `OpfiContaExterna` | `OPFI_CONTAS_EXTERNAS` | `AbstractAuditoria` |
-| `OpfiTransacao` | `OPFI_TRANSACOES` | `AbstractAuditoria` |
-| `OpfiFatura` | `OPFI_FATURAS` | `AbstractAuditoria` |
-| `OpfiInvestimento` | `OPFI_INVESTIMENTOS` | `AbstractAuditoria` |
-| `OpfiEventoWebhook` | `OPFI_EVENTOS_WEBHOOK` | `AbstractAuditoria` |
-| `OpfiSincronizacao` | `OPFI_SINCRONIZACOES` | `AbstractAuditoria` |
+| `OpenFinanceProvedor` | `OPFI_PROVEDORES` | `AbstractAuditoria` |
+| `OpenFinanceInstituicaoProvedor` | `OPFI_INSTITUICAO_PROVEDOR` | `AbstractAuditoria` |
+| `OpenFinanceCredencial` | `OPFI_CREDENCIAIS` | `AbstractAuditoria` |
+| `OpenFinanceConexao` | `OPFI_CONEXOES` | `AbstractAuditoria` |
+| `OpenFinanceConsentimento` | `OPFI_CONSENTIMENTOS` | `AbstractAuditoria` |
+| `OpenFinanceContaExterna` | `OPFI_CONTAS_EXTERNAS` | `AbstractAuditoria` |
+| `OpenFinanceTransacao` | `OPFI_TRANSACOES` | `AbstractAuditoria` |
+| `OpenFinanceFatura` | `OPFI_FATURAS` | `AbstractAuditoria` |
+| `OpenFinanceInvestimento` | `OPFI_INVESTIMENTOS` | `AbstractAuditoria` |
+| `OpenFinanceEventoWebhook` | `OPFI_EVENTOS_WEBHOOK` | `AbstractAuditoria` |
+| `OpenFinanceSincronizacao` | `OPFI_SINCRONIZACOES` | `AbstractAuditoria` |
 
 ---
 

@@ -5,8 +5,8 @@ import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.InstituicaoProved
 import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.InstituicaoProvedorGridDTO;
 import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.ProvedorOpcaoDTO;
 import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.InstituicaoFinanceiraRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiInstituicaoProvedorRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceInstituicaoProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import br.com.diegocordeiro.dscproject.service.instituicaofinanceira.InstituicaoProvedorService;
 import br.com.diegocordeiro.dscproject.web.sistema.validator.instituicaofinanceira.InstituicaoProvedorValidator;
 import org.springframework.beans.propertyeditors.StringTrimmerEditor;
@@ -37,22 +37,22 @@ import java.util.Map;
 public class InstituicaoProvedorController {
 
     private final InstituicaoProvedorService instituicaoProvedorService;
-    private final OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository;
+    private final OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository;
     private final InstituicaoFinanceiraRepository instituicaoFinanceiraRepository;
-    private final OpfiProvedorRepository opfiProvedorRepository;
+    private final OpenFinanceProvedorRepository openFinanceProvedorRepository;
     private final MessageSource messageSource;
     private final SmartValidator smartValidator;
 
     public InstituicaoProvedorController(InstituicaoProvedorService instituicaoProvedorService,
-                                         OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository,
+                                         OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository,
                                          InstituicaoFinanceiraRepository instituicaoFinanceiraRepository,
-                                         OpfiProvedorRepository opfiProvedorRepository,
+                                         OpenFinanceProvedorRepository openFinanceProvedorRepository,
                                          MessageSource messageSource,
                                          SmartValidator smartValidator) {
         this.instituicaoProvedorService = instituicaoProvedorService;
-        this.opfiInstituicaoProvedorRepository = opfiInstituicaoProvedorRepository;
+        this.openFinanceInstituicaoProvedorRepository = openFinanceInstituicaoProvedorRepository;
         this.instituicaoFinanceiraRepository = instituicaoFinanceiraRepository;
-        this.opfiProvedorRepository = opfiProvedorRepository;
+        this.openFinanceProvedorRepository = openFinanceProvedorRepository;
         this.messageSource = messageSource;
         this.smartValidator = smartValidator;
     }
@@ -121,7 +121,7 @@ public class InstituicaoProvedorController {
     private BindingResult validar(InstituicaoProvedorFormDTO dto, Locale locale) {
         BindingResult resultado = new BeanPropertyBindingResult(dto, "instituicaoProvedorFormDTO");
         smartValidator.validate(dto, resultado);
-        new InstituicaoProvedorValidator(opfiInstituicaoProvedorRepository, instituicaoFinanceiraRepository, opfiProvedorRepository, messageSource, locale)
+        new InstituicaoProvedorValidator(openFinanceInstituicaoProvedorRepository, instituicaoFinanceiraRepository, openFinanceProvedorRepository, messageSource, locale)
             .validate(dto, resultado);
         return resultado;
     }

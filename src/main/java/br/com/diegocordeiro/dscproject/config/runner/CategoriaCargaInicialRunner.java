@@ -2,9 +2,9 @@ package br.com.diegocordeiro.dscproject.config.runner;
 
 import br.com.diegocordeiro.dscproject.enums.AplicaA;
 import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -22,11 +22,11 @@ public class CategoriaCargaInicialRunner implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(CategoriaCargaInicialRunner.class);
 
     private final CategoriaRepository categoriaRepository;
-    private final OpfiProvedorRepository opfiProvedorRepository;
+    private final OpenFinanceProvedorRepository openFinanceProvedorRepository;
 
-    public CategoriaCargaInicialRunner(CategoriaRepository categoriaRepository, OpfiProvedorRepository opfiProvedorRepository) {
+    public CategoriaCargaInicialRunner(CategoriaRepository categoriaRepository, OpenFinanceProvedorRepository openFinanceProvedorRepository) {
         this.categoriaRepository = categoriaRepository;
-        this.opfiProvedorRepository = opfiProvedorRepository;
+        this.openFinanceProvedorRepository = openFinanceProvedorRepository;
     }
 
     private record CategoriaInicial(String codigo, String nome, AplicaA aplicaA) {}
@@ -80,14 +80,14 @@ public class CategoriaCargaInicialRunner implements ApplicationRunner {
     }
 
     private void carregarProvedoresPadrao() {
-        if (opfiProvedorRepository.findByCodigo("PLUGGY").isEmpty()) {
-            OpfiProvedor pluggy = new OpfiProvedor();
+        if (openFinanceProvedorRepository.findByCodigo("PLUGGY").isEmpty()) {
+            OpenFinanceProvedor pluggy = new OpenFinanceProvedor();
             pluggy.setCodigo("PLUGGY");
             pluggy.setNome("Pluggy");
             pluggy.setUrlBase("https://api.pluggy.ai");
             pluggy.setSuportaWebhook(false);
             pluggy.setAtivo(true);
-            opfiProvedorRepository.save(pluggy);
+            openFinanceProvedorRepository.save(pluggy);
             log.info("Carga inicial de provedores Open Finance executada: provedor PLUGGY inserido.");
         }
     }
