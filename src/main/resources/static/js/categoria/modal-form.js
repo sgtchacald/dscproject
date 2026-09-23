@@ -11,7 +11,24 @@ export const ICONES_CATEGORIA = {
     heart: 'ph-heart',
     book: 'ph-book',
     plane: 'ph-airplane-tilt',
-    coins: 'ph-coins'
+    coins: 'ph-coins',
+    money: 'ph-money',
+    gift: 'ph-gift',
+    'hand-coins': 'ph-hand-coins',
+    sun: 'ph-sun',
+    'trend-up': 'ph-trend-up',
+    'fork-knife': 'ph-fork-knife',
+    popcorn: 'ph-popcorn',
+    't-shirt': 'ph-t-shirt',
+    bus: 'ph-bus',
+    heartbeat: 'ph-heartbeat',
+    'graduation-cap': 'ph-graduation-cap',
+    wrench: 'ph-wrench',
+    bank: 'ph-bank',
+    'credit-card': 'ph-credit-card',
+    receipt: 'ph-receipt',
+    buildings: 'ph-buildings',
+    'dots-three-circle': 'ph-dots-three-circle'
 };
 
 export function obterIconeHtml(chave, tamanhoPx = 18) {
