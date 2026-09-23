@@ -53,17 +53,6 @@ Para o banco subir automaticamente ao apertar ▶ ou 🐛:
 
 Repita para a configuração de Debug se existir separada.
 
-### Hooks de git
-
-```bash
-./scripts/instalar-hooks.sh
-```
-
-Aponta o clone para `scripts/hooks/`. O `pre-commit` roda
-`scripts/lint/verificar_assinaturas_java.py` e barra o commit quando alguma
-assinatura de método/construtor fere a convenção de quebra de linha (até 5
-parâmetros numa linha; 6+ um por linha).
-
 ### Rodando o projeto
 
 ```bash
