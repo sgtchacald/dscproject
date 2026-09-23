@@ -169,13 +169,13 @@ public interface DespesaRepository extends JpaRepository<Despesa, Long> {
     @Query(value = """
         SELECT DISTINCT ano FROM (
           SELECT CAST(SUBSTRING(r.RECE_COMPETENCIA, 1, 4) AS UNSIGNED) AS ano
-            FROM RECEITAS r JOIN CONTAS c ON c.CTA_ID = r.CTA_ID
+            FROM receitas r JOIN contas c ON c.CTA_ID = r.CTA_ID
             WHERE c.USU_ID = :usuarioId AND r.audit_data_exclusao IS NULL
           UNION
           SELECT CAST(SUBSTRING(d.DESP_COMPETENCIA, 1, 4) AS UNSIGNED) AS ano
-            FROM DESPESAS d
-            LEFT JOIN CONTAS c2          ON c2.CTA_ID  = d.CTA_ID
-            LEFT JOIN CARTOES_CREDITO cc ON cc.CACR_ID = d.CACR_ID
+            FROM despesas d
+            LEFT JOIN contas c2          ON c2.CTA_ID  = d.CTA_ID
+            LEFT JOIN cartoes_credito cc ON cc.CACR_ID = d.CACR_ID
             WHERE (c2.USU_ID = :usuarioId OR cc.USU_ID = :usuarioId) AND d.audit_data_exclusao IS NULL
         ) anos
         ORDER BY ano ASC
