@@ -1,0 +1,46 @@
+<div th:fragment="card" class="card h-100">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Pagas × pendentes no mês</h3>
+        </div>
+        <div class="card-body">
+
+            <div th:if="${dashboard.statusPagamento.pagas == 0 and dashboard.statusPagamento.pendentes == 0 and dashboard.statusPagamento.naoSeAplica == 0}"
+                 class="empty-box" style="padding:34px 12px;text-align:center;color:#69747f;">
+                <i class="ph ph-chart-bar" aria-hidden="true" style="font-size:1.8rem;color:#c7cfd8;display:block;margin-bottom:6px"></i>
+                Sem dados no período selecionado.
+            </div>
+
+            <div th:unless="${dashboard.statusPagamento.pagas == 0 and dashboard.statusPagamento.pendentes == 0 and dashboard.statusPagamento.naoSeAplica == 0}">
+
+                <!-- Barra de progresso segmentada -->
+                <div class="barh mb-3">
+                            <span th:if="${dashboard.statusPagamento.pctPagas > 0}"
+                                  th:style="'width:' + ${dashboard.statusPagamento.pctPagas} + '%; background:#2fb344'" title="Pagas"></span>
+
+                    <span th:if="${dashboard.statusPagamento.pctPendentes > 0}"
+                          th:style="'width:' + ${dashboard.statusPagamento.pctPendentes} + '%; background:#f59f00'" title="Pendentes"></span>
+
+                    <span th:if="${dashboard.statusPagamento.pctNaoSeAplica > 0}"
+                          th:style="'width:' + ${dashboard.statusPagamento.pctNaoSeAplica} + '%; background:#8b95a1'" title="Não se aplica"></span>
+                </div>
+
+                <div class="d-flex flex-wrap gap-3 small">
+                            <span>
+                                <span class="legend-dot" style="background:#2fb344"></span>Pagas —
+                                <b th:text="${#numbers.formatCurrency(dashboard.statusPagamento.pagas)}">R$ 0,00</b>
+                            </span>
+                    <span>
+                                <span class="legend-dot" style="background:#f59f00"></span>Pendentes —
+                                <b th:text="${#numbers.formatCurrency(dashboard.statusPagamento.pendentes)}">R$ 0,00</b>
+                            </span>
+                    <span>
+                                <span class="legend-dot" style="background:#8b95a1"></span>Não se aplica —
+                                <b th:text="${#numbers.formatCurrency(dashboard.statusPagamento.naoSeAplica)}">R$ 0,00</b>
+                            </span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

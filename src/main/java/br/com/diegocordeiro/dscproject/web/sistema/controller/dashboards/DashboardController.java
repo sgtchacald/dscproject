@@ -22,20 +22,22 @@ public class DashboardController {
     @GetMapping("/dashboards")
     public String carregarDashboard(
             @RequestParam(value = "competencia", required = false) String competenciaStr,
+            @RequestParam(value = "anoInicio", required = false) Integer anoInicio,
+            @RequestParam(value = "anoFim", required = false) Integer anoFim,
             HttpServletRequest request,
             Model model) {
 
-        // Regra RN02 / Requisito RF11: Padrão inicial mes_atual - 1 se não vier informado
+        // Padrão inicial mes_atual - 1 se não vier informado
         YearMonth competencia = (competenciaStr != null && !competenciaStr.isBlank())
                 ? YearMonth.parse(competenciaStr)
                 : YearMonth.now().minusMonths(1);
 
-        DashboardFinanceiroDTO dashboard = dashboardService.carregarDashboardFinanceiro(competencia);
+        // Passa a competência e os anos opcionais do Card 8 para o serviço
+        DashboardFinanceiroDTO dashboard = dashboardService.carregarDashboardFinanceiro(competencia, anoInicio, anoFim);
 
         model.addAttribute("dashboard", dashboard);
         model.addAttribute("competencia", competencia.toString());
         model.addAttribute("uriAtual", request.getRequestURI());
-
 
         return "sistema/modulos/dashboards/dashboards";
     }

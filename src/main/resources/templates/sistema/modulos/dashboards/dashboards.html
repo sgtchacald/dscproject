@@ -1,131 +1,67 @@
 <!DOCTYPE html>
 <html lang="pt" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       layout:decorate="~{sistema/template-admin/layout}">
 <head>
     <title>Dashboard Financeiro</title>
+    <!-- Importação do teu CSS externo limpo -->
+    <link rel="stylesheet" th:href="@{/css/dashboard.css}">
+    <!-- Importação do ApexCharts via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
 <body>
 
-<!-- Cabeçalho da página com o Título e o Filtro Global de Competência -->
 <div layout:fragment="cabecalho">
-    <div class="row g-2 align-items-center">
-        <div class="col">
-            <h2 class="page-title">Dashboard Financeiro</h2>
-        </div>
-        <div class="col-auto ms-auto">
-            <form method="get" th:action="@{/dashboards}" class="filtro-global">
-                <label class="form-label mb-0 text-secondary small">Competência</label>
-                <div class="input-icon" style="width: 170px;">
-                    <input type="month" name="competencia" class="form-control" th:value="${competencia}" onchange="this.form.submit()">
-                </div>
-            </form>
-        </div>
-    </div>
+    <div th:replace="~{sistema/modulos/dashboards/fragments/cabecalho :: cabecalho(titulo='Dashboard', tipoAtivo='FINANCEIRO')}"></div>
 </div>
 
-<!-- Corpo principal da página onde ficam os cards e gráficos -->
-<section layout:fragment="corpo">
+<section layout:fragment="corpo" class="dashboard-container">
     <div class="row row-deck row-cards">
-
-        <!-- CARD 1: Saldo Consolidado -->
-        <div class="col-md-4">
-            <div class="card card-kpi">
-                <div class="card-body">
-                    <div class="subheader">Saldo consolidado</div>
-                    <div class="kpi-val mt-1 text-success"
-                         th:text="${#numbers.formatCurrency(dashboard.saldoConsolidado)}">
-                        R$ 0,00
-                    </div>
-                    <div class="text-secondary small mt-2">
-                        <i class="ph ph-bank" aria-hidden="true"></i> Soma das contas com "considera no saldo geral"
-                    </div>
-                </div>
-            </div>
+        <!-- LINHA 1: Saldo Consolidado, Saldo por conta, Limite por cartão -->
+        <div class="col-lg-3 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card1-saldo-consolidado :: card}"></th:block>
+        </div>
+        <div class="col-lg-5 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card2-saldo-conta :: card}"></th:block>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card7-limite-cartao :: card}"></th:block>
         </div>
 
-        <!-- CARD 2: Saldo por Conta Bancária -->
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Saldo por conta</h3>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
-                        <tbody>
-                        <tr th:if="${#lists.isEmpty(dashboard.contas)}">
-                            <td colspan="3" class="text-center text-secondary py-3">
-                                Nenhuma conta cadastrada.
-                            </td>
-                        </tr>
-                        <tr th:each="conta : ${dashboard.contas}">
-                            <td>
-                                <i class="ph ph-bank" aria-hidden="true"></i>
-                                <span th:text="${conta.descricao}">Nome da Conta</span>
-                            </td>
-                            <td class="text-secondary small" th:text="${conta.tipo}">Tipo</td>
-                            <td class="text-end">
-                                <span th:text="${#numbers.formatCurrency(conta.saldo)}">R$ 0,00</span><br>
-                                <span th:if="${!conta.consideraNoSaldoGeral}" class="badge bg-secondary-lt mt-1">
-                                        Não entra no saldo geral
-                                    </span>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <!-- LINHA 2: Receitas x Despesas, Pagas x Pendentes -->
+        <div class="col-lg-6 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card3-receitas-despesas :: card}"></th:block>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card5-pagas-pendentes :: card}"></th:block>
         </div>
 
-        <!-- CARD 3: Receitas × Despesas do Mês -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Receitas × despesas do mês</h3>
-                </div>
-                <div class="card-body">
+        <!-- LINHA 3: Despesas por categoria, Total Rateado -->
+        <div class="col-lg-6 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card4-despesas-categoria :: card}"></th:block>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card6-total-rateado :: card}"></th:block>
+        </div>
 
-                    <!-- Estado Vazio (Exibido se os dois totais forem zero) -->
-                    <div th:if="${dashboard.totalReceitas == 0 and dashboard.totalDespesas == 0}"
-                         style="padding:34px 12px;text-align:center;color:#69747f;">
-                        <i class="ph ph-chart-bar" aria-hidden="true" style="font-size:1.8rem;color:#c7cfd8;display:block;margin-bottom:6px"></i>
-                        Sem dados no período selecionado.
-                    </div>
-
-                    <!-- Gráfico Visual (Mock do protótipo) -->
-                    <div th:unless="${dashboard.totalReceitas == 0 and dashboard.totalDespesas == 0}"
-                         class="d-flex align-items-end gap-4" style="height:150px">
-
-                        <!-- Coluna Verde: Receitas -->
-                        <div class="text-center flex-fill">
-                            <div style="height:120px;display:flex;align-items:flex-end;justify-content:center">
-                                <div style="width:56px;border-radius:6px 6px 0 0;background:#2fb344;height:100%"></div>
-                            </div>
-                            <div class="mt-2 fw-bold" th:text="${#numbers.formatCurrency(dashboard.totalReceitas)}">R$ 0,00</div>
-                            <div class="text-secondary small">Receitas</div>
-                        </div>
-
-                        <!-- Coluna Laranja: Despesas -->
-                        <div class="text-center flex-fill">
-                            <div style="height:120px;display:flex;align-items:flex-end;justify-content:center">
-                                <div style="width:56px;border-radius:6px 6px 0 0;background:#f59f00;height:70%"></div>
-                            </div>
-                            <div class="mt-2 fw-bold" th:text="${#numbers.formatCurrency(dashboard.totalDespesas)}">R$ 0,00</div>
-                            <div class="text-secondary small">Despesas (cota líquida)</div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
+        <!-- LINHA 4: Evolução Anual (Largura Total) -->
+        <div class="col-12 mb-3">
+            <th:block th:insert="~{sistema/modulos/dashboards/fragments/card8-evolucao :: card}"></th:block>
         </div>
 
     </div>
 </section>
 
-<!-- Bloco opcional para scripts JS específicos do Dashboard futuramente -->
+<!-- Ponte JS passa os dados do Spring para o JS-->
 <th:block layout:fragment="js">
-    <!-- <script type="module" th:src="@{/js/dashboard/dashboard.js}"></script> -->
+    <script th:inline="javascript">
+        window.dashboardData = {
+            rotulos: /*[[${dashboard.rotulosGrafico}]]*/ [],
+            receitas: /*[[${dashboard.receitasGrafico}]]*/ [],
+            despesas: /*[[${dashboard.despesasGrafico}]]*/ []
+        };
+    </script>
+    <script th:src="@{/js/dashboard/dashboard.js}"></script>
 </th:block>
 
 </body>

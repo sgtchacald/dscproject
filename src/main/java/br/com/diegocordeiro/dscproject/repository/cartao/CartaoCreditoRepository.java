@@ -31,4 +31,18 @@ public interface CartaoCreditoRepository extends JpaRepository<CartaoCredito, Lo
         ORDER BY c.descricao ASC
         """)
     List<CartaoCredito> listarAtivasPorUsuario(@Param("usuarioId") Long usuarioId);
+
+    @Query("""
+        SELECT ca.id, ca.descricao, ca.limite,
+               COALESCE((SELECT SUM(d.valor) FROM Despesa d 
+                         WHERE d.cartao.id = ca.id 
+                           AND d.statusPagamento = 'NAO' 
+                           AND d.dataExclusao IS NULL), 0) AS usado
+        FROM CartaoCredito ca
+        WHERE ca.usuario.id = :usuarioId
+          AND ca.ativo = TRUE
+          AND ca.dataExclusao IS NULL
+        ORDER BY ca.descricao ASC
+    """)
+    List<Object[]> buscarLimiteUsadoPorCartao(@Param("usuarioId") Long usuarioId);
 }

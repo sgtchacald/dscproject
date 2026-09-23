@@ -1,0 +1,31 @@
+<div th:fragment="card" class="card h-100">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Saldo por conta</h3>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+                <tbody>
+                <tr th:if="${#lists.isEmpty(dashboard.contas)}">
+                    <td colspan="3" class="text-center text-secondary py-3">
+                        Nenhuma conta cadastrada.
+                    </td>
+                </tr>
+                <tr th:each="conta : ${dashboard.contas}">
+                    <td>
+                        <i class="ph ph-bank" aria-hidden="true"></i>
+                        <span th:text="${conta.descricao}">Nome da Conta</span>
+                    </td>
+                    <td class="text-secondary small" th:text="${conta.tipo}">Tipo</td>
+                    <td class="text-end">
+                        <span th:text="${#numbers.formatCurrency(conta.saldo)}">R$ 0,00</span><br>
+                        <span th:if="${!conta.consideraNoSaldoGeral}" class="badge bg-secondary-lt mt-1">
+                                        Não entra no saldo geral
+                                    </span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

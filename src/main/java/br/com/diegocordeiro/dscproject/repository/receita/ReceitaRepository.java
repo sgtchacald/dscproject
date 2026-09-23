@@ -38,5 +38,29 @@ public interface ReceitaRepository extends JpaRepository<Receita, Long> {
           AND r.dataExclusao IS NULL
         """)
     BigDecimal somarPorCompetenciaEUsuario(@Param("competencia") YearMonth competencia, @Param("usuarioId") Long usuarioId);
+
+    @Query("""
+        SELECT SUBSTRING(r.competencia, 6, 2) AS mes, COALESCE(SUM(r.valor), 0) AS total
+        FROM Receita r
+        JOIN r.conta c
+        WHERE c.usuario.id = :usuarioId
+          AND SUBSTRING(r.competencia, 1, 4) = :ano
+          AND r.dataExclusao IS NULL
+        GROUP BY mes
+        ORDER BY mes ASC
+    """)
+    List<Object[]> somarReceitasPorMesEAnual(@Param("usuarioId") Long usuarioId, @Param("ano") String ano);
+
+    @Query("""
+        SELECT SUBSTRING(r.competencia, 1, 4) AS ano, COALESCE(SUM(r.valor), 0) AS total
+        FROM Receita r
+        JOIN r.conta c
+        WHERE c.usuario.id = :usuarioId
+          AND SUBSTRING(r.competencia, 1, 4) BETWEEN :anoInicio AND :anoFim
+          AND r.dataExclusao IS NULL
+        GROUP BY ano
+        ORDER BY ano ASC
+    """)
+    List<Object[]> somarReceitasPorIntervaloAnos(@Param("usuarioId") Long usuarioId, @Param("anoInicio") String anoInicio, @Param("anoFim") String anoFim);
 }
 
