@@ -23,6 +23,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -81,10 +82,10 @@ class RememberMeIntegrationTest {
         assertThat(rememberMe).as("cookie remember-me").isNotNull();
         assertThat(rememberMe.getMaxAge()).isPositive();
 
-        // Só o cookie remember-me, sem sessão: rota protegida abre em vez de
-        // redirecionar para /login.
+        // Só o cookie remember-me, sem sessão: a home segue para o dashboard
+        // em vez de redirecionar para /login.
         mockMvc.perform(get("/").cookie(rememberMe))
-            .andExpect(status().isOk());
+            .andExpect(redirectedUrl("/dashboards"));
     }
 
     @Test
