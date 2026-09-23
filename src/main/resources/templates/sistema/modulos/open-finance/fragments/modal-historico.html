@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalHistoricoSincronizacao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ph ph-clock-counter-clockwise me-2 text-primary"></i>
+                    <span id="modalHistoricoTitulo">Histórico de Sincronizações</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalHistoricoLoading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <div class="table-responsive d-none" id="containerTabelaHistorico">
+                    <table class="table table-vcenter card-table table-hover">
+                        <thead>
+                        <tr>
+                            <th th:text="#{openfinance.modal.historico.col.inicio}">Início</th>
+                            <th th:text="#{openfinance.modal.historico.col.duracao}">Finalizado</th>
+                            <th th:text="#{openfinance.modal.historico.col.tipo}">Tipo</th>
+                            <th class="text-center" th:text="#{openfinance.modal.historico.col.transacoes}">Transações Novas</th>
+                            <th class="text-center" th:text="#{openfinance.modal.historico.col.contas}">Contas Atualizadas</th>
+                            <th th:text="#{openfinance.modal.historico.col.status}">Status</th>
+                            <th th:text="#{openfinance.modal.historico.col.detalhe}">Detalhes / Erro</th>
+                        </tr>
+                        </thead>
+                        <tbody id="corpoTabelaHistorico"></tbody>
+                    </table>
+                </div>
+                <div id="modalHistoricoVazio" class="text-center py-4 d-none">
+                    <p class="text-secondary">Nenhum registro de sincronização encontrado.</p>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3 d-none" id="paginacaoHistorico">
+                    <span class="text-secondary small" id="infoPaginacaoHistorico"></span>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary me-1" id="btnPaginaAnteriorHistorico">Anterior</button>
+                        <button class="btn btn-sm btn-outline-secondary" id="btnPaginaProximaHistorico">Próxima</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

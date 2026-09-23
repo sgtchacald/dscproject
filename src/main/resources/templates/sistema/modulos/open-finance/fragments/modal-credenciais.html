@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="modal" class="modal modal-blur fade" id="modalCredenciais" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ph ph-key me-2 text-primary"></i>
+                    <span id="modalCredenciaisTitulo" th:text="#{openfinance.btn.credenciais}">Configurar Credenciais</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form id="formCredenciais" novalidate>
+                <div class="modal-body">
+                    <input type="hidden" id="credencialProvedorId" name="provedorId" value="1">
+
+                    <div class="mb-3">
+                        <label class="form-label required" th:text="#{openfinance.modal.credenciais.ambiente}">Ambiente</label>
+                        <select class="form-select" id="credencialAmbiente" name="ambiente" required>
+                            <option value="PRODUCTION" th:text="#{openfinance.modal.credenciais.ambiente.production}">Produção</option>
+                            <option value="SANDBOX" th:text="#{openfinance.modal.credenciais.ambiente.sandbox}">Sandbox (Testes)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" th:text="#{openfinance.modal.credenciais.clientId}">Client ID</label>
+                        <input type="text" class="form-control" id="credencialClientId" name="clientId" required placeholder="Ex.: 12345678-abcd-ef01-2345-6789abcdef01">
+                        <div class="invalid-feedback" id="erroCredencialClientId"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label required" th:text="#{openfinance.modal.credenciais.clientSecret}">Client Secret</label>
+                        <div class="input-group input-group-flat">
+                            <input type="password" class="form-control" id="credencialClientSecret" name="clientSecret" placeholder="••••••••••••••••••••••••">
+                            <span class="input-group-text">
+                                <a href="javascript:void(0)" class="link-secondary" id="btnToggleSecret" title="Mostrar/Ocultar segredo">
+                                    <i class="ph ph-eye" id="iconeToggleSecret"></i>
+                                </a>
+                            </span>
+                        </div>
+                        <small class="form-hint" th:text="#{openfinance.modal.credenciais.clientSecret.ajuda}">O segredo é gravado com criptografia forte AES-256 e nunca exibido em texto claro.</small>
+                        <div class="invalid-feedback" id="erroCredencialClientSecret"></div>
+                    </div>
+
+                    <div id="alertaCredenciaisFeedback" class="alert d-none" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnTestarCredencial">
+                        <span class="spinner-border spinner-border-sm me-2 d-none" id="spinnerTestarCredencial" role="status"></span>
+                        <i class="ph ph-plugs me-1"></i>
+                        <span th:text="#{openfinance.modal.credenciais.btn.testar}">Testar Conexão</span>
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btnSalvarCredencial">
+                        <span class="spinner-border spinner-border-sm me-2 d-none" id="spinnerSalvarCredencial" role="status"></span>
+                        <i class="ph ph-check me-1"></i>
+                        <span th:text="#{openfinance.modal.credenciais.btn.salvar}">Salvar Credenciais</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

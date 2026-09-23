@@ -5,11 +5,11 @@ import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.InstituicaoProved
 import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.InstituicaoProvedorGridDTO;
 import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.ProvedorOpcaoDTO;
 import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.InstituicaoFinanceira;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiInstituicaoProvedor;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceInstituicaoProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.InstituicaoFinanceiraRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiInstituicaoProvedorRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceInstituicaoProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegistroNaoEncontradoException;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegraNegocioException;
 import org.springframework.stereotype.Service;
@@ -21,19 +21,19 @@ import java.util.List;
 @Service
 public class InstituicaoProvedorService {
 
-    private final OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository;
+    private final OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository;
     private final InstituicaoFinanceiraRepository instituicaoFinanceiraRepository;
-    private final OpfiProvedorRepository opfiProvedorRepository;
+    private final OpenFinanceProvedorRepository openFinanceProvedorRepository;
 
-    public InstituicaoProvedorService(OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository, InstituicaoFinanceiraRepository instituicaoFinanceiraRepository, OpfiProvedorRepository opfiProvedorRepository) {
-        this.opfiInstituicaoProvedorRepository = opfiInstituicaoProvedorRepository;
+    public InstituicaoProvedorService(OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository, InstituicaoFinanceiraRepository instituicaoFinanceiraRepository, OpenFinanceProvedorRepository openFinanceProvedorRepository) {
+        this.openFinanceInstituicaoProvedorRepository = openFinanceInstituicaoProvedorRepository;
         this.instituicaoFinanceiraRepository = instituicaoFinanceiraRepository;
-        this.opfiProvedorRepository = opfiProvedorRepository;
+        this.openFinanceProvedorRepository = openFinanceProvedorRepository;
     }
 
     @Transactional(readOnly = true)
     public List<InstituicaoProvedorGridDTO> listarParaGrid() {
-        return opfiInstituicaoProvedorRepository.listarParaGrid().stream()
+        return openFinanceInstituicaoProvedorRepository.listarParaGrid().stream()
             .map(m -> InstituicaoProvedorGridDTO.builder()
                 .id(m.getId())
                 .idExterno(m.getIdExterno())
@@ -47,7 +47,7 @@ public class InstituicaoProvedorService {
 
     @Transactional(readOnly = true)
     public InstituicaoProvedorEdicaoDTO buscarParaEdicao(Long id) {
-        OpfiInstituicaoProvedor entity = opfiInstituicaoProvedorRepository.findByIdAndDataExclusaoIsNull(id)
+        OpenFinanceInstituicaoProvedor entity = openFinanceInstituicaoProvedorRepository.findByIdAndDataExclusaoIsNull(id)
             .orElseThrow(() -> new RegistroNaoEncontradoException("msg.instituicaoprovedor.nao-encontrado"));
 
         return InstituicaoProvedorEdicaoDTO.builder()
@@ -59,60 +59,60 @@ public class InstituicaoProvedorService {
     }
 
     @Transactional
-    public OpfiInstituicaoProvedor inserir(InstituicaoProvedorFormDTO dto) {
+    public OpenFinanceInstituicaoProvedor inserir(InstituicaoProvedorFormDTO dto) {
         validarUnicidade(dto.getInstituicaoId(), dto.getProvedorId(), dto.getIdExterno(), null);
 
         InstituicaoFinanceira instituicao = obterInstituicaoAtiva(dto.getInstituicaoId());
-        OpfiProvedor provedor = obterProvedorAtivo(dto.getProvedorId());
+        OpenFinanceProvedor provedor = obterProvedorAtivo(dto.getProvedorId());
 
-        OpfiInstituicaoProvedor entity = new OpfiInstituicaoProvedor();
+        OpenFinanceInstituicaoProvedor entity = new OpenFinanceInstituicaoProvedor();
         entity.setIdExterno(dto.getIdExterno().trim());
         entity.setInstituicao(instituicao);
         entity.setProvedor(provedor);
 
-        return opfiInstituicaoProvedorRepository.save(entity);
+        return openFinanceInstituicaoProvedorRepository.save(entity);
     }
 
     @Transactional
-    public OpfiInstituicaoProvedor editar(Long id, InstituicaoProvedorFormDTO dto) {
-        OpfiInstituicaoProvedor entity = opfiInstituicaoProvedorRepository.findByIdAndDataExclusaoIsNull(id)
+    public OpenFinanceInstituicaoProvedor editar(Long id, InstituicaoProvedorFormDTO dto) {
+        OpenFinanceInstituicaoProvedor entity = openFinanceInstituicaoProvedorRepository.findByIdAndDataExclusaoIsNull(id)
             .orElseThrow(() -> new RegistroNaoEncontradoException("msg.instituicaoprovedor.nao-encontrado"));
 
         validarUnicidade(dto.getInstituicaoId(), dto.getProvedorId(), dto.getIdExterno(), id);
 
         InstituicaoFinanceira instituicao = obterInstituicaoAtiva(dto.getInstituicaoId());
-        OpfiProvedor provedor = obterProvedorAtivo(dto.getProvedorId());
+        OpenFinanceProvedor provedor = obterProvedorAtivo(dto.getProvedorId());
 
         entity.setIdExterno(dto.getIdExterno().trim());
         entity.setInstituicao(instituicao);
         entity.setProvedor(provedor);
 
-        return opfiInstituicaoProvedorRepository.save(entity);
+        return openFinanceInstituicaoProvedorRepository.save(entity);
     }
 
     @Transactional
     public void excluir(Long id, String usuarioLogado) {
-        OpfiInstituicaoProvedor entity = opfiInstituicaoProvedorRepository.findByIdAndDataExclusaoIsNull(id)
+        OpenFinanceInstituicaoProvedor entity = openFinanceInstituicaoProvedorRepository.findByIdAndDataExclusaoIsNull(id)
             .orElseThrow(() -> new RegistroNaoEncontradoException("msg.instituicaoprovedor.nao-encontrado"));
 
         entity.setDataExclusao(Instant.now());
         entity.setExcluidoPor(usuarioLogado);
-        opfiInstituicaoProvedorRepository.save(entity);
+        openFinanceInstituicaoProvedorRepository.save(entity);
     }
 
     @Transactional(readOnly = true)
     public List<ProvedorOpcaoDTO> listarProvedoresOpcoes() {
-        return opfiProvedorRepository.findByDataExclusaoIsNullOrderByNomeAsc().stream()
+        return openFinanceProvedorRepository.findByDataExclusaoIsNullOrderByNomeAsc().stream()
             .map(p -> new ProvedorOpcaoDTO(p.getId(), p.getCodigo(), p.getNome(), p.isAtivo()))
             .toList();
     }
 
     private void validarUnicidade(Long instituicaoId, Long provedorId, String idExterno, Long idAtual) {
-        if (opfiInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(instituicaoId, provedorId, idAtual) > 0) {
+        if (openFinanceInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(instituicaoId, provedorId, idAtual) > 0) {
             throw new RegraNegocioException("instituicaoId", "msg.instituicaoprovedor.instituicao.duplicada");
         }
 
-        if (idExterno != null && opfiInstituicaoProvedorRepository.contarPorProvedorEIdExterno(provedorId, idExterno.trim(), idAtual) > 0) {
+        if (idExterno != null && openFinanceInstituicaoProvedorRepository.contarPorProvedorEIdExterno(provedorId, idExterno.trim(), idAtual) > 0) {
             throw new RegraNegocioException("idExterno", "msg.instituicaoprovedor.idexterno.duplicado");
         }
     }
@@ -127,8 +127,8 @@ public class InstituicaoProvedorService {
         return i;
     }
 
-    private OpfiProvedor obterProvedorAtivo(Long provedorId) {
-        OpfiProvedor p = opfiProvedorRepository.findById(provedorId)
+    private OpenFinanceProvedor obterProvedorAtivo(Long provedorId) {
+        OpenFinanceProvedor p = openFinanceProvedorRepository.findById(provedorId)
             .orElseThrow(() -> new RegraNegocioException("provedorId", "msg.instituicaoprovedor.provedor.invalido"));
 
         if (!p.isAtivo() || p.isExcluido()) {

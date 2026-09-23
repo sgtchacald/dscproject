@@ -2,10 +2,10 @@ package br.com.diegocordeiro.dscproject.web.sistema.validator.categoria;
 
 import br.com.diegocordeiro.dscproject.dto.categoriaprovedor.CategoriaProvedorFormDTO;
 import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaProvedorRepository;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ class CategoriaProvedorValidatorTest {
     private CategoriaRepository categoriaRepository;
 
     @Mock
-    private OpfiProvedorRepository opfiProvedorRepository;
+    private OpenFinanceProvedorRepository openFinanceProvedorRepository;
 
     @Mock
     private MessageSource messageSource;
@@ -44,7 +44,7 @@ class CategoriaProvedorValidatorTest {
     @BeforeEach
     void setUp() {
         validator = new CategoriaProvedorValidator(
-            categoriaProvedorRepository, categoriaRepository, opfiProvedorRepository, messageSource, Locale.getDefault());
+            categoriaProvedorRepository, categoriaRepository, openFinanceProvedorRepository, messageSource, Locale.getDefault());
     }
 
     @Test
@@ -52,7 +52,7 @@ class CategoriaProvedorValidatorTest {
     void validate_quandoRotuloDuplicado_deveAdicionarErro() {
         when(categoriaProvedorRepository.contarPorProvedorERotulo(1L, "Food", null)).thenReturn(1L);
         when(categoriaRepository.findById(10L)).thenReturn(Optional.of(new Categoria()));
-        when(opfiProvedorRepository.findById(1L)).thenReturn(Optional.of(new OpfiProvedor()));
+        when(openFinanceProvedorRepository.findById(1L)).thenReturn(Optional.of(new OpenFinanceProvedor()));
         when(messageSource.getMessage(eq("categoriaprovedor.rotulo.duplicado"), any(), any()))
             .thenReturn("Já existe um vínculo para este rótulo neste provedor.");
 

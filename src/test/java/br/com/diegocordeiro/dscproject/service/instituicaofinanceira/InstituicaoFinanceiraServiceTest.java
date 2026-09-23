@@ -4,9 +4,9 @@ import br.com.diegocordeiro.dscproject.dto.instituicaofinanceira.InstituicaoFina
 import br.com.diegocordeiro.dscproject.dto.instituicaofinanceira.InstituicaoFinanceiraOpcaoDTO;
 import br.com.diegocordeiro.dscproject.enums.TipoInstituicaoFinanceira;
 import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.InstituicaoFinanceira;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiInstituicaoProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceInstituicaoProvedor;
 import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.InstituicaoFinanceiraRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiInstituicaoProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceInstituicaoProvedorRepository;
 import br.com.diegocordeiro.dscproject.repository.parametro.ParametroGlobalRepository;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegraNegocioException;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +31,7 @@ class InstituicaoFinanceiraServiceTest {
     private InstituicaoFinanceiraRepository instituicaoFinanceiraRepository;
 
     @Mock
-    private OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository;
+    private OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository;
 
     @Mock
     private ParametroGlobalRepository parametroGlobalRepository;
@@ -45,7 +45,7 @@ class InstituicaoFinanceiraServiceTest {
     void setUp() {
         instituicaoFinanceiraService = new InstituicaoFinanceiraService(
                 instituicaoFinanceiraRepository,
-                opfiInstituicaoProvedorRepository,
+                openFinanceInstituicaoProvedorRepository,
                 parametroGlobalRepository,
                 jdbcTemplate
         );
@@ -221,12 +221,12 @@ class InstituicaoFinanceiraServiceTest {
         comum.setNome("Banco Sem Uso");
         comum.setSistema(false);
 
-        OpfiInstituicaoProvedor vinculo = new OpfiInstituicaoProvedor();
+        OpenFinanceInstituicaoProvedor vinculo = new OpenFinanceInstituicaoProvedor();
         vinculo.setId(10L);
 
         when(instituicaoFinanceiraRepository.findById(3L)).thenReturn(Optional.of(comum));
         when(jdbcTemplate.queryForObject(anyString(), eq(Long.class), eq(3L))).thenReturn(0L);
-        when(opfiInstituicaoProvedorRepository.findByInstituicaoIdAndDataExclusaoIsNull(3L)).thenReturn(List.of(vinculo));
+        when(openFinanceInstituicaoProvedorRepository.findByInstituicaoIdAndDataExclusaoIsNull(3L)).thenReturn(List.of(vinculo));
 
         instituicaoFinanceiraService.excluir(3L, "ADMIN");
 
@@ -238,7 +238,7 @@ class InstituicaoFinanceiraServiceTest {
         assertTrue(vinculo.isExcluido());
         assertEquals("ADMIN", vinculo.getExcluidoPor());
         assertNotNull(vinculo.getDataExclusao());
-        verify(opfiInstituicaoProvedorRepository).save(vinculo);
+        verify(openFinanceInstituicaoProvedorRepository).save(vinculo);
     }
 
     @Test

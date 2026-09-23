@@ -4,10 +4,10 @@ import br.com.diegocordeiro.dscproject.dto.categoriaprovedor.CategoriaProvedorFo
 import br.com.diegocordeiro.dscproject.dto.categoriaprovedor.CategoriaProvedorGridDTO;
 import br.com.diegocordeiro.dscproject.model.categoria.Categoria;
 import br.com.diegocordeiro.dscproject.model.categoria.CategoriaProvedor;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaProvedorRepository;
 import br.com.diegocordeiro.dscproject.repository.categoria.CategoriaRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegistroNaoEncontradoException;
 import br.com.diegocordeiro.dscproject.service.exceptions.RegraNegocioException;
 import org.springframework.stereotype.Service;
@@ -21,12 +21,12 @@ public class CategoriaProvedorService {
 
     private final CategoriaProvedorRepository categoriaProvedorRepository;
     private final CategoriaRepository categoriaRepository;
-    private final OpfiProvedorRepository opfiProvedorRepository;
+    private final OpenFinanceProvedorRepository openFinanceProvedorRepository;
 
-    public CategoriaProvedorService(CategoriaProvedorRepository categoriaProvedorRepository, CategoriaRepository categoriaRepository, OpfiProvedorRepository opfiProvedorRepository) {
+    public CategoriaProvedorService(CategoriaProvedorRepository categoriaProvedorRepository, CategoriaRepository categoriaRepository, OpenFinanceProvedorRepository openFinanceProvedorRepository) {
         this.categoriaProvedorRepository = categoriaProvedorRepository;
         this.categoriaRepository = categoriaRepository;
-        this.opfiProvedorRepository = opfiProvedorRepository;
+        this.openFinanceProvedorRepository = openFinanceProvedorRepository;
     }
 
     @Transactional(readOnly = true)
@@ -55,7 +55,7 @@ public class CategoriaProvedorService {
         validarUnicidade(dto.getProvedorId(), rotulo, null);
 
         Categoria categoria = validarECarregarCategoriaAtiva(dto.getCategoriaId());
-        OpfiProvedor provedor = validarECarregarProvedorAtivo(dto.getProvedorId());
+        OpenFinanceProvedor provedor = validarECarregarProvedorAtivo(dto.getProvedorId());
 
         CategoriaProvedor vinculo = new CategoriaProvedor();
         vinculo.setRotuloExterno(rotulo);
@@ -72,7 +72,7 @@ public class CategoriaProvedorService {
         validarUnicidade(dto.getProvedorId(), rotulo, id);
 
         Categoria categoria = validarECarregarCategoriaAtiva(dto.getCategoriaId());
-        OpfiProvedor provedor = validarECarregarProvedorAtivo(dto.getProvedorId());
+        OpenFinanceProvedor provedor = validarECarregarProvedorAtivo(dto.getProvedorId());
 
         vinculo.setRotuloExterno(rotulo);
         vinculo.setCategoria(categoria);
@@ -105,8 +105,8 @@ public class CategoriaProvedorService {
         return categoria;
     }
 
-    private OpfiProvedor validarECarregarProvedorAtivo(Long provedorId) {
-        OpfiProvedor provedor = opfiProvedorRepository.findById(provedorId)
+    private OpenFinanceProvedor validarECarregarProvedorAtivo(Long provedorId) {
+        OpenFinanceProvedor provedor = openFinanceProvedorRepository.findById(provedorId)
             .orElseThrow(() -> new RegraNegocioException("provedorId", "categoriaprovedor.provedor.invalido"));
 
         if (!provedor.isAtivo() || provedor.isExcluido()) {

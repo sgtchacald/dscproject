@@ -2,10 +2,10 @@ package br.com.diegocordeiro.dscproject.web.sistema.validator.instituicaofinance
 
 import br.com.diegocordeiro.dscproject.dto.instituicaoprovedor.InstituicaoProvedorFormDTO;
 import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.InstituicaoFinanceira;
-import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpfiProvedor;
+import br.com.diegocordeiro.dscproject.model.instituicaofinanceira.OpenFinanceProvedor;
 import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.InstituicaoFinanceiraRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiInstituicaoProvedorRepository;
-import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpfiProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceInstituicaoProvedorRepository;
+import br.com.diegocordeiro.dscproject.repository.instituicaofinanceira.OpenFinanceProvedorRepository;
 import org.springframework.context.MessageSource;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -15,16 +15,16 @@ import java.util.Optional;
 
 public class InstituicaoProvedorValidator implements Validator {
 
-    private final OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository;
+    private final OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository;
     private final InstituicaoFinanceiraRepository instituicaoFinanceiraRepository;
-    private final OpfiProvedorRepository opfiProvedorRepository;
+    private final OpenFinanceProvedorRepository openFinanceProvedorRepository;
     private final MessageSource messageSource;
     private final Locale locale;
 
-    public InstituicaoProvedorValidator(OpfiInstituicaoProvedorRepository opfiInstituicaoProvedorRepository, InstituicaoFinanceiraRepository instituicaoFinanceiraRepository, OpfiProvedorRepository opfiProvedorRepository, MessageSource messageSource, Locale locale) {
-        this.opfiInstituicaoProvedorRepository = opfiInstituicaoProvedorRepository;
+    public InstituicaoProvedorValidator(OpenFinanceInstituicaoProvedorRepository openFinanceInstituicaoProvedorRepository, InstituicaoFinanceiraRepository instituicaoFinanceiraRepository, OpenFinanceProvedorRepository openFinanceProvedorRepository, MessageSource messageSource, Locale locale) {
+        this.openFinanceInstituicaoProvedorRepository = openFinanceInstituicaoProvedorRepository;
         this.instituicaoFinanceiraRepository = instituicaoFinanceiraRepository;
-        this.opfiProvedorRepository = opfiProvedorRepository;
+        this.openFinanceProvedorRepository = openFinanceProvedorRepository;
         this.messageSource = messageSource;
         this.locale = locale;
     }
@@ -39,7 +39,7 @@ public class InstituicaoProvedorValidator implements Validator {
         InstituicaoProvedorFormDTO dto = (InstituicaoProvedorFormDTO) target;
 
         if (dto.getInstituicaoId() != null && dto.getProvedorId() != null && !errors.hasFieldErrors("instituicaoId")) {
-            long count = opfiInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(
+            long count = openFinanceInstituicaoProvedorRepository.contarPorInstituicaoEProvedor(
                 dto.getInstituicaoId(), dto.getProvedorId(), dto.getId());
             if (count > 0) {
                 errors.rejectValue("instituicaoId", "Duplicate.instituicaoProvedorFormDTO.instituicaoId",
@@ -48,7 +48,7 @@ public class InstituicaoProvedorValidator implements Validator {
         }
 
         if (dto.getProvedorId() != null && dto.getIdExterno() != null && !dto.getIdExterno().isBlank() && !errors.hasFieldErrors("idExterno")) {
-            long count = opfiInstituicaoProvedorRepository.contarPorProvedorEIdExterno(
+            long count = openFinanceInstituicaoProvedorRepository.contarPorProvedorEIdExterno(
                 dto.getProvedorId(), dto.getIdExterno().trim(), dto.getId());
             if (count > 0) {
                 errors.rejectValue("idExterno", "Duplicate.instituicaoProvedorFormDTO.idExterno",
@@ -65,7 +65,7 @@ public class InstituicaoProvedorValidator implements Validator {
         }
 
         if (dto.getProvedorId() != null && !errors.hasFieldErrors("provedorId")) {
-            Optional<OpfiProvedor> provOpt = opfiProvedorRepository.findById(dto.getProvedorId());
+            Optional<OpenFinanceProvedor> provOpt = openFinanceProvedorRepository.findById(dto.getProvedorId());
             if (provOpt.isEmpty() || !provOpt.get().isAtivo() || provOpt.get().isExcluido()) {
                 errors.rejectValue("provedorId", "Invalid.instituicaoProvedorFormDTO.provedorId",
                     messageSource.getMessage("msg.instituicaoprovedor.provedor.invalido", null, locale));
