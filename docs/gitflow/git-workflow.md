@@ -10,8 +10,10 @@ Crie a branch a partir da `main` seguindo a convenção de nomenclatura:
 
 ```bash
 git checkout main
-git checkout -b feature/nome_funcionalidade+breve-descricao+DDMMAAAAHHMM
+git checkout -b feature/nome_funcionalidade-breve-descricao-DDMMAAAAHHMM
 ```
+
+As partes do nome são separadas por hífen (`-`), nunca por `+`. Ex.: `feature/open-finance-conectar-conta-230920261751`.
 
 **Convenção do timestamp no nome da branch:**
 
