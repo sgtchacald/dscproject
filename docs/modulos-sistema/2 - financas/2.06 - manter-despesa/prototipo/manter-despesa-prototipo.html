@@ -1,0 +1,935 @@
+<title>Protótipo Manter Despesa</title>
+<!--
+  Protótipo navegável — Documento 2.06 · Manter Despesa (tela "Finanças > Despesas").
+  Replica o padrão dos módulos 04 (manter-categoria) e 06 (manter-conta).
+  5 telas/modais, correspondendo aos QUADRO_DESCRITIVO_1..5 da Seção 7:
+    md-list       -> QUADRO_DESCRITIVO_1  Despesas (listagem)
+    md-filtro     -> QUADRO_DESCRITIVO_2  Modal Filtrar Despesas
+    md-form-nova  -> QUADRO_DESCRITIVO_3  Modal Cadastro (modo criação)
+    md-form-edit  -> QUADRO_DESCRITIVO_3  Modal Edição (despesa rateada, com PERM03)
+    md-pagto      -> QUADRO_DESCRITIVO_4  Modal Registrar Pagamento
+    md-lote       -> QUADRO_DESCRITIVO_5  Modal Confirmar Pagamento em Lote
+  Os marcadores numéricos (●) correspondem aos IDs de cada QUADRO_DESCRITIVO.
+
+  Combobox Conta (SB01): endpoint de opções do módulo 06 — GET /contas/opcoes.
+  Combobox Cartão (SB02): endpoint de opções do módulo 07 — GET /cartoes/opcoes.
+  Combobox Categoria (SB03): endpoint de opções do módulo 04 — GET /categorias/opcoes?aplicaA=DESPESA.
+  Usuário do rateio (SB06): GET /despesas/usuarios-rateio?termo= — aqui simulado com <datalist>.
+  Dados de conta/cartão/categoria/usuário abaixo são só exemplo do protótipo.
+
+  Botão "PERM03 rateio" na barra inferior simula ligar/desligar a permissão efetiva
+  DESPESA_RATEAR_MULTIUSUARIO (RT10/RN15) — controla a seção Rateio do modal, a coluna
+  Rateio do grid e o ícone "Ratear" das ações.
+-->
+<style>
+  :root{
+    --ground:#f5f6f8; --surface:#ffffff; --surface-2:#fbfbfc; --border:#e5e7eb;
+    --ink:#1b2430; --muted:#69747f; --primary:#1f6fd0; --primary-ink:#ffffff;
+    --ok:#1f9d57; --ok-bg:#e4f5ec; --warn:#8a6d1f; --warn-bg:#fbf1d9;
+    --info:#1f6fd0; --info-bg:#e8f1fb;
+    --gone:#8b95a1; --gone-bg:#eef0f2;
+    --neg:#c0392b;
+    --marker:#d1367f; --shadow:0 1px 2px rgba(20,30,45,.06),0 8px 24px rgba(20,30,45,.08);
+    --radius:9px;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#12171e; --surface:#1a212a; --surface-2:#161d25; --border:#2a333e;
+      --ink:#e7eaee; --muted:#93a0ad; --primary:#4c96e6; --primary-ink:#0c1116;
+      --ok:#41c37e; --ok-bg:#12331f; --warn:#d8b25a; --warn-bg:#332a12;
+      --info:#4c96e6; --info-bg:#122536;
+      --gone:#7c8894; --gone-bg:#232b34;
+      --neg:#e8776a;
+      --marker:#ec6aa8; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#12171e; --surface:#1a212a; --surface-2:#161d25; --border:#2a333e;
+    --ink:#e7eaee; --muted:#93a0ad; --primary:#4c96e6; --primary-ink:#0c1116;
+    --ok:#41c37e; --ok-bg:#12331f; --warn:#d8b25a; --warn-bg:#332a12;
+    --info:#4c96e6; --info-bg:#122536;
+    --gone:#7c8894; --gone-bg:#232b34;
+    --neg:#e8776a;
+    --marker:#ec6aa8; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+  h1,h2,h3,p{margin:0}
+  button{font:inherit;color:inherit;cursor:pointer}
+  a{color:var(--primary);text-decoration:none}
+
+  .app{display:grid;grid-template-columns:224px 1fr;min-height:100vh}
+  .side{background:var(--surface);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;padding:6px 8px 14px}
+  .brand .dot{width:22px;height:22px;border-radius:6px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-size:12px}
+  .navlabel{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:14px 8px 4px}
+  .navitem{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:var(--muted);font-weight:500;text-align:left;border:none;background:none;width:100%;line-height:1.25}
+  .navitem svg{width:16px;height:16px;flex:none}
+  .navitem>span:not(.mk){flex:1;min-width:0}
+  .navitem.active{background:color-mix(in srgb,var(--primary) 12%,transparent);color:var(--primary)}
+  .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 22px}
+  .who{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13px}
+  .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#8b5cf6);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:600}
+  .main{padding:26px 30px 120px;max-width:1280px}
+  .crumb{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:4px;flex-wrap:wrap}
+  .page-h h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin-bottom:20px;max-width:660px}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:13px}
+  .btn svg{width:15px;height:15px}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+  .btn.ghost{background:transparent}
+  .btn.danger{border-color:color-mix(in srgb,#d6336c 55%,transparent);color:#d6336c}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{text-align:left;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:12px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+  tbody td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--surface-2)}
+  tbody tr.excluida{opacity:.55}
+  td.mono{font-family:var(--mono);font-size:12px}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+  th.num{text-align:right}
+  td.neg{color:var(--neg)}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .badge.pago{background:var(--ok-bg);color:var(--ok)}
+  .badge.aberto{background:var(--warn-bg);color:var(--warn)}
+  .badge.nsa{background:var(--gone-bg);color:var(--gone)}
+  .badge.del{background:#fdeaea;color:#c0392b}
+  .badge.cat{background:color-mix(in srgb,var(--primary) 10%,transparent);color:var(--primary)}
+  .badge.manual{background:var(--gone-bg);color:var(--gone)}
+  .badge.openfinance{background:var(--info-bg);color:var(--info)}
+  .badge.importacao{background:var(--warn-bg);color:var(--warn)}
+  .badge.meio{background:var(--surface-2);color:var(--muted);border:1px solid var(--border)}
+  .pgmeio{display:inline-flex;align-items:center;gap:6px}
+  .pgmeio svg{width:14px;height:14px;color:var(--muted);flex:none}
+  .rowact{display:flex;gap:4px}
+  .iconbtn{width:29px;height:29px;border-radius:7px;border:1px solid transparent;background:transparent;display:grid;place-items:center;color:var(--muted)}
+  .iconbtn:hover{background:var(--surface-2);border-color:var(--border);color:var(--ink)}
+  .iconbtn svg{width:15px;height:15px}
+  .tblfoot{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;color:var(--muted);font-size:12.5px}
+  .pager{display:flex;gap:4px}
+  .pager span{min-width:28px;height:28px;border-radius:6px;border:1px solid var(--border);display:grid;place-items:center;font-size:12px}
+  .pager span.on{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+  .empty{padding:34px 16px;text-align:center;color:var(--muted);font-size:13px}
+  .rateioicon{color:var(--primary)}
+
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .field label{font-size:12.5px;font-weight:600}
+  .field label .req{color:#d6336c}
+  .field input,.field select,.field textarea{padding:9px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit}
+  .field textarea{resize:vertical;min-height:60px}
+  .field input:disabled,.field select:disabled{background:var(--surface-2);color:var(--muted);cursor:not-allowed}
+  .field .hint{font-size:11.5px;color:var(--muted)}
+  .field.invalid input,.field.invalid select{border-color:#d6336c}
+  .field.money input{text-align:right;font-variant-numeric:tabular-nums}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 16px}
+  .toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .toggle button{padding:7px 14px;background:var(--surface);border:none;font-size:12.5px;font-weight:600;color:var(--muted)}
+  .toggle button.on{background:var(--primary);color:var(--primary-ink)}
+  .infobox{display:flex;gap:9px;background:var(--info-bg);border:1px solid color-mix(in srgb,var(--info) 40%,transparent);color:var(--info);border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
+  .infobox.warn{background:var(--warn-bg);border-color:color-mix(in srgb,var(--warn) 45%,transparent);color:var(--warn)}
+  .infobox svg{width:16px;height:16px;flex:none;margin-top:1px}
+  .readout{padding:9px 11px;border-radius:8px;border:1px dashed var(--border);background:var(--surface-2);color:var(--muted);font-variant-numeric:tabular-nums;font-weight:600}
+  .section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:18px 0 12px;padding-top:16px;border-top:1px solid var(--border)}
+  .section-title:first-child{margin-top:0;padding-top:0;border-top:none}
+
+  .rateio-head,.rateio-row{display:grid;grid-template-columns:1fr 118px 150px 28px;gap:8px;align-items:center}
+  .rateio-head{font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase;padding-bottom:6px}
+  .rateio-row{padding:6px 0;border-bottom:1px solid var(--border)}
+  .rateio-row input{padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;width:100%}
+  .rateio-row .num{text-align:right;font-variant-numeric:tabular-nums}
+  .rateio-add{display:flex;gap:8px;margin-top:10px}
+  .rateio-add input{flex:1;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit}
+  .cota{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);font-size:12.5px;color:var(--muted)}
+  .cota b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+  .scrim{position:fixed;inset:0;background:rgba(15,22,32,.5);display:grid;place-items:center;padding:24px;z-index:40;overflow:auto}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);width:min(480px,100%);max-height:min(88vh,calc(100vh - 170px));overflow:auto}
+  .modal.wide{width:min(640px,100%)}
+  .modal-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+  .modal-h h3{font-size:15px;font-weight:700}
+  .modal-b{padding:18px 20px}
+  .modal-f{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border);position:sticky;bottom:0;background:var(--surface)}
+  .x{border:none;background:none;color:var(--muted);font-size:18px;line-height:1;padding:4px}
+
+  .mk{position:absolute;z-index:30;width:20px;height:20px;border-radius:50%;background:var(--marker);color:#fff;
+      font:600 11px/20px var(--mono);text-align:center;box-shadow:0 0 0 2px var(--surface),0 2px 6px rgba(0,0,0,.35);pointer-events:none}
+  body.no-mk .mk{display:none}
+  .anchor{position:relative}
+
+  .proto-bar{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;
+     background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:8px;max-width:min(96vw,980px)}
+  .proto-bar button{padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);font-size:12px;font-weight:600;color:var(--muted)}
+  .proto-bar button.on{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+  .proto-bar button.perm{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+  .proto-bar button.perm.off{background:var(--gone-bg);border-color:var(--border);color:var(--gone)}
+  .proto-tag{position:fixed;left:16px;bottom:16px;z-index:60;font:600 11px/1 var(--mono);color:var(--muted);
+     background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;box-shadow:var(--shadow)}
+  .legend{position:fixed;left:16px;bottom:52px;z-index:60;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+     box-shadow:var(--shadow);padding:12px 14px;font-size:12px;max-width:360px;display:none}
+  body.show-legend .legend{display:block}
+  .legend h4{font:600 11px/1.4 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+  .screen{display:none}
+  .screen.on{display:block}
+  @media (max-width:860px){.app{grid-template-columns:1fr}.side{display:none}}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="dot">d</span> dscproject</div>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg> Início</button>
+    <div class="navlabel">Finanças</div>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg> Minhas Contas</button>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 6H9a3 3 0 000 6h6a3 3 0 010 6H7"/></svg> Receitas</button>
+    <button class="navitem active anchor" id="nav-md" onclick="showList()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V2M7 18H9a3 3 0 000-6h6a3 3 0 010-6h-2"/></svg>
+      <span>Despesas</span>
+      <span class="mk" style="right:2px;top:2px">0</span></button>
+    <div class="navlabel">Administração</div>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-7h6v7"/></svg> Instituições Financeiras</button>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h.01M3 7l4-4h7l7 7-11 11-7-7z"/></svg> Categorias</button>
+  </aside>
+  <div>
+    <div class="topbar">
+      <strong style="font-size:14px" id="topTitle">Despesas</strong>
+      <div class="who"><span>Diego Cordeiro</span><span class="avatar">DC</span></div>
+    </div>
+
+    <!-- ============ 7.1 Despesas (Listagem) — QUADRO_DESCRITIVO_1 ============ -->
+    <main class="main screen on" id="s-list">
+      <div class="anchor">
+        <div class="crumb">Finanças <span style="opacity:.5">›</span> Despesas <span class="mk" style="left:-26px;top:-2px">1</span></div>
+        <div class="page-h">
+          <h1 class="anchor">Despesas <span class="mk" style="left:-26px;top:2px">2</span></h1>
+          <div class="toolbar">
+            <button class="btn ghost anchor" onclick="openF()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg> Filtrar
+              <span class="mk" style="left:-11px;top:-11px">4</span></button>
+            <button class="btn anchor" id="btnLote" disabled onclick="openLote()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg> Registrar pagamento
+              <span class="mk" style="left:-11px;top:-11px">6</span></button>
+            <button class="btn primary anchor" onclick="openD()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Nova despesa
+              <span class="mk" style="right:-11px;top:-11px">5</span></button>
+          </div>
+        </div>
+        <p class="sub anchor">Cadastre e acompanhe as suas despesas, parcelamentos e divisões de conta. <span class="mk" style="left:-26px;top:0">3</span></p>
+
+        <div class="card anchor">
+          <span class="mk" style="left:-13px;top:44px">7</span>
+          <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th class="anchor" style="width:30px"><input type="checkbox" id="chkAll" onchange="toggleAll(this)"><span class="mk" style="left:22px;top:2px">8</span></th>
+              <th class="anchor">Competência <span class="mk" style="left:76px;top:8px">9</span></th>
+              <th class="anchor">Nome <span class="mk" style="left:42px;top:8px">10</span></th>
+              <th class="anchor">Parcela <span class="mk" style="left:56px;top:8px">11</span></th>
+              <th class="anchor">Categoria <span class="mk" style="left:66px;top:8px">12</span></th>
+              <th class="anchor">Pagamento <span class="mk" style="left:70px;top:8px">13</span></th>
+              <th class="anchor">Meio <span class="mk" style="left:38px;top:8px">14</span></th>
+              <th class="anchor num">Valor <span class="mk" style="left:48px;top:8px">15</span></th>
+              <th class="anchor">Lançamento <span class="mk" style="left:76px;top:8px">16</span></th>
+              <th class="anchor">Vencimento <span class="mk" style="left:76px;top:8px">17</span></th>
+              <th class="anchor">Status <span class="mk" style="left:48px;top:8px">18</span></th>
+              <th class="anchor">Pagamento em <span class="mk" style="left:84px;top:8px">19</span></th>
+              <th class="anchor" style="width:40px">Rat. <span class="mk" style="left:30px;top:8px">20</span></th>
+              <th class="anchor">Origem <span class="mk" style="left:50px;top:8px">21</span></th>
+              <th class="anchor" style="width:130px">Ação <span class="mk" style="left:42px;top:8px">22</span></th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          </div>
+          <div class="tblfoot">
+            <span id="count">Mostrando 0 de 0</span>
+            <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+          </div>
+        </div>
+        <p style="margin-top:10px;color:var(--muted);font-size:12px">
+          Grid <b>client-side</b>: a lista completa das despesas do usuário autenticado é carregada uma vez (EDP02 → C1) e o DataTables
+          pagina, ordena e busca no navegador (RNF05). Cada parcela de uma compra parcelada é uma linha própria. O modal <b>Filtrar</b>
+          aplica os critérios <b>em memória</b> (RT01/RT02). "Nova despesa" e os ícones de ação exigem <code>PERM_DESPESAS_MANTER</code>;
+          a tela, <code>PERM_DESPESAS_LISTAR</code>. A coluna Rateio e o ícone "Ratear" exigem <code>PERM_DESPESA_RATEAR_MULTIUSUARIO</code>
+          (plano pago — veja o botão "PERM03 rateio" na barra inferior). O grid nunca traz despesa de outro usuário nem despesa em que
+          o usuário é só co-participante do rateio (RN02, RN19).
+        </p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ 7.2 Modal Filtrar Despesas — QUADRO_DESCRITIVO_2 ============ -->
+<div class="scrim" id="mF" hidden>
+  <div class="modal">
+    <div class="modal-h"><h3 class="anchor">Filtrar Despesas <span class="mk" style="left:-24px;top:0">1</span></h3><button class="x" onclick="closeF()">×</button></div>
+    <div class="modal-b">
+      <div class="field anchor"><label>Busca</label>
+        <input id="fBusca" placeholder="Nome ou descrição">
+        <span class="hint">Filtro parcial e sem acento sobre nome e descrição.</span>
+        <span class="mk" style="left:-11px;top:22px">2</span></div>
+      <div class="grid2">
+        <div class="field anchor"><label>Competência inicial</label>
+          <input id="fCompIni" type="month">
+          <span class="mk" style="left:-11px;top:22px">3</span></div>
+        <div class="field anchor"><label>Competência final</label>
+          <input id="fCompFim" type="month">
+          <span class="mk" style="left:-11px;top:22px">4</span></div>
+      </div>
+      <div class="grid2">
+        <div class="field anchor"><label>Status de pagamento</label>
+          <select id="fStatus"><option value="">Todos</option><option value="NAO">Em aberto</option><option value="SIM">Pago</option><option value="NAO_SE_APLICA">Não se aplica</option><option value="EXCLUIDA">Excluída</option></select>
+          <span class="mk" style="left:-11px;top:22px">5</span></div>
+        <div class="field anchor"><label>Forma de pagamento</label>
+          <select id="fForma"><option value="">Todas</option><optgroup label="Contas" id="fFormaContas"></optgroup><optgroup label="Cartões" id="fFormaCartoes"></optgroup></select>
+          <span class="mk" style="left:-11px;top:22px">6</span></div>
+      </div>
+      <div class="grid2">
+        <div class="field anchor"><label>Categoria</label>
+          <select id="fCategoria"><option value="">Todas as categorias</option></select>
+          <span class="mk" style="left:-11px;top:22px">7</span></div>
+        <div class="field anchor"><label>Parcelada</label>
+          <select id="fParcelada"><option value="">Todas</option><option value="1">Sim</option><option value="0">Não</option></select>
+          <span class="mk" style="left:-11px;top:22px">8</span></div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost anchor" onclick="limparF()">Limpar <span class="mk" style="left:-11px;top:-11px">10</span></button>
+      <button class="btn primary anchor" onclick="aplicarF()">Aplicar <span class="mk" style="right:-11px;top:-11px">9</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 7.3 Modal Cadastro / Edição de Despesa — QUADRO_DESCRITIVO_3 ============ -->
+<div class="scrim" id="mD" hidden>
+  <div class="modal wide">
+    <div class="modal-h"><h3 class="anchor" id="dTitle">Nova despesa <span class="mk" style="left:-24px;top:0">1</span></h3><button class="x" onclick="closeD()">×</button></div>
+    <div class="modal-b">
+      <div class="infobox warn anchor" id="dAvisoImportada" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        <span>Esta despesa foi importada do Open Finance. A forma de pagamento e a origem não podem ser alteradas, e ela não pode ser excluída por esta tela.</span>
+        <span class="mk" style="left:-11px;top:-11px">24</span></div>
+
+      <div class="section-title anchor">Dados básicos <span class="mk" style="left:-11px;top:-2px">2</span></div>
+      <div class="field anchor"><label>Nome <span class="req">*</span></label>
+        <input id="dNome" maxlength="100" placeholder="Ex.: MERCADO, NOTEBOOK">
+        <span class="mk" style="left:-11px;top:22px">3</span></div>
+      <div class="field anchor"><label>Descrição</label>
+        <textarea id="dDescricao" maxlength="512" placeholder="Opcional"></textarea>
+        <span class="mk" style="left:-11px;top:22px">4</span></div>
+      <div class="grid2">
+        <div class="field anchor money" id="fldValor"><label id="dValorLabel">Valor <span class="req">*</span></label>
+          <input id="dValor" inputmode="decimal" placeholder="0,00" value="0,00" oninput="maskMoney(this);calcParcela()">
+          <span class="hint" id="dValorHint">Deve ser maior que zero (RN05).</span>
+          <span class="mk" style="left:-11px;top:22px">5</span></div>
+        <div class="field anchor"><label>Categoria</label>
+          <select id="dCategoria"><option value="">Sem categoria</option></select>
+          <span class="hint">Categorias de despesa ativas (SB03).</span>
+          <span class="mk" style="left:-11px;top:22px">9</span></div>
+      </div>
+      <div class="grid3">
+        <div class="field anchor"><label>Data de lançamento <span class="req">*</span></label>
+          <input id="dDtLanc" type="date" onchange="onDtLancChange()">
+          <span class="mk" style="left:-11px;top:22px">6</span></div>
+        <div class="field anchor"><label>Data de vencimento</label>
+          <input id="dDtVenc" type="date">
+          <span class="mk" style="left:-11px;top:22px">7</span></div>
+        <div class="field anchor"><label>Competência <span class="req">*</span></label>
+          <input id="dCompetencia" type="month" onchange="dCompetenciaManual=true">
+          <span class="hint">AAAA-MM (RN04).</span>
+          <span class="mk" style="left:-11px;top:22px">8</span></div>
+      </div>
+
+      <div class="section-title anchor">Forma de pagamento <span class="mk" style="left:-11px;top:-2px">10</span></div>
+      <div class="field anchor" id="fldForma"><label>Forma de pagamento <span class="req">*</span></label>
+        <div class="toggle"><button type="button" data-v="CONTA" class="on" onclick="setForma(this)">Conta à vista</button><button type="button" data-v="CARTAO" onclick="setForma(this)">Cartão de crédito</button><button type="button" data-v="DINHEIRO" onclick="setForma(this)">Dinheiro</button></div>
+        <span class="mk" style="left:-11px;top:38px">11</span></div>
+      <div class="grid2">
+        <div class="field anchor" id="fldConta"><label>Conta <span class="req">*</span></label>
+          <select id="dConta"></select>
+          <span class="mk" style="left:-11px;top:22px">12</span></div>
+        <div class="field anchor" id="fldCartao" hidden><label>Cartão <span class="req">*</span></label>
+          <select id="dCartao"></select>
+          <span class="mk" style="left:-11px;top:22px">13</span></div>
+        <div class="field anchor" id="fldContaCarteira" hidden><label>Conta (Carteira) <span class="req">*</span></label>
+          <select id="dContaCarteira"></select>
+          <span class="hint">Apenas contas do tipo Carteira. Sem uma, ver MSG18.</span>
+          <span class="mk" style="left:-11px;top:22px">14</span></div>
+        <div class="field anchor" id="fldMeio"><label>Meio de pagamento</label>
+          <select id="dMeio"><option value="DEBITO">Débito</option><option value="PIX">PIX</option><option value="BOLETO">Boleto</option><option value="TRANSFERENCIA">Transferência</option></select>
+          <span class="mk" style="left:-11px;top:22px">15</span></div>
+      </div>
+      <div class="grid2">
+        <div class="field anchor" id="fldJaPaguei"><label>Já paguei</label>
+          <div class="toggle"><button type="button" data-v="1" onclick="setPago(this)">Sim</button><button type="button" data-v="0" class="on" onclick="setPago(this)">Não</button></div>
+          <span class="mk" style="left:-11px;top:38px">16</span></div>
+        <div class="field anchor" id="fldDtPagto" hidden><label>Data de pagamento <span class="req">*</span></label>
+          <input id="dDtPagto" type="date">
+          <span class="mk" style="left:-11px;top:22px">17</span></div>
+      </div>
+
+      <div id="secParcelamento">
+        <div class="section-title anchor">Parcelamento <span class="mk" style="left:-11px;top:-2px">18</span></div>
+        <div class="field anchor"><label>Parcelada</label>
+          <div class="toggle"><button type="button" data-v="1" onclick="setParcelada(this)">Sim</button><button type="button" data-v="0" class="on" onclick="setParcelada(this)">Não</button></div>
+          <span class="mk" style="left:-11px;top:38px">19</span></div>
+        <div class="grid2" id="fldParcelas" hidden>
+          <div class="field anchor"><label>Número de parcelas <span class="req">*</span></label>
+            <input id="dQtdParcelas" type="number" min="2" max="72" value="2" oninput="calcParcela()">
+            <span class="mk" style="left:-11px;top:22px">20</span></div>
+          <div class="field anchor"><label>Valor da parcela (calculado)</label>
+            <div class="readout" id="dValorParcela">R$ 0,00</div>
+            <span class="hint">A última parcela pode diferir alguns centavos (RN12).</span>
+            <span class="mk" style="left:-11px;top:22px">21</span></div>
+        </div>
+      </div>
+
+      <div id="secRateio">
+        <div class="section-title anchor">Rateio <span class="mk" style="left:-11px;top:-2px">22</span></div>
+        <div class="anchor">
+          <div class="rateio-head"><span>Usuário</span><span>Fatia</span><span>Acerto</span><span></span></div>
+          <div id="rateioRows"></div>
+          <span class="mk" style="left:-11px;top:6px">23</span>
+        </div>
+        <div class="rateio-add">
+          <input id="dRateioBusca" list="dlUsuarios" placeholder="Buscar usuário por nome ou e-mail (SB06)…">
+          <datalist id="dlUsuarios"></datalist>
+          <button class="btn" type="button" onclick="addRateioRow()">Adicionar</button>
+        </div>
+        <div class="cota">Minha cota (o que sobra do rateio) <b id="dMinhaCota">R$ 0,00</b></div>
+        <p class="hint" id="dRateioParceladaHint" hidden style="margin-top:6px">Esta despesa é parcelada: o rateio informado será replicado em cada parcela da série (RN18).</p>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn danger anchor" onclick="closeD()">Cancelar <span class="mk" style="left:-11px;top:-11px">26</span></button>
+      <button class="btn primary anchor" onclick="saveD()">Salvar <span class="mk" style="right:-11px;top:-11px">25</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 7.4 Modal Registrar Pagamento — QUADRO_DESCRITIVO_4 ============ -->
+<div class="scrim" id="mP" hidden>
+  <div class="modal">
+    <div class="modal-h"><h3 class="anchor" id="pTitle">Registrar pagamento <span class="mk" style="left:-24px;top:0">1</span></h3><button class="x" onclick="closeP()">×</button></div>
+    <div class="modal-b">
+      <div class="field anchor"><label>Valor da despesa</label>
+        <div class="readout" id="pValor">R$ 0,00</div>
+        <span class="mk" style="left:-11px;top:22px">2</span></div>
+      <div class="field anchor"><label>Data de pagamento <span class="req">*</span></label>
+        <input id="pDtPagto" type="date">
+        <span class="mk" style="left:-11px;top:22px">3</span></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn danger anchor" onclick="closeP()">Cancelar <span class="mk" style="left:-11px;top:-11px">5</span></button>
+      <button class="btn primary anchor" onclick="saveP()">Registrar <span class="mk" style="right:-11px;top:-11px">4</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 7.5 Modal Confirmar Pagamento em Lote — QUADRO_DESCRITIVO_5 ============ -->
+<div class="scrim" id="mL" hidden>
+  <div class="modal">
+    <div class="modal-h"><h3 class="anchor">Registrar pagamento em lote <span class="mk" style="left:-24px;top:0">1</span></h3><button class="x" onclick="closeL()">×</button></div>
+    <div class="modal-b">
+      <div class="field anchor"><label>Resumo da seleção</label>
+        <div class="readout" id="lResumo" style="text-align:left;font-weight:400"></div>
+        <span class="mk" style="left:-11px;top:22px">2</span></div>
+      <div class="field anchor"><label>Data de pagamento <span class="req">*</span></label>
+        <input id="lDtPagto" type="date">
+        <span class="mk" style="left:-11px;top:22px">3</span></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn danger anchor" onclick="closeL()">Cancelar <span class="mk" style="left:-11px;top:-11px">5</span></button>
+      <button class="btn primary anchor" onclick="saveL()">Registrar <span class="mk" style="right:-11px;top:-11px">4</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="proto-tag">2.06 · Manter Despesa — protótipo</div>
+<div class="legend">
+  <h4>Marcadores</h4>
+  <p style="color:var(--muted);margin-bottom:6px">Os números <span style="color:var(--marker);font-weight:700">●</span> ligam a tela aos itens do QUADRO_DESCRITIVO da Seção 7 do documento.</p>
+  <p style="color:var(--muted)">Tela "Despesas" (7.1) e os quatro modais 7.2 (Filtrar), 7.3 (Cadastro/Edição), 7.4 (Registrar pagamento) e 7.5 (Pagamento em lote). Alterne na barra inferior. O botão "PERM03 rateio" simula ligar/desligar a permissão de plano pago.</p>
+</div>
+<div class="proto-bar">
+  <button data-v="md-list" class="on" onclick="go(this)">7.1 Despesas</button>
+  <button data-v="md-filtro" onclick="go(this)">7.2 Modal Filtrar</button>
+  <button data-v="md-form-nova" onclick="go(this)">7.3 Modal Nova despesa</button>
+  <button data-v="md-form-edit" onclick="go(this)">7.3 Modal Editar (rateada)</button>
+  <button data-v="md-pagto" onclick="go(this)">7.4 Modal Pagamento</button>
+  <button data-v="md-lote" onclick="go(this)">7.5 Modal Lote</button>
+  <button id="btnPerm3" class="perm" onclick="togglePerm3()">PERM03 rateio: ON</button>
+  <button onclick="document.body.classList.toggle('no-mk')" style="margin-left:6px">◉ marcadores</button>
+  <button onclick="document.body.classList.toggle('show-legend')">? legenda</button>
+</div>
+
+<script>
+  // ---- dados de exemplo (só protótipo) ----
+  // Contas: no sistema real vêm de GET /contas/opcoes (módulo 06). {id, desc, tipo}
+  const contas = [
+    {id:1, desc:"Nubank Conta Corrente", tipo:"CORRENTE"},
+    {id:2, desc:"Itaú Poupança", tipo:"POUPANCA"},
+    {id:3, desc:"Carteira / Dinheiro em espécie", tipo:"CARTEIRA"},
+  ];
+  // Cartões: GET /cartoes/opcoes (módulo 07). {id, desc}
+  const cartoes = [
+    {id:1, desc:"Nubank Mastercard Black"},
+    {id:2, desc:"Itaú Click Visa"},
+  ];
+  // Categorias: GET /categorias/opcoes?aplicaA=DESPESA (módulo 04). {id, nome}
+  const categorias = [
+    {id:1, nome:"Mercado"},
+    {id:2, nome:"Moradia"},
+    {id:3, nome:"Transporte"},
+    {id:4, nome:"Lazer"},
+    {id:5, nome:"Saúde"},
+    {id:6, nome:"Compras"},
+  ];
+  // Usuários para o rateio: GET /despesas/usuarios-rateio?termo= (SB06). {id, nome, email}
+  const usuariosRateio = [
+    {id:2, nome:"Maria Silva", email:"maria.silva@example.com"},
+    {id:3, nome:"João Souza", email:"joao.souza@example.com"},
+    {id:4, nome:"Ana Pereira", email:"ana.pereira@example.com"},
+  ];
+
+  // despesa: {id, competencia, nome, descricao, valor, valorTotalCompra, parcelada,
+  //           nroParcela, qtdParcelas, idParcelaPai, meioPagamento, statusPagamento,
+  //           dataLancamento, dataVencimento, dataPagamento, origem, contaId, cartaoId,
+  //           categoriaId, rateio:[{usuarioId,nome,valor,statusAcerto,dataAcerto}], excluido}
+  let despesas = [
+    // compra parcelada em 6x no cartão (id 1 = despesa-mãe)
+    {id:1, competencia:"2026-07", nome:"NOTEBOOK", descricao:"Notebook para trabalho", valor:500.00, valorTotalCompra:3000.00, parcelada:true, nroParcela:1, qtdParcelas:6, idParcelaPai:null, meioPagamento:"CREDITO", statusPagamento:"NAO_SE_APLICA", dataLancamento:"2026-07-05", dataVencimento:"2026-07-10", dataPagamento:null, origem:"MANUAL", contaId:null, cartaoId:1, categoriaId:6, rateio:[], excluido:false},
+    {id:2, competencia:"2026-08", nome:"NOTEBOOK", descricao:"Notebook para trabalho", valor:500.00, valorTotalCompra:3000.00, parcelada:true, nroParcela:2, qtdParcelas:6, idParcelaPai:1, meioPagamento:"CREDITO", statusPagamento:"NAO_SE_APLICA", dataLancamento:"2026-07-05", dataVencimento:"2026-08-10", dataPagamento:null, origem:"MANUAL", contaId:null, cartaoId:1, categoriaId:6, rateio:[], excluido:false},
+    {id:3, competencia:"2026-09", nome:"NOTEBOOK", descricao:"Notebook para trabalho", valor:500.00, valorTotalCompra:3000.00, parcelada:true, nroParcela:3, qtdParcelas:6, idParcelaPai:1, meioPagamento:"CREDITO", statusPagamento:"NAO_SE_APLICA", dataLancamento:"2026-07-05", dataVencimento:"2026-09-10", dataPagamento:null, origem:"MANUAL", contaId:null, cartaoId:1, categoriaId:6, rateio:[], excluido:false},
+    {id:4, competencia:"2026-10", nome:"NOTEBOOK", descricao:"Notebook para trabalho", valor:500.00, valorTotalCompra:3000.00, parcelada:true, nroParcela:4, qtdParcelas:6, idParcelaPai:1, meioPagamento:"CREDITO", statusPagamento:"NAO_SE_APLICA", dataLancamento:"2026-07-05", dataVencimento:"2026-10-10", dataPagamento:null, origem:"MANUAL", contaId:null, cartaoId:1, categoriaId:6, rateio:[], excluido:false},
+    {id:5, competencia:"2026-11", nome:"NOTEBOOK", descricao:"Notebook para trabalho", valor:500.00, valorTotalCompra:3000.00, parcelada:true, nroParcela:5, qtdParcelas:6, idParcelaPai:1, meioPagamento:"CREDITO", statusPagamento:"NAO_SE_APLICA", dataLancamento:"2026-07-05", dataVencimento:"2026-11-10", dataPagamento:null, origem:"MANUAL", contaId:null, cartaoId:1, categoriaId:6, rateio:[], excluido:false},
+    {id:6, competencia:"2026-12", nome:"NOTEBOOK", descricao:"Notebook para trabalho", valor:500.00, valorTotalCompra:3000.00, parcelada:true, nroParcela:6, qtdParcelas:6, idParcelaPai:1, meioPagamento:"CREDITO", statusPagamento:"NAO_SE_APLICA", dataLancamento:"2026-07-05", dataVencimento:"2026-12-10", dataPagamento:null, origem:"MANUAL", contaId:null, cartaoId:1, categoriaId:6, rateio:[], excluido:false},
+    // à vista, já paga
+    {id:7, competencia:"2026-09", nome:"MERCADO", descricao:"Compras da semana", valor:285.40, valorTotalCompra:null, parcelada:false, nroParcela:null, qtdParcelas:null, idParcelaPai:null, meioPagamento:"DEBITO", statusPagamento:"SIM", dataLancamento:"2026-09-03", dataVencimento:null, dataPagamento:"2026-09-03", origem:"MANUAL", contaId:1, cartaoId:null, categoriaId:1, rateio:[], excluido:false},
+    // boleto, em aberto
+    {id:8, competencia:"2026-09", nome:"ALUGUEL", descricao:"", valor:1800.00, valorTotalCompra:null, parcelada:false, nroParcela:null, qtdParcelas:null, idParcelaPai:null, meioPagamento:"BOLETO", statusPagamento:"NAO", dataLancamento:"2026-09-01", dataVencimento:"2026-09-10", dataPagamento:null, origem:"MANUAL", contaId:1, cartaoId:null, categoriaId:2, rateio:[], excluido:false},
+    // rateada com Maria
+    {id:9, competencia:"2026-09", nome:"JANTAR", descricao:"Jantar de aniversário", valor:200.00, valorTotalCompra:null, parcelada:false, nroParcela:null, qtdParcelas:null, idParcelaPai:null, meioPagamento:"DEBITO", statusPagamento:"SIM", dataLancamento:"2026-09-05", dataVencimento:null, dataPagamento:"2026-09-05", origem:"MANUAL", contaId:1, cartaoId:null, categoriaId:4, rateio:[{usuarioId:2, nome:"Maria Silva", valor:100.00, statusAcerto:"NAO", dataAcerto:null}], excluido:false},
+    // dinheiro (conta Carteira)
+    {id:10, competencia:"2026-09", nome:"UBER", descricao:"", valor:32.50, valorTotalCompra:null, parcelada:false, nroParcela:null, qtdParcelas:null, idParcelaPai:null, meioPagamento:"DINHEIRO", statusPagamento:"SIM", dataLancamento:"2026-09-08", dataVencimento:null, dataPagamento:"2026-09-08", origem:"MANUAL", contaId:3, cartaoId:null, categoriaId:3, rateio:[], excluido:false},
+    // importada do Open Finance
+    {id:11, competencia:"2026-09", nome:"SUPERMERCADO XYZ", descricao:"Importado via Open Finance", valor:145.90, valorTotalCompra:null, parcelada:false, nroParcela:null, qtdParcelas:null, idParcelaPai:null, meioPagamento:"DEBITO", statusPagamento:"NAO", dataLancamento:"2026-09-09", dataVencimento:null, dataPagamento:null, origem:"OPEN_FINANCE", contaId:1, cartaoId:null, categoriaId:1, rateio:[], excluido:false},
+    // excluída
+    {id:12, competencia:"2026-08", nome:"ASSINATURA STREAMING", descricao:"", valor:39.90, valorTotalCompra:null, parcelada:false, nroParcela:null, qtdParcelas:null, idParcelaPai:null, meioPagamento:"DEBITO", statusPagamento:"SIM", dataLancamento:"2026-08-15", dataVencimento:null, dataPagamento:"2026-08-15", origem:"MANUAL", contaId:1, cartaoId:null, categoriaId:4, rateio:[], excluido:true},
+  ];
+
+  const $ = s => document.querySelector(s);
+  const HOJE = "2026-09-11";
+  const MEIO = {DEBITO:"Débito", CREDITO:"Crédito", PIX:"PIX", BOLETO:"Boleto", TRANSFERENCIA:"Transferência", DINHEIRO:"Dinheiro"};
+  const ORIGEM = {MANUAL:["Manual","manual"], OPEN_FINANCE:["Open Finance","openfinance"], IMPORTACAO:["Importação","importacao"]};
+  let filtro = {busca:"",compIni:"",compFim:"",status:"",forma:"",categoria:"",parcelada:""};
+  let selecionados = new Set();
+  let perm3 = true;                                   // simula DESPESA_RATEAR_MULTIUSUARIO efetiva
+  let editId = null, pagtoId = null, dCompetenciaManual = false;
+  let dForma = "CONTA", dPago = 0, dParcelada = 0, dRateio = [];
+  const norm = s => (s||"").normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const contaNome = id => (contas.find(c=>c.id===id)||{}).desc || "—";
+  const cartaoNome = id => (cartoes.find(c=>c.id===id)||{}).desc || "—";
+  const categoriaNome = id => (categorias.find(c=>c.id===id)||{}).nome || "";
+
+  function fmtMoeda(v){ try { return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v); } catch(e){ return 'R$ '+Number(v).toFixed(2); } }
+  function fmtData(iso){ if(!iso) return ""; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+  function fmtComp(c){ if(!c) return ""; const [y,m]=c.split('-'); return `${m}/${y}`; }
+  function maskMoney(el){
+    let d = el.value.replace(/\D/g,''); d = d.replace(/^0+(?=\d)/,'');
+    while(d.length < 3) d = '0'+d;
+    const int = d.slice(0,-2).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+    el.value = int+','+d.slice(-2);
+  }
+  const parseMoney = s => { const n = Number(String(s).replace(/\./g,'').replace(',', '.').replace(/[^0-9.]/g,'')); return isNaN(n)?0:n; };
+  const addMeses = (iso, n) => { const [y,m,d]=iso.split('-').map(Number); const dt=new Date(Date.UTC(y,m-1+n,d)); return dt.toISOString().slice(0,10); };
+  const addMesesComp = (comp, n) => { const [y,m]=comp.split('-').map(Number); const total=(y*12+(m-1))+n; const ny=Math.floor(total/12), nm=(total%12)+1; return `${ny}-${String(nm).padStart(2,'0')}`; };
+
+  function statusBadge(d){
+    if(d.excluido) return `<span class="badge del">Excluída</span>`;
+    if(d.statusPagamento==="SIM") return `<span class="badge pago">Pago</span>`;
+    if(d.statusPagamento==="NAO_SE_APLICA") return `<span class="badge nsa">N/A</span>`;
+    return `<span class="badge aberto">Em aberto</span>`;
+  }
+  function origemBadge(d){ const [lbl,cls]=ORIGEM[d.origem]||["Manual","manual"]; return `<span class="badge ${cls}">${lbl}</span>`; }
+  function pagamentoCelula(d){
+    if(d.cartaoId) return `<span class="pgmeio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>${cartaoNome(d.cartaoId)}</span>`;
+    return `<span class="pgmeio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>${contaNome(d.contaId)}</span>`;
+  }
+
+  function passaFiltro(d){
+    const f = filtro;
+    if(f.busca){ const q = norm(f.busca); if(!norm(d.nome).includes(q) && !norm(d.descricao).includes(q)) return false; }
+    if(f.compIni && d.competencia < f.compIni) return false;
+    if(f.compFim && d.competencia > f.compFim) return false;
+    if(f.status){
+      if(f.status==="EXCLUIDA" && !d.excluido) return false;
+      if(f.status!=="EXCLUIDA" && (d.excluido || d.statusPagamento!==f.status)) return false;
+    }
+    if(f.forma){
+      const [tipo,idStr] = f.forma.split(':'); const id = +idStr;
+      if(tipo==='C' && d.contaId!==id) return false;
+      if(tipo==='K' && d.cartaoId!==id) return false;
+    }
+    if(f.categoria && d.categoriaId!==+f.categoria) return false;
+    if(f.parcelada==="1" && !d.parcelada) return false;
+    if(f.parcelada==="0" && d.parcelada) return false;
+    return true;
+  }
+
+  function render(){
+    const tb = $("#rows"); tb.innerHTML = "";
+    const list = despesas.filter(passaFiltro).slice()
+      .sort((a,b)=> b.competencia.localeCompare(a.competencia) || (a.dataVencimento||'9999').localeCompare(b.dataVencimento||'9999'));
+    if(!list.length){
+      tb.innerHTML = `<tr><td colspan="15"><div class="empty">MSG08 — Nenhuma despesa encontrada com os filtros informados.</div></td></tr>`;
+    } else list.forEach(d => {
+      const tr = document.createElement('tr');
+      tr.className = d.excluido ? 'excluida' : '';
+      const podeSelecionar = !d.excluido && d.statusPagamento==="NAO";
+      const podePagar = !d.excluido && d.statusPagamento==="NAO";
+      const podeExcluir = !d.excluido && d.origem==="MANUAL";
+      const podeRatear = perm3 && !d.excluido;
+      tr.innerHTML = `
+        <td><input type="checkbox" data-id="${d.id}" ${podeSelecionar?'':'disabled'} ${selecionados.has(d.id)?'checked':''} onchange="toggleSel(${d.id},this.checked)"></td>
+        <td>${fmtComp(d.competencia)}</td>
+        <td>${d.nome}</td>
+        <td>${d.parcelada?`${d.nroParcela}/${d.qtdParcelas}`:''}</td>
+        <td>${d.categoriaId?`<span class="badge cat">${categoriaNome(d.categoriaId)}</span>`:''}</td>
+        <td>${pagamentoCelula(d)}</td>
+        <td>${d.meioPagamento?`<span class="badge meio">${MEIO[d.meioPagamento]}</span>`:''}</td>
+        <td class="num">${fmtMoeda(d.valor)}</td>
+        <td>${fmtData(d.dataLancamento)}</td>
+        <td>${fmtData(d.dataVencimento)}</td>
+        <td>${statusBadge(d)}</td>
+        <td>${fmtData(d.dataPagamento)}</td>
+        <td>${(perm3 && d.rateio.length)?`<svg class="rateioicon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" title="Dividida com ${d.rateio.length} pessoa(s)"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`:''}</td>
+        <td>${origemBadge(d)}</td>
+        <td><div class="rowact">
+          <button class="iconbtn" title="Editar despesa" aria-label="Editar despesa" onclick="openD(${d.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L18 10l-4-4L4 16z"/><path d="M13 5l4 4"/></svg></button>
+          ${podePagar?`<button class="iconbtn" title="Registrar pagamento" aria-label="Registrar pagamento" onclick="openP(${d.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg></button>`:''}
+          ${podeRatear?`<button class="iconbtn" title="Dividir despesa" aria-label="Dividir despesa" onclick="openD(${d.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></button>`:''}
+          ${podeExcluir?`<button class="iconbtn" title="Excluir despesa" aria-label="Excluir despesa" onclick="excluir(${d.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>`:''}
+        </div></td>`;
+      tb.appendChild(tr);
+    });
+    $("#count").textContent = `Mostrando ${list.length} de ${despesas.length}`;
+    $("#btnLote").disabled = selecionados.size===0;
+  }
+
+  // ---- combos ----
+  function fillCombos(){
+    const contasAVista = contas.filter(c=>c.tipo!=="CARTEIRA");
+    const contasCarteira = contas.filter(c=>c.tipo==="CARTEIRA");
+    $("#dConta").innerHTML = contasAVista.map(c=>`<option value="${c.id}">${c.desc}</option>`).join('');
+    $("#dContaCarteira").innerHTML = contasCarteira.map(c=>`<option value="${c.id}">${c.desc}</option>`).join('');
+    $("#dCartao").innerHTML = cartoes.map(c=>`<option value="${c.id}">${c.desc}</option>`).join('');
+    $("#dCategoria").insertAdjacentHTML('beforeend', categorias.map(c=>`<option value="${c.id}">${c.nome}</option>`).join(''));
+    $("#fFormaContas").innerHTML = contas.map(c=>`<option value="C:${c.id}">${c.desc}</option>`).join('');
+    $("#fFormaCartoes").innerHTML = cartoes.map(c=>`<option value="K:${c.id}">${c.desc}</option>`).join('');
+    $("#fCategoria").insertAdjacentHTML('beforeend', categorias.map(c=>`<option value="${c.id}">${c.nome}</option>`).join(''));
+    $("#dlUsuarios").innerHTML = usuariosRateio.map(u=>`<option value="${u.nome}">`).join('');
+  }
+
+  // ---- seleção / lote ----
+  function toggleSel(id, checked){ if(checked) selecionados.add(id); else selecionados.delete(id); $("#btnLote").disabled = selecionados.size===0; }
+  function toggleAll(cb){
+    document.querySelectorAll('#rows input[type=checkbox]:not(:disabled)').forEach(el=>{ el.checked = cb.checked; toggleSel(+el.dataset.id, cb.checked); });
+  }
+
+  // ---- filtro (7.2) ----
+  function openF(){
+    $("#fBusca").value=filtro.busca; $("#fCompIni").value=filtro.compIni; $("#fCompFim").value=filtro.compFim;
+    $("#fStatus").value=filtro.status; $("#fForma").value=filtro.forma; $("#fCategoria").value=filtro.categoria; $("#fParcelada").value=filtro.parcelada;
+    $("#mF").hidden=false;
+  }
+  function closeF(){ $("#mF").hidden=true; }
+  function aplicarF(){
+    filtro = {busca:$("#fBusca").value.trim(), compIni:$("#fCompIni").value, compFim:$("#fCompFim").value,
+      status:$("#fStatus").value, forma:$("#fForma").value, categoria:$("#fCategoria").value, parcelada:$("#fParcelada").value};
+    closeF(); render();
+  }
+  function limparF(){ $("#fBusca").value=""; $("#fCompIni").value=""; $("#fCompFim").value=""; $("#fStatus").value=""; $("#fForma").value=""; $("#fCategoria").value=""; $("#fParcelada").value=""; }
+
+  // ---- cadastro/edição de despesa (7.3) ----
+  function setForma(btn){
+    dForma = btn.dataset.v;
+    btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b===btn));
+    $("#fldConta").hidden = dForma!=="CONTA";
+    $("#fldCartao").hidden = dForma!=="CARTAO";
+    $("#fldContaCarteira").hidden = dForma!=="DINHEIRO";
+    $("#fldMeio").hidden = dForma!=="CONTA";
+    $("#fldJaPaguei").hidden = dForma==="CARTAO";
+    $("#fldDtPagto").hidden = dForma==="CARTAO" || dPago!==1;
+    if(dForma==="DINHEIRO"){ setPagoValor(1); }
+  }
+  function setPago(btn){ setPagoValor(+btn.dataset.v); btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.v===dPago)); }
+  function setPagoValor(v){ dPago=v; $("#fldDtPagto").hidden = dForma==="CARTAO" || dPago!==1; if(dPago===1 && !$("#dDtPagto").value) $("#dDtPagto").value = HOJE; }
+  function setParcelada(btn){
+    dParcelada = +btn.dataset.v;
+    btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.v===dParcelada));
+    $("#fldParcelas").hidden = dParcelada!==1;
+    $("#dValorLabel").innerHTML = dParcelada===1 ? 'Valor total da compra <span class="req">*</span>' : 'Valor <span class="req">*</span>';
+    $("#dRateioParceladaHint").hidden = dParcelada!==1;
+    calcParcela();
+  }
+  function calcParcela(){
+    if(dParcelada!==1){ $("#dValorParcela").textContent = fmtMoeda(0); recalcCota(); return; }
+    const total = parseMoney($("#dValor").value); const n = Math.max(2, +$("#dQtdParcelas").value || 2);
+    const base = Math.floor((total/n)*100)/100;
+    $("#dValorParcela").textContent = `${fmtMoeda(base)}  (última: ${fmtMoeda(total - base*(n-1))})`;
+    recalcCota();
+  }
+  function onDtLancChange(){
+    if(!dCompetenciaManual){ $("#dCompetencia").value = $("#dDtLanc").value.slice(0,7); }
+  }
+
+  function renderRateio(){
+    const box = $("#rateioRows"); box.innerHTML = "";
+    dRateio.forEach((r, idx) => {
+      const row = document.createElement('div'); row.className = 'rateio-row';
+      row.innerHTML = `<span>${r.nome}</span>
+        <input class="num" value="${r.valor.toFixed(2).replace('.', ',')}" oninput="onRateioValor(${idx}, this)">
+        <span>${r.statusAcerto==='SIM'
+          ? `<span class="badge pago" style="cursor:pointer" onclick="toggleAcerto(${idx})">Acertado</span>`
+          : `<span class="badge aberto" style="cursor:pointer" onclick="toggleAcerto(${idx})">Pendente</span>`}</span>
+        <button class="iconbtn" title="Remover" onclick="removeRateioRow(${idx})">×</button>`;
+      box.appendChild(row);
+    });
+    recalcCota();
+  }
+  function onRateioValor(idx, el){ dRateio[idx].valor = parseMoney(el.value); recalcCota(); }
+  function toggleAcerto(idx){
+    const r = dRateio[idx];
+    r.statusAcerto = r.statusAcerto==='SIM' ? 'NAO' : 'SIM';
+    r.dataAcerto = r.statusAcerto==='SIM' ? HOJE : null;
+    renderRateio();
+  }
+  function addRateioRow(){
+    const nome = $("#dRateioBusca").value.trim();
+    const u = usuariosRateio.find(x=>norm(x.nome)===norm(nome));
+    if(!u){ toast("MSG19 — Um dos usuários do rateio não foi encontrado ou está inativo."); return; }
+    if(dRateio.some(r=>r.usuarioId===u.id)){ toast("Este usuário já está no rateio."); return; }
+    dRateio.push({usuarioId:u.id, nome:u.nome, valor:0, statusAcerto:'NAO', dataAcerto:null});
+    $("#dRateioBusca").value = "";
+    renderRateio();
+  }
+  function removeRateioRow(idx){ dRateio.splice(idx,1); renderRateio(); }
+  function recalcCota(){
+    const valor = dParcelada===1 ? (Math.floor((parseMoney($("#dValor").value)/Math.max(2,+$("#dQtdParcelas").value||2))*100)/100) : parseMoney($("#dValor").value);
+    const soma = dRateio.reduce((s,r)=>s+r.valor,0);
+    $("#dMinhaCota").textContent = fmtMoeda(valor - soma);
+    $("#dMinhaCota").style.color = soma > valor ? 'var(--neg)' : '';
+  }
+
+  function openD(id){
+    editId = id || null;
+    document.querySelectorAll('#mD .field').forEach(f=>f.classList.remove('invalid'));
+    dCompetenciaManual = false;
+    const ehParcela = editId && despesas.some(x => x.id===editId && (x.idParcelaPai!==null || despesas.some(y=>y.idParcelaPai===x.id)));
+    $("#secParcelamento").hidden = !!ehParcela;
+    $("#secRateio").hidden = !perm3;
+
+    if(editId){
+      const d = despesas.find(x=>x.id===editId);
+      $("#dTitle").firstChild.textContent = ehParcela ? `Editar despesa — parcela ${d.nroParcela}/${d.qtdParcelas} ` : "Editar despesa ";
+      $("#dNome").value = d.nome; $("#dDescricao").value = d.descricao||"";
+      $("#dValor").value = d.valor.toFixed(2).replace('.', ','); maskMoney($("#dValor"));
+      $("#dDtLanc").value = d.dataLancamento; $("#dDtVenc").value = d.dataVencimento||""; $("#dCompetencia").value = d.competencia;
+      dCompetenciaManual = true;
+      $("#dCategoria").value = d.categoriaId||"";
+      const forma = d.cartaoId ? "CARTAO" : (contas.find(c=>c.id===d.contaId)||{}).tipo==="CARTEIRA" ? "DINHEIRO" : "CONTA";
+      $(`#fldForma .toggle button[data-v="${forma}"]`).click();
+      if(forma==="CONTA") $("#dConta").value = d.contaId;
+      if(forma==="CARTAO") $("#dCartao").value = d.cartaoId;
+      if(forma==="DINHEIRO") $("#dContaCarteira").value = d.contaId;
+      $("#dMeio").value = d.meioPagamento==="CREDITO"||d.meioPagamento==="DINHEIRO" ? "DEBITO" : d.meioPagamento;
+      const jaPago = d.statusPagamento==="SIM" ? 1 : 0;
+      $(`#fldJaPaguei .toggle button[data-v="${jaPago}"]`).click();
+      $("#dDtPagto").value = d.dataPagamento || HOJE;
+      dRateio = d.rateio.map(r=>({...r}));
+      renderRateio();
+      const importada = d.origem !== "MANUAL";
+      $("#dAvisoImportada").hidden = !importada;
+      document.querySelectorAll("#fldForma .toggle button").forEach(b=>b.disabled = importada);
+      $("#dConta").disabled = importada; $("#dCartao").disabled = importada; $("#dContaCarteira").disabled = importada;
+    } else {
+      $("#dTitle").firstChild.textContent = "Nova despesa ";
+      $("#dNome").value=""; $("#dDescricao").value=""; $("#dValor").value="0,00";
+      $("#dDtLanc").value = HOJE; $("#dDtVenc").value=""; $("#dCompetencia").value = HOJE.slice(0,7);
+      $("#dCategoria").value = "";
+      $(`#fldForma .toggle button[data-v="CONTA"]`).click();
+      $("#dConta").value = contas.find(c=>c.tipo!=="CARTEIRA").id;
+      $("#dMeio").value = "DEBITO";
+      $(`#fldJaPaguei .toggle button[data-v="0"]`).click();
+      $("#dDtPagto").value = HOJE;
+      $(`#secParcelamento .toggle button[data-v="0"]`).click();
+      $("#dQtdParcelas").value = 2;
+      dRateio = []; renderRateio();
+      $("#dAvisoImportada").hidden = true;
+      document.querySelectorAll("#fldForma .toggle button").forEach(b=>b.disabled = false);
+      $("#dConta").disabled = false; $("#dCartao").disabled = false; $("#dContaCarteira").disabled = false;
+    }
+    calcParcela();
+    $("#mD").hidden=false;
+  }
+  function closeD(){ $("#mD").hidden=true; }
+
+  function saveD(){
+    document.querySelectorAll('#mD .field').forEach(f=>f.classList.remove('invalid'));
+    if(!$("#dNome").value.trim()){ toast("MSG02 — O campo Nome é obrigatório."); return; }
+    if(!$("#dDtLanc").value){ toast("MSG02 — O campo Data de lançamento é obrigatório."); return; }
+    if(!$("#dCompetencia").value){ toast("MSG02 — O campo Competência é obrigatório."); return; }
+    const valorInformado = parseMoney($("#dValor").value);
+    if(valorInformado <= 0){ $("#fldValor").classList.add('invalid'); toast("MSG03 — Informe um valor maior que zero."); return; }
+    if(dForma==="CONTA" && !$("#dConta").value){ toast("MSG12 — A conta selecionada não está disponível."); return; }
+    if(dForma==="CARTAO" && !$("#dCartao").value){ toast("MSG12 — O cartão selecionado não está disponível."); return; }
+    if(dForma==="DINHEIRO" && !$("#dContaCarteira").value){ toast("MSG18 — Você ainda não tem uma conta do tipo Carteira."); return; }
+    if(dParcelada===1 && (+$("#dQtdParcelas").value < 2 || +$("#dQtdParcelas").value > 72)){ toast("MSG13 — O número de parcelas deve ser um inteiro entre 2 e 72."); return; }
+    const valorBase = dParcelada===1 ? Math.floor((valorInformado/+$("#dQtdParcelas").value)*100)/100 : valorInformado;
+    const somaRateio = dRateio.reduce((s,r)=>s+r.valor,0);
+    if(perm3 && somaRateio > valorBase){ toast(`MSG17 — A soma das fatias (${fmtMoeda(somaRateio)}) não pode ser maior que o valor da despesa (${fmtMoeda(valorBase)}).`); return; }
+    if(dPago===1 && !$("#dDtPagto").value){ toast("MSG09 — Informe a data de pagamento para marcar a despesa como paga."); return; }
+
+    const meio = dForma==="CARTAO" ? "CREDITO" : dForma==="DINHEIRO" ? "DINHEIRO" : $("#dMeio").value;
+    const status = dForma==="CARTAO" ? "NAO_SE_APLICA" : (dPago===1 ? "SIM" : "NAO");
+    const contaId = dForma==="CONTA" ? +$("#dConta").value : (dForma==="DINHEIRO" ? +$("#dContaCarteira").value : null);
+    const cartaoId = dForma==="CARTAO" ? +$("#dCartao").value : null;
+
+    if(editId){
+      const d = despesas.find(x=>x.id===editId);
+      d.nome=$("#dNome").value.trim(); d.descricao=$("#dDescricao").value.trim();
+      d.valor=valorBase; d.dataLancamento=$("#dDtLanc").value; d.dataVencimento=$("#dDtVenc").value||null;
+      d.competencia=$("#dCompetencia").value; d.categoriaId=$("#dCategoria").value?+$("#dCategoria").value:null;
+      if(d.origem==="MANUAL"){ d.meioPagamento=meio; d.contaId=contaId; d.cartaoId=cartaoId; }
+      d.statusPagamento=status; d.dataPagamento = status==="SIM" ? $("#dDtPagto").value : null;
+      if(perm3) d.rateio = dRateio.map(r=>({...r}));
+      toast("MSG04 — Despesa atualizada com sucesso.");
+      closeD(); render(); return;
+    }
+
+    const proximoId = Math.max(...despesas.map(x=>x.id), 0) + 1;
+    const base = {
+      nome:$("#dNome").value.trim(), descricao:$("#dDescricao").value.trim(),
+      dataLancamento:$("#dDtLanc").value, categoriaId:$("#dCategoria").value?+$("#dCategoria").value:null,
+      meioPagamento:meio, contaId, cartaoId, origem:"MANUAL", excluido:false,
+    };
+    if(dParcelada!==1){
+      despesas.push({...base, id:proximoId, competencia:$("#dCompetencia").value, valor:valorBase, valorTotalCompra:null,
+        parcelada:false, nroParcela:null, qtdParcelas:null, idParcelaPai:null,
+        dataVencimento:$("#dDtVenc").value||null, dataPagamento: status==="SIM" ? $("#dDtPagto").value : null,
+        statusPagamento:status, rateio: perm3 ? dRateio.map(r=>({...r})) : []});
+      toast("MSG01 — Despesa cadastrada com sucesso.");
+    } else {
+      const n = +$("#dQtdParcelas").value;
+      const maeId = proximoId;
+      for(let i=1;i<=n;i++){
+        const valorParc = i<n ? valorBase : (valorInformado - valorBase*(n-1));
+        despesas.push({...base, id: maeId + i - 1, competencia: addMesesComp($("#dCompetencia").value, i-1),
+          valor: Math.round(valorParc*100)/100, valorTotalCompra: valorInformado, parcelada:true,
+          nroParcela:i, qtdParcelas:n, idParcelaPai: i===1 ? null : maeId,
+          dataVencimento: $("#dDtVenc").value ? addMeses($("#dDtVenc").value, i-1) : null,
+          dataPagamento: status==="SIM" ? $("#dDtPagto").value : null, statusPagamento: status,
+          rateio: perm3 ? dRateio.map((r,idx)=>({...r, valor: Math.round((r.valor*valorParc/valorBase)*100)/100})) : []});
+      }
+      toast(`MSG14 — Compra parcelada cadastrada: ${n} parcelas geradas.`);
+    }
+    closeD(); render();
+  }
+
+  function excluir(id){
+    const d = despesas.find(x=>x.id===id);
+    const ehMae = d.nroParcela===1 && despesas.some(x=>x.idParcelaPai===d.id);
+    if(ehMae){
+      const qtd = d.qtdParcelas;
+      if(!confirm(`MSG15 — Esta é a primeira parcela de uma compra em ${qtd}x. Excluir vai apagar todas as ${qtd} parcelas. Confirma?`)) return;
+      despesas.filter(x=>x.id===d.id || x.idParcelaPai===d.id).forEach(x=>x.excluido=true);
+    } else {
+      if(!confirm(`MSG06 — Confirma a exclusão da despesa "${d.nome}"?`)) return;
+      d.excluido = true;
+    }
+    selecionados.delete(id);
+    render(); toast("MSG07 — Despesa excluída com sucesso.");
+  }
+
+  // ---- registrar pagamento individual (7.4) ----
+  function openP(id){
+    pagtoId = id;
+    const d = despesas.find(x=>x.id===id);
+    $("#pTitle").firstChild.textContent = `Registrar pagamento — ${d.nome} `;
+    $("#pValor").textContent = d.parcelada ? `${fmtMoeda(d.valor)}  (parcela ${d.nroParcela}/${d.qtdParcelas})` : fmtMoeda(d.valor);
+    $("#pDtPagto").value = d.dataVencimento && d.dataVencimento > HOJE ? d.dataVencimento : HOJE;
+    $("#mP").hidden=false;
+  }
+  function closeP(){ $("#mP").hidden=true; }
+  function saveP(){
+    if(!$("#pDtPagto").value){ toast("MSG02 — O campo Data de pagamento é obrigatório."); return; }
+    const d = despesas.find(x=>x.id===pagtoId);
+    d.statusPagamento="SIM"; d.dataPagamento=$("#pDtPagto").value;
+    closeP(); render(); toast("MSG10 — Pagamento registrado com sucesso.");
+  }
+
+  // ---- pagamento em lote (7.5) ----
+  function openLote(){
+    const lista = [...selecionados].map(id=>despesas.find(x=>x.id===id));
+    const total = lista.reduce((s,d)=>s+d.valor,0);
+    $("#lResumo").innerHTML = `<b>${lista.length} despesas selecionadas — total ${fmtMoeda(total)}</b><br>`
+      + lista.map(d=>`${fmtComp(d.competencia)} · ${d.nome} · ${fmtMoeda(d.valor)}`).join('<br>');
+    $("#lDtPagto").value = HOJE;
+    $("#mL").hidden=false;
+  }
+  function closeL(){ $("#mL").hidden=true; }
+  function saveL(){
+    if(!$("#lDtPagto").value){ toast("MSG02 — O campo Data de pagamento é obrigatório."); return; }
+    const n = selecionados.size;
+    selecionados.forEach(id=>{ const d=despesas.find(x=>x.id===id); d.statusPagamento="SIM"; d.dataPagamento=$("#lDtPagto").value; });
+    selecionados.clear();
+    closeL(); render(); toast(`MSG10b — Pagamento de ${n} despesas registrado com sucesso.`);
+  }
+
+  // ---- permissão de rateio (proto) ----
+  function togglePerm3(){
+    perm3 = !perm3;
+    const b = $("#btnPerm3");
+    b.textContent = `PERM03 rateio: ${perm3?'ON':'OFF'}`;
+    b.classList.toggle('off', !perm3);
+    render();
+  }
+
+  // ---- navegação ----
+  function showList(){ swap('s-list','nav-md','Despesas'); }
+  function swap(screen,nav,title){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===screen));
+    document.querySelectorAll('.side .navitem').forEach(n=>n.classList.toggle('active',n.id===nav));
+    $("#topTitle").textContent=title;
+    window.scrollTo(0,0);
+  }
+  function go(btn){
+    document.querySelectorAll('.proto-bar button[data-v]').forEach(b=>b.classList.toggle('on', b===btn));
+    const v = btn.dataset.v;
+    showList();
+    closeF(); closeD(); closeP(); closeL();
+    if(v==='md-filtro')    openF();
+    if(v==='md-form-nova') openD();
+    if(v==='md-form-edit') openD(9);      // despesa "JANTAR", rateada com Maria
+    if(v==='md-pagto')     openP(8);      // "ALUGUEL", em aberto
+    if(v==='md-lote'){ selecionados = new Set([7,10]); render(); openLote(); }
+  }
+
+  function toast(msg){
+    const t=document.createElement('div');
+    t.textContent=msg;
+    t.style.cssText='position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:80;box-shadow:var(--shadow);max-width:80vw;text-align:center';
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2800);
+  }
+
+  fillCombos();
+  render();
+</script>

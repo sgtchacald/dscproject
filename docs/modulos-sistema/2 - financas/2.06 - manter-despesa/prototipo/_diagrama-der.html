@@ -1,0 +1,147 @@
+<title>DER — Manter Despesa</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f7f9fb;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2430}
+  #diagram{width:1680px;padding:26px 28px 32px;background:#f7f9fb}
+  h1{font-size:15px;margin:0 0 2px}
+  .note{color:#69747f;font-size:11.5px;margin:0 0 18px;max-width:1560px}
+  .canvas{position:relative;height:980px}
+  .ent{position:absolute;background:#fff;border:1px solid;border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgba(20,30,45,.06)}
+  .ent > h2{margin:0;font-size:12px;font-weight:700;text-align:center;padding:7px 8px;line-height:1.35}
+  .ent ul{margin:0;padding:0;list-style:none}
+  .ent li{padding:4px 10px;font-size:10.5px;border-top:1px solid #eef1f4;white-space:nowrap}
+  .ent li.k{font-weight:700}
+  .ent li.mut{color:#8b95a1}
+  .usu  > h2{background:#f1eaf7;color:#5b3b86}   .usu{border-color:#5b3b86}
+  .cta  > h2{background:#eaf2fb;color:#1f3864}   .cta{border-color:#1f3864}
+  .cacr > h2{background:#fbf3e6;color:#8a5a12}   .cacr{border-color:#8a5a12}
+  .cate > h2{background:#eaf7ef;color:#1f6b45}   .cate{border-color:#1f6b45}
+  .desp > h2{background:#fdeaf2;color:#8a1d5c}   .desp{border-color:#8a1d5c}
+  .depu > h2{background:#fdeaf2;color:#8a1d5c}   .depu{border-color:#8a1d5c}
+  .ftca > h2{background:#eaeaf7;color:#3b3b86}   .ftca{border-color:#3b3b86}
+  svg.wires{position:absolute;left:0;top:0;width:1620px;height:960px;pointer-events:none;overflow:visible}
+  .wires path{stroke:#69747f;stroke-width:1.4;fill:none}
+  .wires text{fill:#69747f;font-size:10px}
+  .legend{position:absolute;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;color:#69747f;font-size:10.5px;line-height:1.55}
+</style>
+<div id="diagram">
+  <h1>DER — Manter Despesa</h1>
+  <p class="note">Subconjunto do DER do Documento 0 — QUADRO_DESCRITIVO_10 (<code>DESPESAS</code>, com auto-relacionamento <code>DESP_ID_PARCELA_PAI</code>), _11 (<code>DESPESAS_USUARIO</code>), _5 (<code>CONTAS</code>), _6 (<code>CARTOES_CREDITO</code>), _3 (<code>CATEGORIAS</code>), _8 (<code>FATURAS_CARTAO</code>) e _2 (<code>USUARIOS</code>). Este documento não cria tabela nova nem faz <code>ALTER TABLE</code>.</p>
+  <div class="canvas">
+    <svg class="wires" viewBox="0 0 1620 960" preserveAspectRatio="none">
+      <path d="M370,150 C440,150 480,230 560,260"/>
+      <text x="380" y="120">USU_ID  1→N  (NOT NULL)</text>
+      <path d="M370,480 C440,480 480,380 560,340"/>
+      <text x="380" y="500">USU_ID  1→N  (NOT NULL)</text>
+      <path d="M370,700 C500,700 560,520 700,510" stroke-dasharray="5 4"/>
+      <text x="400" y="720">USU_ID  1→N  (co-participante)</text>
+      <path d="M370,830 C440,830 480,560 560,520"/>
+      <text x="380" y="850">CATE_ID  1→N  (NULLABLE)</text>
+      <path d="M1030,340 C1060,340 1060,330 1090,325"/>
+      <text x="1040" y="320">DESP_ID  1→N  (rateio)</text>
+      <path d="M1030,420 C1060,420 1060,20 800,20 C700,20 700,255 700,255" stroke-dasharray="5 4"/>
+      <text x="850" y="15">DESP_ID_PARCELA_PAI  1→N  (self, NULLABLE)</text>
+      <path d="M1430,600 C1460,600 1460,420 1030,400" stroke-dasharray="5 4"/>
+      <text x="1200" y="640">FTCA_ID  1→N  (NULL — doc. 2.08)</text>
+    </svg>
+
+    <div class="ent usu" style="left:0;top:70px;width:360px">
+      <h2>USUARIOS</h2>
+      <ul>
+        <li class="k">USU_ID (PK)</li>
+        <li>USU_NOME · USU_EMAIL (UK)</li>
+        <li class="mut">dono via CONTAS/CARTOES_CREDITO</li>
+        <li class="mut">co-participante — DESPESAS_USUARIO.USU_ID</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent cta" style="left:0;top:280px;width:360px">
+      <h2>CONTAS</h2>
+      <ul>
+        <li class="k">CTA_ID (PK)</li>
+        <li>CTA_DESCRICAO · CTA_TIPO {…|CARTEIRA}</li>
+        <li class="k">USU_ID (FK → USUARIOS) NOT NULL</li>
+        <li class="mut">âncora de dono — DESP.CTA_ID (RN02, RN03)</li>
+        <li class="mut">dinheiro em espécie = conta CARTEIRA (Obs. 2a)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent cacr" style="left:0;top:540px;width:360px">
+      <h2>CARTOES_CREDITO</h2>
+      <ul>
+        <li class="k">CACR_ID (PK)</li>
+        <li>CACR_DESCRICAO</li>
+        <li class="k">USU_ID (FK → USUARIOS) NOT NULL</li>
+        <li class="mut">âncora alternativa — DESP.CACR_ID (RN02, RN03)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent cate" style="left:0;top:750px;width:360px">
+      <h2>CATEGORIAS</h2>
+      <ul>
+        <li class="k">CATE_ID (PK)</li>
+        <li>CATE_NOME</li>
+        <li>CATE_APLICA_A {DESPESA|RECEITA|AMBOS}</li>
+        <li class="mut">só leitura aqui — documento 2.01 (SB03)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent desp" style="left:560px;top:250px;width:470px">
+      <h2>DESPESAS</h2>
+      <ul>
+        <li class="k">DESP_ID (PK)</li>
+        <li>DESP_NOME · DESP_DESCRICAO</li>
+        <li>DESP_VALOR DECIMAL(15,2) — &gt; 0 (RN05)</li>
+        <li>DESP_VALOR_TOTAL_COMPRA DECIMAL(15,2) NULL</li>
+        <li>DESP_COMPETENCIA CHAR(7) yyyy-MM (YearMonthConverter)</li>
+        <li>DESP_DT_LANCAMENTO · DESP_DT_VENCIMENTO · DESP_DT_PAGAMENTO</li>
+        <li>DESP_FL_PARCELADA · DESP_NRO_PARCELA · DESP_QTD_PARCELAS</li>
+        <li class="k">DESP_ID_PARCELA_PAI (FK → DESPESAS, self) NULL</li>
+        <li>DESP_MEIO_PAGAMENTO {DINHEIRO|DEBITO|CREDITO|PIX|BOLETO|TRANSFERENCIA}</li>
+        <li>DESP_IND_STATUS_PAGAMENTO {NAO|SIM|NAO_SE_APLICA}</li>
+        <li>DESP_FL_PAGAMENTO_FATURA BOOLEAN</li>
+        <li>DESP_ORIGEM {MANUAL|OPEN_FINANCE|IMPORTACAO} default MANUAL</li>
+        <li class="k">CTA_ID (FK → CONTAS) NULLABLE — XOR com CACR_ID (RN03)</li>
+        <li class="k">CACR_ID (FK → CARTOES_CREDITO) NULLABLE</li>
+        <li>FTCA_ID (FK → FATURAS_CARTAO) NULL — doc. 2.08</li>
+        <li>CATE_ID (FK → CATEGORIAS) NULLABLE</li>
+        <li class="mut">audit_* — @Audited (Hibernate Envers)</li>
+      </ul>
+    </div>
+
+    <div class="ent depu" style="left:1090px;top:290px;width:340px">
+      <h2>DESPESAS_USUARIO</h2>
+      <ul>
+        <li class="k">DESP_ID + USU_ID (FKs) — UNIQUE</li>
+        <li>DEPU_VALOR DECIMAL(15,2) — fatia do co-participante</li>
+        <li>DEPU_IND_STATUS_PAGAMENTO {SIM|NAO|NAO_SE_APLICA}</li>
+        <li>DEPU_DT_ACERTO DATE NULL</li>
+        <li class="mut">soma das fatias ≤ DESP_VALOR (RN17)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent ftca" style="left:1090px;top:560px;width:340px">
+      <h2>FATURAS_CARTAO</h2>
+      <ul>
+        <li class="k">FTCA_ID (PK)</li>
+        <li>ciclo ABERTA → FECHADA → PAGA</li>
+        <li class="mut">DESP.FTCA_ID aponta para cá — doc. 2.08</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="legend" style="top:750px;left:560px;width:470px">
+      <b style="color:#8a1d5c">DESPESAS</b>: CRUD + parcelamento (série auto-relacionada por <code>DESP_ID_PARCELA_PAI</code>,
+      RN12/RN13/RN14) + baixa de pagamento (RN21), sempre no escopo do <code>USU_ID</code> da conta OU do cartão (RN02).<br><br>
+      A âncora conta-XOR-cartão (RN03) é validada no serviço — as duas FKs continuam anuláveis no schema.<br><br>
+      <code>DESPESAS_USUARIO</code> é o rateio entre usuários reais (RN15-RN20); <code>FATURAS_CARTAO</code> e o vínculo
+      <code>FTCA_ID</code> são do documento 2.08 — aqui <code>FTCA_ID</code> fica sempre nulo (RN23).
+    </div>
+  </div>
+</div>
