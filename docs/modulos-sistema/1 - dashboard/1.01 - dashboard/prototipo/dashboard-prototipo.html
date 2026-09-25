@@ -1,0 +1,193 @@
+<title>Protótipo Dashboard (Orquestrador)</title>
+<!--
+  Protótipo navegável — Documento 1.01 · Dashboard (orquestrador genérico).
+  Replica o design system real do projeto: Tabler Core 1.4.0 + Phosphor Icons (regular) 2.1.2,
+  carregados via CDN jsdelivr (o protótipo é standalone, aberto via file://, e não tem acesso
+  aos webjars locais do Spring). Marcadores numéricos (●) correspondem aos IDs do
+  QUADRO_DESCRITIVO_1 da Seção 7 do documento.
+
+  Duas telas, alternadas pela proto-bar:
+    sem-seletor  -> catálogo TipoDashboard com 1 valor (FINANCEIRO) — sem combobox (RN02)
+    com-seletor  -> catálogo com 2+ valores — combobox visível, URL refletindo ?tipo= (RN02/RN03)
+
+  A área de conteúdo (ID3) é deliberadamente um placeholder tracejado: este documento não
+  descreve cards nem cálculo financeiro — isso é o documento 1.02 (dashboard-financeiro), cujo
+  próprio protótipo é a referência visual do conteúdo real.
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css">
+<style>
+  :root{color-scheme:light}
+  [hidden]{display:none!important}
+  body{background:var(--tblr-body-bg,#f5f7fb)}
+
+  /* ---- marcadores / proto-bar (mesmo padrão dos módulos 04/06/07/08/09) ---- */
+  .anchor{position:relative}
+  .mk{position:absolute;z-index:30;width:20px;height:20px;border-radius:50%;background:#d1367f;color:#fff;
+      font:600 11px/20px ui-monospace,"SF Mono",Menlo,Consolas,monospace;text-align:center;
+      box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.35);pointer-events:none}
+  body.no-mk .mk{display:none}
+  .placeholder-conteudo{border:2px dashed #c9d2de;border-radius:8px;background:#fbfcfd;padding:40px 24px;text-align:center;color:#69747f}
+  .placeholder-conteudo .ph{font-size:2.25rem;color:#a7b1bd}
+  .mini-skel{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}
+  .mini-skel .box{height:64px;border-radius:8px;background:linear-gradient(90deg,#eef1f4,#e6e9ed,#eef1f4)}
+  @media (max-width:900px){.mini-skel{grid-template-columns:repeat(2,1fr)}}
+
+  .proto-bar{position:fixed;right:14px;bottom:14px;z-index:60;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;
+     background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 24px rgba(20,30,45,.12);padding:8px;max-width:min(94vw,760px)}
+  .proto-bar button{padding:6px 10px;border-radius:7px;border:1px solid #e5e7eb;background:#fbfbfc;font-size:12px;font-weight:600;color:#69747f;cursor:pointer}
+  .proto-bar button.on{background:#206bc4;border-color:#206bc4;color:#fff}
+  .proto-tag{position:fixed;left:14px;bottom:14px;z-index:60;font:600 11px/1 ui-monospace,monospace;color:#69747f;
+     background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;box-shadow:0 8px 24px rgba(20,30,45,.12)}
+  .legend{position:fixed;left:14px;bottom:50px;z-index:60;background:#fff;border:1px solid #e5e7eb;border-radius:10px;
+     box-shadow:0 8px 24px rgba(20,30,45,.12);padding:12px 14px;font-size:12px;max-width:340px;display:none;color:#1b2430}
+  body.show-legend .legend{display:block}
+  .legend h4{font:600 11px/1.4 -apple-system,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:#69747f;margin-bottom:8px}
+  .screen{display:none}
+  .screen.on{display:block}
+  .page-body{padding-bottom:110px}
+</style>
+
+<div class="page">
+  <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+    <div class="container-fluid">
+      <div class="navbar-brand navbar-brand-autodark">
+        <span style="font-weight:700;font-size:1.05rem;color:#fff">dscproject</span>
+      </div>
+      <div class="collapse navbar-collapse show">
+        <ul class="navbar-nav pt-lg-3">
+          <li class="nav-item active anchor" id="nav-dash">
+            <a class="nav-link" href="#">
+              <span class="nav-link-icon"><i class="ph ph-gauge" aria-hidden="true"></i></span>
+              <span class="nav-link-title">Dashboard</span>
+              <span class="mk" style="right:10px;top:8px" id="mk-nav" hidden>0</span>
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button">
+              <span class="nav-link-icon"><i class="ph ph-wallet" aria-hidden="true"></i></span>
+              <span class="nav-link-title">Finanças</span>
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button">
+              <span class="nav-link-icon"><i class="ph ph-arrows-left-right" aria-hidden="true"></i></span>
+              <span class="nav-link-title">Open Finance</span>
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button">
+              <span class="nav-link-icon"><i class="ph ph-gear" aria-hidden="true"></i></span>
+              <span class="nav-link-title">Administração</span>
+            </a>
+          </li>
+          <li class="nav-item mt-auto">
+            <a class="nav-link" href="#">
+              <span class="nav-link-icon"><i class="ph ph-user-circle" aria-hidden="true"></i></span>
+              <span class="nav-link-title text-uppercase">Diego Cordeiro</span>
+            </a>
+          </li>
+          <li class="nav-item px-3 mb-2">
+            <button type="button" class="btn btn-outline-danger btn-sm w-100"><i class="ph ph-sign-out" aria-hidden="true"></i> Sair</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <div class="page-wrapper">
+    <div class="page-header d-print-none">
+      <div class="container-xl">
+        <div class="row g-2 align-items-center">
+          <div class="col anchor">
+            <h2 class="page-title">Dashboard</h2>
+            <span class="mk" style="left:112px;top:-6px">1</span>
+          </div>
+          <div class="col-auto ms-auto anchor" id="seletorWrap" hidden>
+            <select class="form-select" id="tipoSelect" onchange="trocarTipo(this)" style="min-width:220px">
+              <option value="FINANCEIRO" selected>Financeiro</option>
+              <option value="INVESTIMENTOS">Investimentos</option>
+            </select>
+            <span class="mk" style="left:-11px;top:8px">2</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="container-xl">
+
+        <!-- ============ Tela: sem seletor (catálogo com 1 tipo) ============ -->
+        <section class="screen on" id="s-sem">
+          <div class="anchor">
+            <div class="placeholder-conteudo">
+              <i class="ph ph-squares-four" aria-hidden="true"></i>
+              <p class="mt-2 mb-0"><strong>Conteúdo do dashboard financeiro</strong></p>
+              <p class="text-secondary mb-0">Delegado ao tipo ativo <code>FINANCEIRO</code> — ver o protótipo do documento <code>14&nbsp;-&nbsp;dashboard-financeiro</code> para os 8 cards reais.</p>
+              <div class="mini-skel">
+                <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+              </div>
+            </div>
+            <span class="mk" style="left:-13px;top:16px">3</span>
+          </div>
+          <p class="mt-3 text-secondary small">
+            Catálogo <code>TipoDashboard</code> com um único valor (<code>FINANCEIRO</code>) — o combobox de seleção
+            (ID2) não é renderizado (RN02). URL: <code>/dashboard</code>, sem <code>?tipo=</code>.
+          </p>
+        </section>
+
+        <!-- ============ Tela: com seletor (catálogo com 2+ tipos) ============ -->
+        <section class="screen" id="s-com">
+          <div class="anchor">
+            <div class="placeholder-conteudo" id="conteudoCom">
+              <i class="ph ph-squares-four" aria-hidden="true"></i>
+              <p class="mt-2 mb-0"><strong>Conteúdo do dashboard financeiro</strong></p>
+              <p class="text-secondary mb-0">Delegado ao tipo ativo <code>FINANCEIRO</code> — ver o protótipo do documento <code>14&nbsp;-&nbsp;dashboard-financeiro</code> para os 8 cards reais.</p>
+              <div class="mini-skel">
+                <div class="box"></div><div class="box"></div><div class="box"></div><div class="box"></div>
+              </div>
+            </div>
+            <span class="mk" style="left:-13px;top:16px">3</span>
+          </div>
+          <p class="mt-3 text-secondary small">
+            Catálogo com dois tipos (<code>FINANCEIRO</code>, <code>INVESTIMENTOS</code>) — o combobox (ID2) aparece
+            no cabeçalho e a seleção é refletida na URL (<code>/dashboard?tipo=FINANCEIRO</code>). Trocar a opção
+            recarrega a página inteira via GET (RT01) — sem AJAX.
+          </p>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="proto-tag">1.01 · Dashboard (orquestrador) — protótipo</div>
+<div class="legend">
+  <h4>Marcadores</h4>
+  <p class="text-secondary mb-2">Os números <span style="color:#d1367f;font-weight:700">●</span> ligam a tela aos itens do QUADRO_DESCRITIVO_1 da Seção 7 do documento.</p>
+  <p class="text-secondary mb-0">A área de conteúdo (3) é sempre um placeholder aqui — o conteúdo real do tipo <code>FINANCEIRO</code> é o protótipo do documento 14.</p>
+</div>
+<div class="proto-bar">
+  <button data-v="sem" class="on" onclick="go(this)">7.1 Sem seletor (1 tipo)</button>
+  <button data-v="com" onclick="go(this)">7.1 Com seletor (2+ tipos)</button>
+  <button onclick="document.body.classList.toggle('no-mk')" style="margin-left:6px">◉ marcadores</button>
+  <button onclick="document.body.classList.toggle('show-legend')">? legenda</button>
+</div>
+
+<script>
+  function trocarTipo(sel){
+    // RT01: troca de tipo recarrega a página inteira via GET (?tipo=) — aqui só simulamos a rotulagem.
+    const nome = sel.options[sel.selectedIndex].text;
+    document.querySelector('#conteudoCom p.mb-0 code') // no-op guard
+  }
+  function swap(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on', s.id===id));
+    window.scrollTo(0,0);
+  }
+  function go(btn){
+    document.querySelectorAll('.proto-bar button[data-v]').forEach(b=>b.classList.toggle('on', b===btn));
+    const v = btn.dataset.v;
+    document.getElementById('seletorWrap').hidden = (v!=='com');
+    swap(v==='sem' ? 's-sem' : 's-com');
+  }
+</script>

@@ -1,0 +1,94 @@
+<title>DER — Manter Instituição Financeira</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f7f9fb;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2430}
+  #diagram{width:1280px;padding:26px 28px 32px;background:#f7f9fb}
+  h1{font-size:15px;margin:0 0 2px}
+  .note{color:#69747f;font-size:11.5px;margin:0 0 18px;max-width:1120px}
+  .canvas{position:relative;height:760px}
+  .ent{position:absolute;background:#fff;border:1px solid;border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgba(20,30,45,.06)}
+  .ent > h2{margin:0;font-size:12px;font-weight:700;text-align:center;padding:7px 8px;line-height:1.35}
+  .ent ul{margin:0;padding:0;list-style:none}
+  .ent li{padding:4px 10px;font-size:11px;border-top:1px solid #eef1f4;white-space:nowrap}
+  .ent li.k{font-weight:700}
+  .ent li.mut{color:#8b95a1}
+  .infi > h2{background:#eaf2fb;color:#1f3864}   .infi{border-color:#1f3864}
+  .prov > h2{background:#eaf7ef;color:#1f6b45}   .prov{border-color:#1f6b45}
+  .map  > h2{background:#f1eaf7;color:#5b3b86}   .map{border-color:#5b3b86}
+  .uso  > h2{background:#fbf3e6;color:#8a5a12}   .uso{border-color:#8a5a12}
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+  .wires path{stroke:#69747f;stroke-width:1.4;fill:none}
+  .wires text{fill:#69747f;font-size:10.5px}
+  .legend{position:absolute;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;color:#69747f;font-size:10.5px;line-height:1.5}
+</style>
+<div id="diagram">
+  <h1>DER — Manter Instituição Financeira</h1>
+  <p class="note">Subconjunto do DER do Documento 0 — QUADRO_DESCRITIVO_4, _13 e _14. Este documento não cria tabela nova; os campos <code>INFI_FL_ATIVO</code> e <code>INFI_FL_SISTEMA</code> vêm da evolução do Documento 0.</p>
+  <div class="canvas">
+    <svg class="wires" viewBox="0 0 1280 760" preserveAspectRatio="none">
+      <path d="M380,150 C455,150 455,300 520,312"/>
+      <text x="300" y="315">1 → N (instituição)</text>
+      <path d="M300,500 C420,500 420,372 520,360"/>
+      <text x="330" y="470">1 → N (provedor)</text>
+      <path d="M380,108 C640,60 780,120 900,132" stroke-dasharray="5 4"/>
+      <text x="600" y="78">1 → N  INFI_ID  (CONTAS NOT NULL · demais NULLABLE)</text>
+    </svg>
+
+    <div class="ent infi" style="left:0;top:60px;width:380px">
+      <h2>INSTITUICOES_FINANCEIRAS</h2>
+      <ul>
+        <li class="k">INFI_ID (PK)</li>
+        <li class="k">INFI_NOME (UK)</li>
+        <li>INFI_CODIGO (UK quando informado, NULL)</li>
+        <li>INFI_TIPO_INSTITUICAO CHAR(1) {B|C}</li>
+        <li>INFI_FL_ATIVO (BOOLEAN, novo no Doc 0)</li>
+        <li>INFI_FL_SISTEMA (BOOLEAN, novo no Doc 0)</li>
+        <li class="mut">audit_* (criação/alteração/exclusão)</li>
+      </ul>
+    </div>
+
+    <div class="ent prov" style="left:0;top:430px;width:300px">
+      <h2>OPFI_PROVEDORES</h2>
+      <ul>
+        <li class="k">OFPV_ID (PK)</li>
+        <li>OFPV_CODIGO (UK)</li>
+        <li>OFPV_NOME</li>
+        <li>OFPV_FL_ATIVO (BOOLEAN)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent map" style="left:520px;top:250px;width:380px">
+      <h2>OPFI_INSTITUICAO_PROVEDOR</h2>
+      <ul>
+        <li class="k">OFIP_ID (PK)</li>
+        <li class="k">INFI_ID (FK → INSTITUICOES_FINANCEIRAS)</li>
+        <li class="k">OFPV_ID (FK → OPFI_PROVEDORES)</li>
+        <li>OFIP_ID_EXTERNO VARCHAR(80)</li>
+        <li>UK (INFI_ID, OFPV_ID)</li>
+        <li>UK (OFPV_ID, OFIP_ID_EXTERNO)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent uso" style="left:900px;top:60px;width:300px">
+      <h2>CONTAS / INVESTIMENTOS /<br>OPFI_CONEXOES</h2>
+      <ul>
+        <li class="k">&lt;PK própria&gt;</li>
+        <li>INFI_ID (FK → INSTITUICOES_FINANCEIRAS)</li>
+        <li class="mut">CONTAS: NOT NULL · demais: NULLABLE</li>
+        <li>audit_data_exclusao (exclusão lógica)</li>
+        <li class="mut">… demais colunas</li>
+      </ul>
+    </div>
+
+    <div class="legend" style="top:470px;left:520px;width:520px">
+      <b style="color:#5b3b86">OPFI_INSTITUICAO_PROVEDOR</b>: mapa consultado no passo de importação de contas de Open Finance
+      (id externo + provedor → INFI_ID). O documento 2.10 é o consumidor.<br><br>
+      As travas de exclusão de INSTITUICOES_FINANCEIRAS (RN06 sistema / RN07 em uso) e a contagem de uso (C1/C6)
+      atravessam as FKs INFI_ID de CONTAS, INVESTIMENTOS e OPFI_CONEXOES. A exclusão lógica da instituição
+      cascateia os vínculos (RN12). OPFI_PROVEDORES vem de carga inicial — só leitura nesta tela.
+    </div>
+  </div>
+</div>

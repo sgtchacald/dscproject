@@ -1,0 +1,624 @@
+<title>Protótipo Manter Receita</title>
+<!--
+  Protótipo navegável — Documento 2.05 · Manter Receita (tela "Receitas").
+  Replica o padrão do módulo 06 (manter-conta).
+  4 telas/modais, correspondendo aos QUADRO_DESCRITIVO_1..4 da Seção 7:
+    mr-tela-1 (mr-list)         -> QUADRO_DESCRITIVO_1  Receitas (listagem)
+    mr-tela-2 (mr-filtro)       -> QUADRO_DESCRITIVO_2  Modal Filtrar Receitas
+    mr-tela-3 (mr-form)         -> QUADRO_DESCRITIVO_3  Modal Cadastro / Edição de Receita
+    mr-tela-4 (mr-recebimento)  -> QUADRO_DESCRITIVO_4  Modal Registrar Recebimento
+  Os marcadores numéricos (●) correspondem aos IDs de cada QUADRO_DESCRITIVO.
+
+  Combobox Conta (SB01): NÃO é <option> fixo no sistema real. Vem do endpoint
+  de opções do documento 2.03 — GET /contas/opcoes (contas ativas do usuário).
+  Combobox Categoria (SB02): vem do endpoint de opções do documento 2.01 —
+  GET /categorias/opcoes?aplicaA=RECEITA. Aqui usamos dados de exemplo.
+-->
+<style>
+  :root{
+    --ground:#f5f6f8; --surface:#ffffff; --surface-2:#fbfbfc; --border:#e5e7eb;
+    --ink:#1b2430; --muted:#69747f; --primary:#1f6fd0; --primary-ink:#ffffff;
+    --ok:#1f9d57; --ok-bg:#e4f5ec; --warn:#8a6d1f; --warn-bg:#fbf1d9;
+    --info:#1f6fd0; --info-bg:#e8f1fb;
+    --gone:#8b95a1; --gone-bg:#eef0f2;
+    --neg:#c0392b;
+    --marker:#d1367f; --shadow:0 1px 2px rgba(20,30,45,.06),0 8px 24px rgba(20,30,45,.08);
+    --radius:9px;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#12171e; --surface:#1a212a; --surface-2:#161d25; --border:#2a333e;
+      --ink:#e7eaee; --muted:#93a0ad; --primary:#4c96e6; --primary-ink:#0c1116;
+      --ok:#41c37e; --ok-bg:#12331f; --warn:#d8b25a; --warn-bg:#332a12;
+      --info:#4c96e6; --info-bg:#122536;
+      --gone:#7c8894; --gone-bg:#232b34;
+      --neg:#e8776a;
+      --marker:#ec6aa8; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#12171e; --surface:#1a212a; --surface-2:#161d25; --border:#2a333e;
+    --ink:#e7eaee; --muted:#93a0ad; --primary:#4c96e6; --primary-ink:#0c1116;
+    --ok:#41c37e; --ok-bg:#12331f; --warn:#d8b25a; --warn-bg:#332a12;
+    --info:#4c96e6; --info-bg:#122536;
+    --gone:#7c8894; --gone-bg:#232b34;
+    --neg:#e8776a;
+    --marker:#ec6aa8; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+  h1,h2,h3,p{margin:0}
+  button{font:inherit;color:inherit;cursor:pointer}
+  a{color:var(--primary);text-decoration:none}
+
+  .app{display:grid;grid-template-columns:224px 1fr;min-height:100vh}
+  .side{background:var(--surface);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;padding:6px 8px 14px}
+  .brand .dot{width:22px;height:22px;border-radius:6px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-size:12px}
+  .navlabel{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:14px 8px 4px}
+  .navitem{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:var(--muted);font-weight:500;text-align:left;border:none;background:none;width:100%;line-height:1.25}
+  .navitem svg{width:16px;height:16px;flex:none}
+  .navitem>span:not(.mk){flex:1;min-width:0}
+  .navitem.active{background:color-mix(in srgb,var(--primary) 12%,transparent);color:var(--primary)}
+  .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 22px}
+  .who{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13px}
+  .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#8b5cf6);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:600}
+  .main{padding:26px 30px 120px;max-width:1200px}
+  .crumb{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:4px}
+  .page-h h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin-bottom:20px;max-width:660px}
+  .toolbar{display:flex;gap:10px;align-items:center}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:13px}
+  .btn svg{width:15px;height:15px}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+  .btn.ghost{background:transparent}
+  .btn.danger{border-color:color-mix(in srgb,#d6336c 55%,transparent);color:#d6336c}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{text-align:left;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+  tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--surface-2)}
+  td.mono{font-family:var(--mono);font-size:12px}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+  th.num{text-align:right}
+  td.neg{color:var(--neg)}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .badge.recebida{background:var(--ok-bg);color:var(--ok)}
+  .badge.prevista{background:var(--gone-bg);color:var(--gone)}
+  .badge.del{background:#fdeaea;color:#c0392b}
+  .badge.manual{background:color-mix(in srgb,var(--primary) 12%,transparent);color:var(--primary)}
+  .badge.openfinance{background:var(--warn-bg);color:var(--warn)}
+  .badge.importacao{background:var(--gone-bg);color:var(--gone)}
+  .badge.cat{background:var(--info-bg);color:var(--info)}
+  .rowact{display:flex;gap:4px}
+  .iconbtn{width:30px;height:30px;border-radius:7px;border:1px solid transparent;background:transparent;display:grid;place-items:center;color:var(--muted)}
+  .iconbtn:hover{background:var(--surface-2);border-color:var(--border);color:var(--ink)}
+  .iconbtn svg{width:16px;height:16px}
+  .tblfoot{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;color:var(--muted);font-size:12.5px}
+  .pager{display:flex;gap:4px}
+  .pager span{min-width:28px;height:28px;border-radius:6px;border:1px solid var(--border);display:grid;place-items:center;font-size:12px}
+  .pager span.on{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+  .empty{padding:34px 16px;text-align:center;color:var(--muted);font-size:13px}
+
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .field label{font-size:12.5px;font-weight:600}
+  .field label .req{color:#d6336c}
+  .field input,.field select,.field textarea{padding:9px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit}
+  .field textarea{resize:vertical;min-height:64px}
+  .field input:disabled,.field select:disabled{background:var(--surface-2);color:var(--muted);cursor:not-allowed}
+  .field .hint{font-size:11.5px;color:var(--muted)}
+  .field.invalid input,.field.invalid select{border-color:#d6336c}
+  .field.money input{text-align:right;font-variant-numeric:tabular-nums}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 16px}
+  .toggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .toggle button{padding:7px 16px;background:var(--surface);border:none;font-size:12.5px;font-weight:600;color:var(--muted)}
+  .toggle button.on{background:var(--primary);color:var(--primary-ink)}
+  .infobox{display:flex;gap:9px;background:var(--info-bg);border:1px solid color-mix(in srgb,var(--info) 40%,transparent);color:var(--info);border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
+  .infobox.warn{background:var(--warn-bg);border-color:color-mix(in srgb,var(--warn) 45%,transparent);color:var(--warn)}
+  .infobox svg{width:16px;height:16px;flex:none;margin-top:1px}
+  .readout{padding:9px 11px;border-radius:8px;border:1px dashed var(--border);background:var(--surface-2);color:var(--muted);font-variant-numeric:tabular-nums;font-weight:600}
+
+  .scrim{position:fixed;inset:0;background:rgba(15,22,32,.5);display:grid;place-items:center;padding:24px;z-index:40}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);width:min(480px,100%);max-height:88vh;overflow:auto}
+  .modal.wide{width:min(600px,100%)}
+  .modal-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .modal-h h3{font-size:15px;font-weight:700}
+  .modal-b{padding:18px 20px}
+  .modal-f{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border)}
+  .x{border:none;background:none;color:var(--muted);font-size:18px;line-height:1;padding:4px}
+
+  .mk{position:absolute;z-index:30;width:20px;height:20px;border-radius:50%;background:var(--marker);color:#fff;
+      font:600 11px/20px var(--mono);text-align:center;box-shadow:0 0 0 2px var(--surface),0 2px 6px rgba(0,0,0,.35);pointer-events:none}
+  body.no-mk .mk{display:none}
+  .anchor{position:relative}
+
+  .proto-bar{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;
+     background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:8px;max-width:min(94vw,820px)}
+  .proto-bar button{padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);font-size:12px;font-weight:600;color:var(--muted)}
+  .proto-bar button.on{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+  .proto-tag{position:fixed;left:16px;bottom:16px;z-index:60;font:600 11px/1 var(--mono);color:var(--muted);
+     background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;box-shadow:var(--shadow)}
+  .legend{position:fixed;left:16px;bottom:52px;z-index:60;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+     box-shadow:var(--shadow);padding:12px 14px;font-size:12px;max-width:340px;display:none}
+  body.show-legend .legend{display:block}
+  .legend h4{font:600 11px/1.4 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+  .screen{display:none}
+  .screen.on{display:block}
+  @media (max-width:860px){.app{grid-template-columns:1fr}.side{display:none}}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><span class="dot">d</span> dscproject</div>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg> Início</button>
+    <div class="navlabel">Finanças</div>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg> Minhas Contas</button>
+    <button class="navitem active anchor" id="nav-mr" onclick="showList()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 6H9a3 3 0 000 6h6a3 3 0 010 6H7"/></svg>
+      <span>Receitas</span>
+      <span class="mk" style="right:2px;top:2px">0</span></button>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V2M7 18H9a3 3 0 000-6h6a3 3 0 010-6h-2"/></svg> Despesas</button>
+    <div class="navlabel">Administração</div>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-7h6v7"/></svg> Instituições Financeiras</button>
+    <button class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h.01M3 7l4-4h7l7 7-11 11-7-7z"/></svg> Categorias</button>
+  </aside>
+  <div>
+    <div class="topbar">
+      <strong style="font-size:14px" id="topTitle">Receitas</strong>
+      <div class="who"><span>Diego Cordeiro</span><span class="avatar">DC</span></div>
+    </div>
+
+    <!-- ============ 7.1 Receitas (Listagem) — QUADRO_DESCRITIVO_1 ============ -->
+    <main class="main screen on" id="s-list">
+      <div class="anchor">
+        <div class="crumb">Finanças <span style="opacity:.5">›</span> Receitas <span class="mk" style="left:-26px;top:-2px">1</span></div>
+        <div class="page-h">
+          <h1 class="anchor">Receitas <span class="mk" style="left:-26px;top:2px">2</span></h1>
+          <div class="toolbar">
+            <button class="btn ghost anchor" onclick="openF()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg> Filtrar
+              <span class="mk" style="left:-11px;top:-11px">4</span></button>
+            <button class="btn primary anchor" onclick="openC()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Nova receita
+              <span class="mk" style="right:-11px;top:-11px">5</span></button>
+          </div>
+        </div>
+        <p class="sub anchor">Cadastre e acompanhe as suas receitas previstas e recebidas. <span class="mk" style="left:-26px;top:0">3</span></p>
+
+        <div class="card anchor">
+          <span class="mk" style="left:-13px;top:44px">6</span>
+          <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th class="anchor">Competência <span class="mk" style="left:78px;top:8px">7</span></th>
+              <th class="anchor">Nome <span class="mk" style="left:42px;top:8px">8</span></th>
+              <th class="anchor">Categoria <span class="mk" style="left:66px;top:8px">9</span></th>
+              <th class="anchor">Conta <span class="mk" style="left:48px;top:8px">10</span></th>
+              <th class="anchor num">Valor <span class="mk" style="left:48px;top:8px">11</span></th>
+              <th class="anchor">Data de lançamento <span class="mk" style="left:140px;top:8px">12</span></th>
+              <th class="anchor">Situação <span class="mk" style="left:66px;top:8px">13</span></th>
+              <th class="anchor">Data de recebimento <span class="mk" style="left:150px;top:8px">14</span></th>
+              <th class="anchor">Origem <span class="mk" style="left:52px;top:8px">15</span></th>
+              <th class="anchor" style="width:130px">Ação <span class="mk" style="left:42px;top:8px">16</span></th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+          </div>
+          <div class="tblfoot">
+            <span id="count">Mostrando 0 de 0</span>
+            <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+          </div>
+        </div>
+        <p style="margin-top:10px;color:var(--muted);font-size:12px">
+          Grid <b>client-side</b>: a lista completa das receitas do usuário autenticado é carregada uma vez (EDP02 → C1) e o DataTables
+          pagina, ordena e busca no navegador. O modal <b>Filtrar</b> aplica os critérios <b>em memória</b> (RT02).
+          "Nova receita" e os ícones de ação exigem <code>PERM_RECEITAS_MANTER</code>; a tela, <code>PERM_RECEITAS_LISTAR</code>.
+          O grid nunca traz receita de outro usuário (RN02).
+        </p>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============ 7.2 Modal Filtrar Receitas — QUADRO_DESCRITIVO_2 ============ -->
+<div class="scrim" id="mF" hidden>
+  <div class="modal">
+    <div class="modal-h"><h3 class="anchor">Filtrar Receitas <span class="mk" style="left:-24px;top:0">1</span></h3><button class="x" onclick="closeF()">×</button></div>
+    <div class="modal-b">
+      <div class="field anchor"><label>Busca</label>
+        <input id="fBusca" placeholder="Nome ou descrição">
+        <span class="hint">Parte do nome ou da descrição — sem acento.</span>
+        <span class="mk" style="left:-11px;top:22px">2</span></div>
+      <div class="grid2">
+        <div class="field anchor"><label>Competência inicial</label>
+          <input id="fCompDe" type="month">
+          <span class="mk" style="left:-11px;top:22px">3</span></div>
+        <div class="field anchor"><label>Competência final</label>
+          <input id="fCompAte" type="month">
+          <span class="mk" style="left:-11px;top:22px">4</span></div>
+      </div>
+      <div class="grid2">
+        <div class="field anchor"><label>Situação</label>
+          <select id="fSit"><option>Todas</option><option>Prevista</option><option>Recebida</option><option>Excluída</option></select>
+          <span class="hint">Default: Todas.</span>
+          <span class="mk" style="left:-11px;top:22px">5</span></div>
+        <div class="field anchor"><label>Conta</label>
+          <select id="fConta"><option value="">Todas as contas</option></select>
+          <span class="hint">Opções de <code>GET /contas/opcoes</code> (SB01).</span>
+          <span class="mk" style="left:-11px;top:22px">6</span></div>
+      </div>
+      <div class="field anchor" style="max-width:50%"><label>Categoria</label>
+        <select id="fCat"><option value="">Todas as categorias</option></select>
+        <span class="hint">Opções de <code>GET /categorias/opcoes?aplicaA=RECEITA</code> (SB02).</span>
+        <span class="mk" style="left:-11px;top:22px">7</span></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost anchor" onclick="limparF()">Limpar <span class="mk" style="left:-11px;top:-11px">9</span></button>
+      <button class="btn primary anchor" onclick="aplicarF()">Aplicar <span class="mk" style="right:-11px;top:-11px">8</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 7.3 Modal Cadastro / Edição de Receita — QUADRO_DESCRITIVO_3 ============ -->
+<div class="scrim" id="mC" hidden>
+  <div class="modal wide">
+    <div class="modal-h"><h3 class="anchor" id="cTitle">Nova receita <span class="mk" style="left:-24px;top:0">1</span></h3><button class="x" onclick="closeC()">×</button></div>
+    <div class="modal-b">
+      <div class="infobox anchor" id="cAviso" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        <span>Esta receita foi importada do Open Finance. A conta e a origem não podem ser alteradas, e ela não pode ser excluída por esta tela.</span>
+        <span class="mk" style="left:-11px;top:-11px">11</span></div>
+
+      <div class="field anchor" id="fldNome"><label>Nome <span class="req">*</span></label>
+        <input id="cNome" maxlength="100" placeholder="Ex.: SALÁRIO">
+        <span class="mk" style="left:-11px;top:22px">2</span></div>
+
+      <div class="field anchor" id="fldDesc"><label>Descrição</label>
+        <textarea id="cDesc" maxlength="512" placeholder="Opcional"></textarea>
+        <span class="mk" style="left:-11px;top:22px">3</span></div>
+
+      <div class="grid2">
+        <div class="field anchor money" id="fldValor"><label>Valor <span class="req">*</span></label>
+          <input id="cValor" inputmode="decimal" placeholder="0,00" value="0,00" oninput="maskMoney(this)">
+          <span class="hint">Deve ser maior que zero (RN05).</span>
+          <span class="mk" style="left:-11px;top:22px">4</span></div>
+        <div class="field anchor" id="fldData"><label>Data de lançamento <span class="req">*</span></label>
+          <input id="cData" type="date" onchange="onDataChange()">
+          <span class="hint">Default: hoje. Pode reajustar a Competência (RT11).</span>
+          <span class="mk" style="left:-11px;top:22px">5</span></div>
+      </div>
+
+      <div class="grid2">
+        <div class="field anchor" id="fldComp"><label>Competência <span class="req">*</span></label>
+          <input id="cComp" type="month" onchange="compTocada=true">
+          <span class="hint">Default: mês da data de lançamento (RN04).</span>
+          <span class="mk" style="left:-11px;top:22px">6</span></div>
+        <div class="field anchor" id="fldConta"><label>Conta <span class="req">*</span></label>
+          <select id="cConta"><option value="">Selecione…</option></select>
+          <span class="hint" id="cContaHint">Contas ativas (SB01). Não altera em receita importada (RN08).</span>
+          <span class="mk" style="left:-11px;top:22px">7</span></div>
+      </div>
+
+      <div class="field anchor" id="fldCat"><label>Categoria</label>
+        <select id="cCat"><option value="">Sem categoria</option></select>
+        <span class="hint">Categorias de receita ativas (SB02).</span>
+        <span class="mk" style="left:-11px;top:22px">8</span></div>
+
+      <div class="grid2">
+        <div class="field anchor" id="fldRecebido"><label>Recebido</label>
+          <div class="toggle"><button type="button" data-v="1" onclick="setRecebido(this)">Sim</button><button type="button" data-v="0" class="on" onclick="setRecebido(this)">Não</button></div>
+          <span class="hint">Default: Não. Ao marcar, exibe a Data de recebimento (RT12).</span>
+          <span class="mk" style="left:-11px;top:22px">9</span></div>
+        <div class="field anchor" id="fldDataReceb" hidden><label>Data de recebimento <span class="req">*</span></label>
+          <input id="cDataReceb" type="date">
+          <span class="hint">Obrigatória quando Recebido = Sim (RN06).</span>
+          <span class="mk" style="left:-11px;top:22px">10</span></div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn danger anchor" onclick="closeC()">Cancelar <span class="mk" style="left:-11px;top:-11px">13</span></button>
+      <button class="btn primary anchor" onclick="saveC()">Salvar <span class="mk" style="right:-11px;top:-11px">12</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 7.4 Modal Registrar Recebimento — QUADRO_DESCRITIVO_4 ============ -->
+<div class="scrim" id="mR" hidden>
+  <div class="modal">
+    <div class="modal-h"><h3 class="anchor" id="rTitle">Registrar recebimento <span class="mk" style="left:-24px;top:0">1</span></h3><button class="x" onclick="closeR()">×</button></div>
+    <div class="modal-b">
+      <div class="field anchor"><label>Valor da receita</label>
+        <div class="readout" id="rValor">R$ 0,00</div>
+        <span class="hint">Somente leitura.</span>
+        <span class="mk" style="left:-11px;top:22px">2</span></div>
+      <div class="field anchor" id="fldDataR"><label>Data de recebimento <span class="req">*</span></label>
+        <input id="rData" type="date">
+        <span class="hint">Default: hoje. Grava <code>RECE_DT_RECEBIMENTO</code>.</span>
+        <span class="mk" style="left:-11px;top:22px">3</span></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn danger anchor" onclick="closeR()">Cancelar <span class="mk" style="left:-11px;top:-11px">5</span></button>
+      <button class="btn primary anchor" onclick="saveR()">Registrar <span class="mk" style="right:-11px;top:-11px">4</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="proto-tag">2.05 · Manter Receita — protótipo</div>
+<div class="legend">
+  <h4>Marcadores</h4>
+  <p style="color:var(--muted);margin-bottom:6px">Os números <span style="color:var(--marker);font-weight:700">●</span> ligam a tela aos itens do QUADRO_DESCRITIVO da Seção 7 do documento.</p>
+  <p style="color:var(--muted)">Tela "Receitas" (7.1) e os três modais 7.2 (Filtrar), 7.3 (Cadastro/Edição) e 7.4 (Registrar recebimento). Alterne na barra inferior.</p>
+</div>
+<div class="proto-bar">
+  <button data-v="mr-list" class="on" onclick="go(this)">7.1 Receitas</button>
+  <button data-v="mr-filtro" onclick="go(this)">7.2 Modal Filtrar</button>
+  <button data-v="mr-form" onclick="go(this)">7.3 Modal Receita</button>
+  <button data-v="mr-recebimento" onclick="go(this)">7.4 Modal Recebimento</button>
+  <button onclick="document.body.classList.toggle('no-mk')" style="margin-left:6px">◉ marcadores</button>
+  <button onclick="document.body.classList.toggle('show-legend')">? legenda</button>
+</div>
+
+<script>
+  // ---- dados de exemplo (só protótipo) ----
+  // Contas: no sistema real vêm de GET /contas/opcoes (módulo 06). [id, descricao]
+  const contas = [
+    [1,"Nubank Conta Corrente"],
+    [2,"Itaú Poupança"],
+    [3,"XP Investimentos"],
+    [4,"Carteira / Dinheiro em espécie"],
+  ];
+  // Categorias: no sistema real vêm de GET /categorias/opcoes?aplicaA=RECEITA (módulo 04). [id, nome]
+  const categorias = [
+    [1,"Salário"],
+    [2,"Freelance / Renda Extra"],
+    [3,"Rendimentos"],
+    [4,"Reembolso"],
+  ];
+  // receita: [id, competencia, nome, descricao, valor, dataLancamento, dataRecebimento, recebido, origem, contaId, categoriaId, excluido]
+  let receitas = [
+    [1,"2026-09","Salário","",6500.00,"2026-09-05","2026-09-05",true,"MANUAL",1,1,false],
+    [2,"2026-09","Freela Site Institucional","Desenvolvimento de site para cliente X",1800.00,"2026-09-15",null,false,"MANUAL",1,2,false],
+    [3,"2026-08","Dividendos XP","",342.15,"2026-08-28","2026-08-28",true,"OPEN_FINANCE",3,3,false],
+    [4,"2026-10","Salário","",6500.00,"2026-10-05",null,false,"MANUAL",1,1,false],
+    [5,"2026-09","Reembolso viagem","Reembolso de despesa de viagem a trabalho",450.00,"2026-09-10","2026-09-12",true,"MANUAL",4,4,false],
+    [6,"2026-07","Bico cancelado","",200.00,"2026-07-02",null,false,"MANUAL",1,2,true],
+  ];
+
+  const $ = s => document.querySelector(s);
+  const ORIGEM = {MANUAL:"Manual",OPEN_FINANCE:"Open Finance",IMPORTACAO:"Importação"};
+  const ORIGEM_CLS = {MANUAL:"manual",OPEN_FINANCE:"openfinance",IMPORTACAO:"importacao"};
+  let filtro = {busca:"",compDe:"",compAte:"",sit:"Todas",conta:"",cat:""};
+  let editId = null, recebId = null, recebido = 0, compTocada = false;
+  const norm = s => (s||"").normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const contaNome = id => (contas.find(c=>c[0]===id)||[,"—"])[1];
+  const catNome = id => id ? (categorias.find(c=>c[0]===id)||[,"—"])[1] : "";
+
+  function fmtMoeda(v){
+    return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
+  }
+  function fmtData(d){
+    if(!d) return "";
+    const [a,m,dd] = d.split('-');
+    return `${dd}/${m}/${a}`;
+  }
+  function fmtComp(c){
+    const [a,m] = c.split('-');
+    return `${m}/${a}`;
+  }
+  function maskMoney(el){
+    let d = el.value.replace(/\D/g,'');
+    d = d.replace(/^0+(?=\d)/,'');
+    while(d.length < 3) d = '0'+d;
+    const int = d.slice(0,-2).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+    el.value = int+','+d.slice(-2);
+  }
+  const parseMoney = s => Number(String(s).replace(/\./g,'').replace(',', '.').replace(/[^0-9.]/g,'')) || 0;
+
+  function situacao(r){
+    if(r[11]) return `<span class="badge del">Excluída</span>`;
+    return r[7] ? `<span class="badge recebida">Recebida</span>` : `<span class="badge prevista">Prevista</span>`;
+  }
+
+  function passaFiltro(r){
+    const f = filtro;
+    if(f.busca){
+      const q = norm(f.busca);
+      if(!norm(r[2]).includes(q) && !norm(r[3]).includes(q)) return false;
+    }
+    if(f.compDe && r[1] < f.compDe) return false;
+    if(f.compAte && r[1] > f.compAte) return false;
+    if(f.sit==="Prevista" && !(!r[7] && !r[11])) return false;
+    if(f.sit==="Recebida" && !(r[7] && !r[11])) return false;
+    if(f.sit==="Excluída" && !r[11]) return false;
+    if(f.conta && String(r[9])!==f.conta) return false;
+    if(f.cat && String(r[10])!==f.cat) return false;
+    return true;
+  }
+
+  function render(){
+    const tb = $("#rows"); tb.innerHTML = "";
+    const list = receitas.filter(passaFiltro).slice().sort((a,b)=> b[1].localeCompare(a[1]) || b[5].localeCompare(a[5]));
+    if(!list.length){
+      tb.innerHTML = `<tr><td colspan="10"><div class="empty">MSG08 — Nenhuma receita encontrada com os filtros informados.</div></td></tr>`;
+    } else list.forEach(r => {
+      const tr = document.createElement('tr');
+      const podeExcluir = !r[11] && r[8]==="MANUAL";
+      const podeReceber = !r[11] && !r[7];
+      tr.innerHTML = `
+        <td class="mono">${fmtComp(r[1])}</td>
+        <td>${r[2]}</td>
+        <td>${r[10]?`<span class="badge cat">${catNome(r[10])}</span>`:''}</td>
+        <td>${contaNome(r[9])}</td>
+        <td class="num">${fmtMoeda(r[4])}</td>
+        <td class="mono">${fmtData(r[5])}</td>
+        <td>${situacao(r)}</td>
+        <td class="mono">${fmtData(r[6])}</td>
+        <td><span class="badge ${ORIGEM_CLS[r[8]]}">${ORIGEM[r[8]]}</span></td>
+        <td><div class="rowact">
+          ${!r[11]?`<button class="iconbtn" title="Editar receita" aria-label="Editar receita" onclick="openC(${r[0]})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L18 10l-4-4L4 16z"/><path d="M13 5l4 4"/></svg></button>`:''}
+          ${podeReceber?`<button class="iconbtn" title="Registrar recebimento" aria-label="Registrar recebimento" onclick="openR(${r[0]})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M7 5h8a3 3 0 010 6H9a3 3 0 000 6h9"/></svg></button>`:''}
+          ${podeExcluir?`<button class="iconbtn" title="Excluir receita" aria-label="Excluir receita" onclick="excluir(${r[0]})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>`:''}
+        </div></td>`;
+      tb.appendChild(tr);
+    });
+    $("#count").textContent = `Mostrando ${list.length} de ${receitas.length}`;
+  }
+
+  // ---- combos ----
+  function fillOptions(){
+    const fConta = $("#fConta"), cConta = $("#cConta"), fCat = $("#fCat"), cCat = $("#cCat");
+    contas.forEach(c=>{
+      fConta.insertAdjacentHTML('beforeend',`<option value="${c[0]}">${c[1]}</option>`);
+      cConta.insertAdjacentHTML('beforeend',`<option value="${c[0]}">${c[1]}</option>`);
+    });
+    categorias.forEach(c=>{
+      fCat.insertAdjacentHTML('beforeend',`<option value="${c[0]}">${c[1]}</option>`);
+      cCat.insertAdjacentHTML('beforeend',`<option value="${c[0]}">${c[1]}</option>`);
+    });
+  }
+
+  // ---- filtro (7.2) ----
+  function openF(){
+    $("#fBusca").value=filtro.busca; $("#fCompDe").value=filtro.compDe; $("#fCompAte").value=filtro.compAte;
+    $("#fSit").value=filtro.sit; $("#fConta").value=filtro.conta; $("#fCat").value=filtro.cat;
+    $("#mF").hidden=false;
+  }
+  function closeF(){ $("#mF").hidden=true; }
+  function aplicarF(){
+    filtro={busca:$("#fBusca").value.trim(),compDe:$("#fCompDe").value,compAte:$("#fCompAte").value,
+            sit:$("#fSit").value,conta:$("#fConta").value,cat:$("#fCat").value};
+    closeF(); render();
+  }
+  function limparF(){
+    $("#fBusca").value=""; $("#fCompDe").value=""; $("#fCompAte").value="";
+    $("#fSit").value="Todas"; $("#fConta").value=""; $("#fCat").value="";
+    filtro={busca:"",compDe:"",compAte:"",sit:"Todas",conta:"",cat:""}; render();
+  }
+
+  // ---- receita (7.3) ----
+  function setRecebido(btn){
+    recebido = +btn.dataset.v;
+    btn.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===btn));
+    $("#fldDataReceb").hidden = recebido!==1;
+    if(recebido===1 && !$("#cDataReceb").value) $("#cDataReceb").value = hoje();
+    if(recebido===0) $("#cDataReceb").value = "";
+  }
+  function hoje(){ return new Date().toISOString().slice(0,10); }
+  function mesDe(d){ return d ? d.slice(0,7) : ""; }
+  function onDataChange(){
+    if(!compTocada) $("#cComp").value = mesDe($("#cData").value);
+  }
+  function openC(id){
+    editId = id||null; compTocada = false;
+    document.querySelectorAll('#mC .field').forEach(f=>f.classList.remove('invalid'));
+    $("#cAviso").hidden=true;
+    if(editId){
+      const r = receitas.find(x=>x[0]===editId);
+      $("#cTitle").firstChild.textContent = "Editar receita ";
+      $("#cNome").value=r[2]; $("#cDesc").value=r[3];
+      $("#cValor").value=r[4].toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+      $("#cData").value=r[5]; $("#cComp").value=r[1]; $("#cConta").value=r[9]; $("#cCat").value=r[10]||"";
+      recebido = r[7]?1:0;
+      $("#fldRecebido").querySelectorAll('.toggle button').forEach(b=>b.classList.toggle('on',+b.dataset.v===recebido));
+      $("#fldDataReceb").hidden = recebido!==1;
+      $("#cDataReceb").value = r[6]||"";
+      const importada = r[8]!=="MANUAL";
+      $("#cConta").disabled = importada;
+      $("#cContaHint").textContent = importada ? "Não pode ser alterada nesta receita (RN08)." : "Contas ativas (SB01). Não altera em receita importada (RN08).";
+      $("#cAviso").hidden = !importada;
+    } else {
+      $("#cTitle").firstChild.textContent = "Nova receita ";
+      $("#cNome").value=""; $("#cDesc").value=""; $("#cValor").value="0,00";
+      $("#cData").value=hoje(); $("#cComp").value=mesDe(hoje()); $("#cConta").value=""; $("#cConta").disabled=false; $("#cCat").value="";
+      recebido = 0;
+      $("#fldRecebido").querySelectorAll('.toggle button').forEach(b=>b.classList.toggle('on',+b.dataset.v===0));
+      $("#fldDataReceb").hidden = true; $("#cDataReceb").value="";
+      $("#cContaHint").textContent = "Contas ativas (SB01). Não altera em receita importada (RN08).";
+    }
+    $("#mC").hidden=false;
+  }
+  function closeC(){ $("#mC").hidden=true; }
+  function saveC(){
+    let ok=true;
+    const check=(id,wrap)=>{ const bad=!$("#"+id).value.trim(); $("#"+wrap).classList.toggle('invalid',bad); if(bad)ok=false; };
+    check("cNome","fldNome"); check("cValor","fldValor"); check("cData","fldData"); check("cComp","fldComp"); check("cConta","fldConta");
+    if(parseMoney($("#cValor").value)<=0){ $("#fldValor").classList.add('invalid'); toast("MSG03 — Informe um valor maior que zero."); return; }
+    if(recebido===1 && !$("#cDataReceb").value){ $("#fldDataReceb").classList.add('invalid'); toast("MSG09 — Informe a data de recebimento para marcar a receita como recebida."); return; }
+    if(!ok){ toast("MSG02 — O campo obrigatório não foi preenchido."); return; }
+    const dados = [$("#cComp").value, $("#cNome").value.trim(), $("#cDesc").value.trim(), parseMoney($("#cValor").value),
+      $("#cData").value, recebido===1?$("#cDataReceb").value:null, recebido===1, +$("#cConta").value,
+      $("#cCat").value?+$("#cCat").value:null];
+    if(editId){
+      const r = receitas.find(x=>x[0]===editId);
+      const origem = r[8];
+      r[1]=dados[0]; r[2]=dados[1]; r[3]=dados[2]; r[4]=dados[3]; r[5]=dados[4];
+      r[6]=dados[5]; r[7]=dados[6]; if(origem==="MANUAL") r[9]=dados[7]; r[10]=dados[8];
+      toast("MSG04 — Receita atualizada com sucesso.");
+    } else {
+      receitas.push([Math.max(...receitas.map(x=>x[0]))+1, dados[0], dados[1], dados[2], dados[3],
+        dados[4], dados[5], dados[6], "MANUAL", dados[7], dados[8], false]);
+      toast("MSG01 — Receita cadastrada com sucesso.");
+    }
+    closeC(); render();
+  }
+  function excluir(id){
+    const r = receitas.find(x=>x[0]===id);
+    if(!confirm(`MSG06 — Confirma a exclusão da receita "${r[2]}"?`)) return;
+    r[11]=true;
+    render(); toast("MSG07 — Receita excluída com sucesso.");
+  }
+
+  // ---- registrar recebimento (7.4) ----
+  function openR(id){
+    recebId = id;
+    const r = receitas.find(x=>x[0]===id);
+    document.querySelectorAll('#mR .field').forEach(f=>f.classList.remove('invalid'));
+    $("#rTitle").firstChild.textContent = `Registrar recebimento — ${r[2]} `;
+    $("#rValor").textContent = fmtMoeda(r[4]);
+    $("#rData").value = hoje();
+    $("#mR").hidden=false;
+  }
+  function closeR(){ $("#mR").hidden=true; }
+  function saveR(){
+    if(!$("#rData").value){ $("#fldDataR").classList.add('invalid'); toast("MSG02 — O campo Data de recebimento é obrigatório."); return; }
+    const r = receitas.find(x=>x[0]===recebId);
+    r[6] = $("#rData").value; r[7] = true;
+    closeR(); render(); toast("MSG10 — Recebimento registrado com sucesso.");
+  }
+
+  // ---- navegação ----
+  function showList(){ swap('s-list','nav-mr','Receitas'); }
+  function swap(screen,nav,title){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===screen));
+    document.querySelectorAll('.side .navitem').forEach(n=>n.classList.toggle('active',n.id===nav));
+    $("#topTitle").textContent=title;
+    window.scrollTo(0,0);
+  }
+  function go(btn){
+    document.querySelectorAll('.proto-bar button[data-v]').forEach(b=>b.classList.toggle('on',b===btn));
+    const v=btn.dataset.v;
+    showList();
+    closeF();closeC();closeR();
+    if(v==='mr-filtro')      openF();
+    if(v==='mr-form')        openC(3);   // modo edição em receita importada: mostra o aviso 11 e a conta desabilitada
+    if(v==='mr-recebimento') openR(2);
+  }
+
+  function toast(msg){
+    const t=document.createElement('div');
+    t.textContent=msg;
+    t.style.cssText='position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:80;box-shadow:var(--shadow);max-width:80vw;text-align:center';
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2800);
+  }
+
+  fillOptions();
+  render();
+</script>

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protótipo — Meus Cartões</title>
+<!--
+  Protótipo navegável — Documento 2.04 · Manter Cartão de Crédito (tela "Meus Cartões").
+  Espelha o padrão REAL já implementado em código (Tabler 1.4.0 + Bootstrap + Phosphor),
+  copiado de conta/listar.html, conta/fragments/modal-conta.html e modal-filtro.html —
+  não o CSS custom usado nos protótipos dos módulos 01-06 (anteriores ao código real).
+  3 telas/modais, correspondendo aos QUADRO_DESCRITIVO_1..3 da Seção 7:
+    mcc-list   -> QUADRO_DESCRITIVO_1  Meus Cartões (listagem)
+    mcc-filtro -> QUADRO_DESCRITIVO_2  Modal Filtrar Cartões
+    mcc-form   -> QUADRO_DESCRITIVO_3  Modal Cadastro / Edição de Cartão
+  Os marcadores numéricos (●) correspondem aos IDs de cada QUADRO_DESCRITIVO.
+
+  Combobox Conta de débito (SB02): alimentado pelo endpoint de opções de contas do
+  documento 2.03 - manter-conta (GET /contas/opcoes, assumido). Aqui, dados de exemplo.
+  Vendor local (sem CDN): vendor/tabler.min.css, vendor/tabler.min.js (inclui o Bootstrap
+  JS compilado no bundle da Tabler — mesmo arquivo usado em produção), vendor/phosphor.css
+  + vendor/Phosphor.woff2 (webjars reais do projeto).
+-->
+<link href="vendor/tabler.min.css" rel="stylesheet">
+<link href="vendor/phosphor.css" rel="stylesheet">
+<style>
+  body{background:var(--tblr-body-bg,#f4f6fa)}
+  .mk{position:absolute;z-index:1200;width:20px;height:20px;border-radius:50%;background:#d6336c;color:#fff;
+      font:600 11px/20px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;text-align:center;
+      box-shadow:0 0 0 2px #fff,0 2px 6px rgba(0,0,0,.35);pointer-events:none}
+  body.no-mk .mk{display:none}
+  .anchor{position:relative}
+  .mk-inline{position:static;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle}
+  .proto-bar{position:fixed;right:16px;bottom:16px;z-index:1400;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;
+     background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 24px rgba(20,30,45,.16);padding:8px;max-width:min(94vw,860px)}
+  .proto-bar button{padding:6px 10px;border-radius:7px;border:1px solid #e5e7eb;background:#f4f6fa;font-size:12px;font-weight:600;color:#626976;cursor:pointer}
+  .proto-bar button.on{background:#206bc4;border-color:#206bc4;color:#fff}
+  .proto-tag{position:fixed;left:16px;bottom:16px;z-index:1400;font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#626976;
+     background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:7px 10px;box-shadow:0 8px 24px rgba(20,30,45,.16)}
+  .legend{position:fixed;left:16px;bottom:52px;z-index:1400;background:#fff;border:1px solid #e5e7eb;border-radius:10px;
+     box-shadow:0 8px 24px rgba(20,30,45,.16);padding:12px 14px;font-size:12px;max-width:360px;display:none;color:#1b2430}
+  body.show-legend .legend{display:block}
+  .legend h4{font:600 11px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:#626976;margin-bottom:8px}
+</style>
+</head>
+<body class="layout-fluid">
+<div class="page">
+
+  <!-- ============ Sidebar (espelha sistema/template-admin/fragments/sidebar.html) ============ -->
+  <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="navbar-brand navbar-brand-autodark">dscproject</div>
+      <div class="collapse navbar-collapse show" id="sidebar-menu">
+        <ul class="navbar-nav pt-lg-3">
+          <li class="nav-item">
+            <a class="nav-link" href="#">
+              <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ph ph-house" aria-hidden="true"></i></span>
+              <span class="nav-link-title">Home</span>
+            </a>
+          </li>
+          <li class="nav-item dropdown active">
+            <a class="nav-link dropdown-toggle show" href="#navbar-financas" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="true">
+              <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ph ph-wallet" aria-hidden="true"></i></span>
+              <span class="nav-link-title">Finanças</span>
+            </a>
+            <div class="dropdown-menu show">
+              <a class="dropdown-item" href="#">
+                <i class="ph ph-credit-card dropdown-item-icon" aria-hidden="true"></i>
+                <span>Minhas Contas</span>
+              </a>
+              <a class="dropdown-item active" href="#" id="nav-cartoes">
+                <i class="ph ph-cardholder dropdown-item-icon" aria-hidden="true"></i>
+                <span>Cartões</span>
+                <span class="mk mk-inline">0</span>
+              </a>
+              <a class="dropdown-item" href="#">
+                <i class="ph ph-tag dropdown-item-icon" aria-hidden="true"></i>
+                <span>Categorias</span>
+              </a>
+              <a class="dropdown-item" href="#">
+                <i class="ph ph-bank dropdown-item-icon" aria-hidden="true"></i>
+                <span>Instituições Financeiras</span>
+              </a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#navbar-admin" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+              <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ph ph-gear" aria-hidden="true"></i></span>
+              <span class="nav-link-title">Administração</span>
+            </a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="#"><i class="ph ph-users dropdown-item-icon" aria-hidden="true"></i><span>Usuários</span></a>
+              <a class="dropdown-item" href="#"><i class="ph ph-shield-check dropdown-item-icon" aria-hidden="true"></i><span>Perfis e Permissões</span></a>
+              <a class="dropdown-item" href="#"><i class="ph ph-sliders-horizontal dropdown-item-icon" aria-hidden="true"></i><span>Parâmetros Globais</span></a>
+            </div>
+          </li>
+          <li class="nav-item mt-auto">
+            <a class="nav-link" href="#">
+              <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ph ph-user-circle" aria-hidden="true"></i></span>
+              <span class="nav-link-title">Diego Cordeiro</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <button type="button" class="btn btn-outline-danger btn-sm w-100"><i class="ph ph-sign-out" aria-hidden="true"></i> Sair</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+  <div class="page-wrapper">
+
+    <!-- ============ 7.1 Meus Cartões (Listagem) — QUADRO_DESCRITIVO_1 ============ -->
+    <div class="page-header d-print-none" aria-label="Page header">
+      <div class="container-xl">
+        <div class="row g-2 align-items-center">
+          <div class="col anchor">
+            <h2 class="page-title">Meus Cartões <span class="mk" style="left:-26px;top:2px">2</span></h2>
+            <br><br>
+            <nav aria-label="Breadcrumb" class="anchor">
+              <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="#"><i class="ph ph-house" aria-hidden="true"></i></a></li>
+                <li class="breadcrumb-item">Finanças</li>
+                <li class="breadcrumb-item active" aria-current="page">Cartões</li>
+              </ol>
+              <span class="mk" style="left:-26px;top:-2px">1</span>
+            </nav>
+            <br>
+            <div class="text-secondary mt-1 anchor">
+              Cadastre os seus cartões de crédito e defina os dias de fechamento e vencimento da fatura.
+              <span class="mk" style="left:-26px;top:0">3</span>
+            </div>
+          </div>
+          <div class="col-auto ms-auto">
+            <button class="btn anchor" id="btnFiltrar" data-bs-toggle="modal" data-bs-target="#modalFiltroCartao">
+              <i class="ph ph-funnel" aria-hidden="true"></i>
+              <span>Filtrar</span>
+              <span class="mk" style="left:-11px;top:-11px">4</span>
+            </button>
+            <button class="btn btn-primary anchor" id="btnNovoCartao" onclick="abrirNovo()">
+              <i class="ph ph-plus" aria-hidden="true"></i>
+              <span>Novo cartão</span>
+              <span class="mk" style="right:-11px;top:-11px">5</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="container-xl">
+        <div class="card anchor">
+          <span class="mk" style="left:-13px;top:44px">6</span>
+          <div class="table-responsive">
+            <table class="table table-vcenter card-table" id="tabelaCartoes">
+              <thead>
+              <tr>
+                <th data-col="descricao" class="sortable" role="button">Descrição <span class="mk mk-inline">7</span></th>
+                <th data-col="bandeira" class="sortable" role="button">Bandeira <span class="mk mk-inline">8</span></th>
+                <th>Final <span class="mk mk-inline">9</span></th>
+                <th data-col="limite" class="sortable text-end" role="button">Limite <span class="mk mk-inline">10</span></th>
+                <th>Fechamento / Vencimento <span class="mk mk-inline">11</span></th>
+                <th data-col="conta" class="sortable" role="button">Conta de débito <span class="mk mk-inline">12</span></th>
+                <th data-col="situacao" class="sortable" role="button">Situação <span class="mk mk-inline">13</span></th>
+                <th class="w-1">Ações <span class="mk mk-inline">14</span></th>
+              </tr>
+              </thead>
+              <tbody id="corpoTabelaCartoes"></tbody>
+            </table>
+          </div>
+          <div class="card-footer d-flex align-items-center">
+            <p class="m-0 text-secondary" id="rodapeContagemCartoes"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 7.2 Modal: Filtrar Cartões — QUADRO_DESCRITIVO_2 ============ -->
+<div class="modal modal-blur fade" id="modalFiltroCartao" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header anchor">
+        <h5 class="modal-title">Filtrar Cartões</h5>
+        <span class="mk" style="left:-13px;top:6px">1</span>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3 anchor">
+          <label class="form-label" for="filtroBusca">Busca</label>
+          <input type="text" class="form-control" id="filtroBusca" placeholder="Descrição ou final do cartão">
+          <small class="form-hint">Parte da descrição ou os 4 dígitos finais — sem acento.</small>
+          <span class="mk" style="left:-11px;top:22px">2</span>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3 anchor">
+            <label class="form-label" for="filtroBandeira">Bandeira</label>
+            <select class="form-select" id="filtroBandeira">
+              <option value="">Todas</option>
+              <option value="VISA">Visa</option>
+              <option value="MASTERCARD">Mastercard</option>
+              <option value="ELO">Elo</option>
+              <option value="AMEX">Amex</option>
+            </select>
+            <span class="mk" style="left:-11px;top:22px">3</span>
+          </div>
+          <div class="col-md-6 mb-3 anchor">
+            <label class="form-label" for="filtroSituacao">Situação</label>
+            <select class="form-select" id="filtroSituacao">
+              <option value="ATIVO" selected>Ativo</option>
+              <option value="INATIVO">Inativo</option>
+              <option value="EXCLUIDO">Excluído</option>
+              <option value="TODAS">Todas</option>
+            </select>
+            <span class="mk" style="left:-11px;top:22px">4</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer anchor">
+        <button type="button" class="btn btn-link link-secondary me-auto" onclick="limparFiltro()">Limpar <span class="mk" style="left:-11px;top:-11px">6</span></button>
+        <button type="button" class="btn btn-primary" onclick="aplicarFiltro()">Aplicar <span class="mk" style="right:-11px;top:-11px">5</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 7.3 Modal: Cadastro / Edição de Cartão — QUADRO_DESCRITIVO_3 ============ -->
+<div class="modal modal-blur fade" id="modalCartao" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <form id="formCartao" onsubmit="return salvarCartao(event)" novalidate>
+        <input type="hidden" id="cartaoId">
+        <div class="modal-header anchor">
+          <h5 class="modal-title" id="tituloModalCartao">Novo cartão</h5>
+          <span class="mk" style="left:-13px;top:6px">1</span>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info align-items-center mb-3 anchor" id="avisoCartao" style="display:none;" role="alert">
+            <i class="ph ph-info alert-icon me-2" aria-hidden="true"></i>
+            <div id="avisoCartaoTexto"></div>
+            <span class="mk" style="left:-11px;top:-11px">10</span>
+          </div>
+
+          <div class="mb-3 anchor">
+            <label class="form-label required" for="cartaoDescricao">Descrição</label>
+            <input type="text" class="form-control" id="cartaoDescricao" maxlength="100" placeholder="Ex.: NUBANK ULTRAVIOLETA" required>
+            <div class="invalid-feedback" id="erroDescricao"></div>
+            <span class="mk" style="left:-11px;top:22px">2</span>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3 anchor">
+              <label class="form-label" for="cartaoBandeira">Bandeira</label>
+              <select class="form-select" id="cartaoBandeira">
+                <option value="">Selecione…</option>
+                <option value="VISA">Visa</option>
+                <option value="MASTERCARD">Mastercard</option>
+                <option value="ELO">Elo</option>
+                <option value="AMEX">Amex</option>
+              </select>
+              <span class="mk" style="left:-11px;top:22px">3</span>
+            </div>
+            <div class="col-md-6 mb-3 anchor">
+              <label class="form-label" for="cartaoFinal">Final do cartão</label>
+              <input type="text" class="form-control" id="cartaoFinal" maxlength="4" inputmode="numeric" placeholder="0000" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)">
+              <div class="invalid-feedback" id="erroFinal"></div>
+              <span class="mk" style="left:-11px;top:22px">4</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3 anchor">
+              <label class="form-label" for="cartaoLimite">Limite (R$)</label>
+              <input type="text" class="form-control" id="cartaoLimite" placeholder="0,00" oninput="maskMoney(this)">
+              <span class="mk" style="left:-11px;top:22px">5</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3 anchor">
+              <label class="form-label" for="cartaoDiaFechamento">Dia de fechamento</label>
+              <input type="number" class="form-control" id="cartaoDiaFechamento" min="1" max="31" placeholder="1 a 31" oninput="limitarDia(this)">
+              <div class="invalid-feedback" id="erroDiaFechamento"></div>
+              <span class="mk" style="left:-11px;top:22px">6</span>
+            </div>
+            <div class="col-md-6 mb-3 anchor">
+              <label class="form-label" for="cartaoDiaVencimento">Dia de vencimento</label>
+              <input type="number" class="form-control" id="cartaoDiaVencimento" min="1" max="31" placeholder="1 a 31" oninput="limitarDia(this)">
+              <div class="invalid-feedback" id="erroDiaVencimento"></div>
+              <span class="mk" style="left:-11px;top:22px">7</span>
+            </div>
+          </div>
+
+          <div class="mb-3 anchor">
+            <label class="form-label" for="cartaoContaDebito">Conta de débito</label>
+            <select class="form-select" id="cartaoContaDebito">
+              <option value="">Nenhuma</option>
+            </select>
+            <small class="form-hint">Contas ativas do usuário (documento 2.03 - manter-conta).</small>
+            <div class="invalid-feedback" id="erroContaDebito"></div>
+            <span class="mk" style="left:-11px;top:22px">8</span>
+          </div>
+
+          <div class="mb-3 anchor" id="grupoAtivoCartao" style="display:none;">
+            <label class="form-label" for="cartaoAtivo">Ativo</label>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="cartaoAtivo" checked>
+              <label class="form-check-label" for="cartaoAtivo">Ativo</label>
+            </div>
+            <small class="form-hint">Cartão inativo some do combobox de novas despesas.</small>
+            <span class="mk" style="left:-11px;top:22px">9</span>
+          </div>
+        </div>
+        <div class="modal-footer anchor">
+          <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar <span class="mk" style="left:-11px;top:-11px">12</span></button>
+          <button type="submit" class="btn btn-primary">Salvar <span class="mk" style="right:-11px;top:-11px">11</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="proto-tag">2.04 · Manter Cartão de Crédito — protótipo</div>
+<div class="legend">
+  <h4>Marcadores</h4>
+  <p style="color:#626976;margin-bottom:6px">Os números <span style="color:#d6336c;font-weight:700">●</span> ligam a tela aos itens do QUADRO_DESCRITIVO da Seção 7 do documento.</p>
+  <p style="color:#626976">Tela "Meus Cartões" (7.1) e os modais 7.2 (Filtrar) e 7.3 (Cadastro/Edição). Alterne na barra inferior.</p>
+</div>
+<div class="proto-bar">
+  <button data-v="mcc-list" class="on" onclick="go(this)">7.1 Meus Cartões</button>
+  <button data-v="mcc-filtro" onclick="go(this)">7.2 Modal Filtrar</button>
+  <button data-v="mcc-form" onclick="go(this)">7.3 Modal Cartão (novo)</button>
+  <button data-v="mcc-form-edit" onclick="go(this)">7.3 Modal Cartão (edição c/ vínculo)</button>
+  <button onclick="document.body.classList.toggle('no-mk')" style="margin-left:6px">◉ marcadores</button>
+  <button onclick="document.body.classList.toggle('show-legend')">? legenda</button>
+</div>
+
+<script src="vendor/tabler.min.js"></script>
+<script>
+  // ---- dados de exemplo (só protótipo) ----
+  // Contas: no sistema real vêm de GET /contas/opcoes (documento 2.03 - manter-conta). [id, descricao]
+  const contas = [
+    [1, "Nubank Conta Corrente"],
+    [2, "Itaú Poupança"],
+    [3, "XP Investimentos"],
+  ];
+  const BANDEIRA = {VISA:"Visa", MASTERCARD:"Mastercard", ELO:"Elo", AMEX:"Amex"};
+  // cartao: [id, descricao, bandeira, final, limite, diaFechamento, diaVencimento, contaId, qtdVinculos, ativo, excluido]
+  let cartoes = [
+    [1, "Nubank Ultravioleta", "MASTERCARD", "1234", 15000.00, 5, 12, 1, 7, true, false],
+    [2, "Itaú Click",          "VISA",       "5678", 8000.00,  10, 17, null, 3, true, false],
+    [3, "XP Visa Infinite",    "VISA",       "9999", null,     null, null, 3, 0, true, false],
+    [4, "C6 Carbon",           "MASTERCARD", "4321", 5000.00,  1, 8,  null, 0, false, false],
+    [5, "Cartão Antigo Elo",   "ELO",        "",     null,     null, null, null, 0, true, true],
+  ];
+
+  const $ = s => document.querySelector(s);
+  const norm = s => (s || "").normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const contaNome = id => (contas.find(c => c[0] === id) || [, "—"])[1];
+
+  function fmtMoeda(v) {
+    if (v == null) return '<span class="text-muted">—</span>';
+    return new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'}).format(v);
+  }
+  function maskMoney(el) {
+    let d = el.value.replace(/\D/g, '');
+    if (!d) { el.value = ''; return; }
+    d = d.replace(/^0+(?=\d)/, '');
+    while (d.length < 3) d = '0' + d;
+    const int = d.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    el.value = int + ',' + d.slice(-2);
+  }
+  const parseMoney = s => {
+    if (!s || !s.trim()) return null;
+    const n = Number(String(s).replace(/\./g, '').replace(',', '.'));
+    return isNaN(n) ? null : n;
+  };
+  function limitarDia(el) {
+    let v = el.value.replace(/\D/g, '').slice(0, 2);
+    if (v && Number(v) > 31) v = '31';
+    el.value = v;
+  }
+
+  let filtro = {busca: "", bandeira: "", situacao: "ATIVO"};
+  let ordenacao = {col: "descricao", asc: true};
+
+  function passaFiltro(c) {
+    if (filtro.busca) {
+      const q = norm(filtro.busca);
+      if (!norm(c[1]).includes(q) && !norm(c[3]).includes(q)) return false;
+    }
+    if (filtro.bandeira && c[2] !== filtro.bandeira) return false;
+    if (filtro.situacao === "ATIVO" && !(c[9] && !c[10])) return false;
+    if (filtro.situacao === "INATIVO" && !(!c[9] && !c[10])) return false;
+    if (filtro.situacao === "EXCLUIDO" && !c[10]) return false;
+    return true;
+  }
+
+  function ordenar(lista) {
+    const {col, asc} = ordenacao;
+    return lista.slice().sort((a, b) => {
+      let va, vb;
+      if (col === "descricao") { va = a[1]; vb = b[1]; }
+      else if (col === "bandeira") { va = BANDEIRA[a[2]] || ''; vb = BANDEIRA[b[2]] || ''; }
+      else if (col === "limite") { va = a[4] || 0; vb = b[4] || 0; return asc ? va - vb : vb - va; }
+      else if (col === "conta") { va = contaNome(a[7]); vb = contaNome(b[7]); }
+      else if (col === "situacao") { va = a[10] ? 2 : (a[9] ? 0 : 1); vb = b[10] ? 2 : (b[9] ? 0 : 1); }
+      if (typeof va === 'string') { const r = va.localeCompare(vb, 'pt-BR'); return asc ? r : -r; }
+      return (va > vb ? 1 : -1) * (asc ? 1 : -1);
+    });
+  }
+
+  function situacaoHtml(c) {
+    if (c[10]) return '<span class="badge bg-red text-red-fg">Excluído</span>';
+    return c[9] ? '<span class="badge bg-green text-green-fg">Ativo</span>' : '<span class="badge bg-secondary text-secondary-fg">Inativo</span>';
+  }
+
+  function render() {
+    const corpo = $("#corpoTabelaCartoes");
+    const filtradas = cartoes.filter(passaFiltro);
+    const lista = ordenar(filtradas);
+    corpo.innerHTML = "";
+    if (!lista.length) {
+      corpo.innerHTML = '<tr><td colspan="8" class="text-center text-secondary">Nenhum cartão encontrado com os filtros informados.</td></tr>';
+    } else lista.forEach(c => {
+      const tr = document.createElement('tr');
+      const fechVenc = (c[5] || c[6]) ? `Dia ${c[5] ?? '—'} / Dia ${c[6] ?? '—'}` : '<span class="text-muted">—</span>';
+      const podeAcao = !c[10];
+      let acao = '';
+      if (podeAcao) {
+        acao += `<button type="button" class="btn btn-action" onclick="abrirEdicao(${c[0]})" title="Editar cartão" aria-label="Editar cartão"><i class="ph ph-pencil-simple" aria-hidden="true"></i></button> `;
+        acao += `<button type="button" class="btn btn-action text-danger" onclick="excluir(${c[0]})" title="Excluir cartão" aria-label="Excluir cartão"><i class="ph ph-trash" aria-hidden="true"></i></button>`;
+      }
+      tr.innerHTML = `
+        <td><strong>${c[1]}</strong></td>
+        <td>${c[2] ? `<span class="badge bg-blue-lt">${BANDEIRA[c[2]]}</span>` : '<span class="text-muted">—</span>'}</td>
+        <td>${c[3] ? '•••• ' + c[3] : '<span class="text-muted">—</span>'}</td>
+        <td class="text-end">${fmtMoeda(c[4])}</td>
+        <td>${fechVenc}</td>
+        <td>${c[7] ? contaNome(c[7]) : '<span class="text-muted">Não definida</span>'}</td>
+        <td>${situacaoHtml(c)}</td>
+        <td><div class="d-flex gap-1">${acao}</div></td>`;
+      corpo.appendChild(tr);
+    });
+    $("#rodapeContagemCartoes").textContent = `Mostrando ${lista.length} de ${cartoes.length} cartões`;
+  }
+
+  document.querySelectorAll('#tabelaCartoes thead th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (ordenacao.col === col) ordenacao.asc = !ordenacao.asc; else { ordenacao.col = col; ordenacao.asc = true; }
+      render();
+    });
+  });
+
+  // ---- filtro (7.2) ----
+  // tabler.min.js reimplementa o Bootstrap sem expor `window.bootstrap` — aciona
+  // via um gatilho real com data-bs-toggle (os listeners são delegados no document).
+  function abrirModal(id) {
+    let trig = document.getElementById('trig-' + id);
+    if (!trig) {
+      trig = document.createElement('button');
+      trig.id = 'trig-' + id; trig.type = 'button'; trig.hidden = true;
+      trig.setAttribute('data-bs-toggle', 'modal');
+      trig.setAttribute('data-bs-target', '#' + id);
+      document.body.appendChild(trig);
+    }
+    trig.click();
+  }
+  function fecharModal(id) {
+    document.getElementById(id).querySelector('[data-bs-dismiss="modal"]')?.click();
+  }
+  function aplicarFiltro() {
+    filtro = {busca: $("#filtroBusca").value.trim(), bandeira: $("#filtroBandeira").value, situacao: $("#filtroSituacao").value};
+    fecharModal('modalFiltroCartao'); render();
+  }
+  function limparFiltro() {
+    $("#filtroBusca").value = ''; $("#filtroBandeira").value = ''; $("#filtroSituacao").value = 'ATIVO';
+    filtro = {busca: "", bandeira: "", situacao: "ATIVO"};
+    fecharModal('modalFiltroCartao'); render();
+  }
+
+  // ---- cartão (7.3) ----
+  function preencherContasCombo() {
+    const sel = $("#cartaoContaDebito");
+    sel.innerHTML = '<option value="">Nenhuma</option>';
+    contas.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${c[0]}">${c[1]}</option>`));
+  }
+  function limparErros() {
+    document.querySelectorAll('#formCartao .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+  }
+  function abrirNovo() {
+    limparErros();
+    preencherContasCombo();
+    $("#cartaoId").value = '';
+    $("#tituloModalCartao").textContent = 'Novo cartão';
+    $("#cartaoDescricao").value = ''; $("#cartaoBandeira").value = ''; $("#cartaoFinal").value = '';
+    $("#cartaoLimite").value = ''; $("#cartaoDiaFechamento").value = ''; $("#cartaoDiaVencimento").value = '';
+    $("#cartaoContaDebito").value = '';
+    $("#grupoAtivoCartao").style.display = 'none';
+    $("#avisoCartao").style.display = 'none';
+    abrirModal('modalCartao');
+  }
+  function abrirEdicao(id) {
+    limparErros();
+    preencherContasCombo();
+    const c = cartoes.find(x => x[0] === id);
+    $("#cartaoId").value = c[0];
+    $("#tituloModalCartao").textContent = 'Editar cartão';
+    $("#cartaoDescricao").value = c[1]; $("#cartaoBandeira").value = c[2] || '';
+    $("#cartaoFinal").value = c[3] || ''; $("#cartaoLimite").value = c[4] != null ? c[4].toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '';
+    $("#cartaoDiaFechamento").value = c[5] ?? ''; $("#cartaoDiaVencimento").value = c[6] ?? '';
+    $("#cartaoContaDebito").value = c[7] || '';
+    $("#cartaoAtivo").checked = c[9];
+    $("#grupoAtivoCartao").style.display = 'block';
+    if (c[8] > 0) {
+      $("#avisoCartaoTexto").textContent = `Este cartão possui ${c[8]} fatura(s)/despesa(s) vinculada(s). Ele não pode ser excluído; você pode desativá-lo.`;
+      $("#avisoCartao").style.display = 'flex';
+    } else {
+      $("#avisoCartao").style.display = 'none';
+    }
+    abrirModal('modalCartao');
+  }
+  function salvarCartao(e) {
+    e.preventDefault();
+    limparErros();
+    let ok = true;
+    if (!$("#cartaoDescricao").value.trim()) { $("#cartaoDescricao").classList.add('is-invalid'); $("#erroDescricao").textContent = 'O campo Descrição é obrigatório.'; ok = false; }
+    const fech = $("#cartaoDiaFechamento").value, venc = $("#cartaoDiaVencimento").value;
+    if (fech && (fech < 1 || fech > 31)) { $("#cartaoDiaFechamento").classList.add('is-invalid'); $("#erroDiaFechamento").textContent = 'Informe um dia entre 1 e 31.'; ok = false; }
+    if (venc && (venc < 1 || venc > 31)) { $("#cartaoDiaVencimento").classList.add('is-invalid'); $("#erroDiaVencimento").textContent = 'Informe um dia entre 1 e 31.'; ok = false; }
+    const fin = $("#cartaoFinal").value;
+    if (fin && fin.length !== 4) { $("#cartaoFinal").classList.add('is-invalid'); $("#erroFinal").textContent = 'O final do cartão deve ter exatamente 4 dígitos.'; ok = false; }
+    if (!ok) return false;
+    const id = $("#cartaoId").value;
+    const dados = [
+      id ? Number(id) : Math.max(...cartoes.map(x => x[0])) + 1,
+      $("#cartaoDescricao").value.trim(),
+      $("#cartaoBandeira").value || null,
+      $("#cartaoFinal").value || "",
+      parseMoney($("#cartaoLimite").value),
+      $("#cartaoDiaFechamento").value ? Number($("#cartaoDiaFechamento").value) : null,
+      $("#cartaoDiaVencimento").value ? Number($("#cartaoDiaVencimento").value) : null,
+      $("#cartaoContaDebito").value ? Number($("#cartaoContaDebito").value) : null,
+      id ? cartoes.find(x => x[0] === Number(id))[8] : 0,
+      id ? $("#cartaoAtivo").checked : true,
+      false,
+    ];
+    if (id) {
+      const idx = cartoes.findIndex(x => x[0] === Number(id));
+      cartoes[idx] = dados;
+      toast('Cartão atualizado com sucesso.');
+    } else {
+      cartoes.push(dados);
+      toast('Cartão cadastrado com sucesso.');
+    }
+    fecharModal('modalCartao'); render();
+    return false;
+  }
+  function excluir(id) {
+    const c = cartoes.find(x => x[0] === id);
+    if (!confirm(`Confirma a exclusão do cartão "${c[1]}"?`)) return;
+    if (c[8] > 0) {
+      if (confirm('Este cartão possui faturas ou despesas vinculadas e não pode ser excluído.\n\nDeseja desativá-lo agora?')) {
+        c[9] = false; render(); toast('Cartão atualizado com sucesso.');
+      }
+      return;
+    }
+    c[10] = true; c[9] = false;
+    render(); toast('Cartão excluído com sucesso.');
+  }
+
+  function toast(msg) {
+    const area = document.createElement('div');
+    area.className = 'position-fixed bottom-0 end-0 p-3';
+    area.style.zIndex = 1500;
+    area.innerHTML = `<div class="toast show align-items-center text-white bg-primary border-0" role="alert"><div class="d-flex"><div class="toast-body">${msg}</div></div></div>`;
+    document.body.appendChild(area);
+    setTimeout(() => area.remove(), 2800);
+  }
+
+  // ---- navegação (barra do protótipo) ----
+  function go(btn) {
+    document.querySelectorAll('.proto-bar button[data-v]').forEach(b => b.classList.toggle('on', b === btn));
+    window.scrollTo(0, 0);
+    const v = btn.dataset.v;
+    const abrir = () => {
+      if (v === 'mcc-filtro') abrirModal('modalFiltroCartao');
+      if (v === 'mcc-form') abrirNovo();
+      if (v === 'mcc-form-edit') abrirEdicao(1);
+    };
+    const aberto = document.querySelector('.modal.show');
+    if (aberto) {
+      aberto.addEventListener('hidden.bs.modal', abrir, {once: true});
+      fecharModal('modalFiltroCartao'); fecharModal('modalCartao');
+    } else {
+      abrir();
+    }
+  }
+
+  render();
+</script>
+</body>
+</html>

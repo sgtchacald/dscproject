@@ -1,0 +1,115 @@
+<title>DER — Manter Receita</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f7f9fb;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2430}
+  #diagram{width:1440px;padding:26px 28px 32px;background:#f7f9fb}
+  h1{font-size:15px;margin:0 0 2px}
+  .note{color:#69747f;font-size:11.5px;margin:0 0 18px;max-width:1320px}
+  .canvas{position:relative;height:900px}
+  .ent{position:absolute;background:#fff;border:1px solid;border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgba(20,30,45,.06)}
+  .ent > h2{margin:0;font-size:12px;font-weight:700;text-align:center;padding:7px 8px;line-height:1.35}
+  .ent ul{margin:0;padding:0;list-style:none}
+  .ent li{padding:4px 10px;font-size:11px;border-top:1px solid #eef1f4;white-space:nowrap}
+  .ent li.k{font-weight:700}
+  .ent li.mut{color:#8b95a1}
+  .rec  > h2{background:#fbf3e6;color:#8a5a12}   .rec{border-color:#8a5a12}
+  .cta  > h2{background:#eaf2fb;color:#1f3864}   .cta{border-color:#1f3864}
+  .cate > h2{background:#eaf7ef;color:#1f6b45}   .cate{border-color:#1f6b45}
+  .usu  > h2{background:#f1eaf7;color:#5b3b86}   .usu{border-color:#5b3b86}
+  .opfi > h2{background:#f3f0fb;color:#5b3b86}   .opfi{border-color:#5b3b86}
+  svg.wires{position:absolute;left:0;top:0;width:1440px;height:900px;pointer-events:none;overflow:visible}
+  .wires path{stroke:#69747f;stroke-width:1.4;fill:none}
+  .wires text{fill:#69747f;font-size:10.5px}
+  .legend{position:absolute;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;color:#69747f;font-size:10.5px;line-height:1.5}
+</style>
+<div id="diagram">
+  <h1>DER — Manter Receita</h1>
+  <p class="note">Subconjunto do DER do Documento 0 — QUADRO_DESCRITIVO_9 (<code>RECEITAS</code>), _5 (<code>CONTAS</code>), _3 (<code>CATEGORIAS</code>) e _2 (<code>USUARIOS</code>), mais o vínculo lógico com <code>OPFI_TRANSACOES</code>. Este documento não cria tabela nova nem faz <code>ALTER TABLE</code>.</p>
+  <div class="canvas">
+    <svg class="wires" viewBox="0 0 1440 900" preserveAspectRatio="none">
+      <path d="M370,180 C440,180 450,290 510,300"/>
+      <text x="380" y="142">USU_ID &#160; 1 &#8594; N &#160; (NOT NULL)</text>
+      <path d="M370,470 C440,470 450,410 510,398" stroke-dasharray="0"/>
+      <text x="380" y="500">CTA_ID &#160; 1 &#8594; N &#160; (NULLABLE no schema &#183; obrigat&#243;ria na aplica&#231;&#227;o &#8212; RN03)</text>
+      <path d="M370,720 C450,720 470,560 510,520" stroke-dasharray="5 4"/>
+      <text x="380" y="760">CATE_ID &#160; 1 &#8594; N &#160; (NULLABLE)</text>
+      <path d="M990,290 C1020,290 1030,290 1050,280" stroke-dasharray="5 4"/>
+      <text x="1000" y="270">v&#237;nculo l&#243;gico (n&#227;o FK) &#8212; RN08</text>
+    </svg>
+
+    <div class="ent usu" style="left:0;top:90px;width:370px">
+      <h2>USUARIOS</h2>
+      <ul>
+        <li class="k">USU_ID (PK)</li>
+        <li>USU_NOME</li>
+        <li>USU_LOGIN (UK) · USU_EMAIL (UK)</li>
+        <li>PERF_ID (FK → PERFIS)</li>
+        <li class="mut">dono da receita — via CONTAS.USU_ID</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent cta" style="left:0;top:400px;width:370px">
+      <h2>CONTAS</h2>
+      <ul>
+        <li class="k">CTA_ID (PK)</li>
+        <li>CTA_DESCRICAO</li>
+        <li>CTA_TIPO {CORRENTE|POUPANCA|INVESTIMENTO|CARTEIRA}</li>
+        <li>CTA_FL_ATIVO BOOLEAN</li>
+        <li class="k">USU_ID (FK → USUARIOS) NOT NULL</li>
+        <li class="mut">catálogo do documento 2.03 — só leitura aqui</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent cate" style="left:0;top:710px;width:370px">
+      <h2>CATEGORIAS</h2>
+      <ul>
+        <li class="k">CATE_ID (PK)</li>
+        <li>CATE_NOME</li>
+        <li>CATE_APLICA_A {RECEITA|DESPESA|AMBOS}</li>
+        <li>CATE_FL_ATIVO BOOLEAN</li>
+        <li class="mut">catálogo do documento 2.01 — só leitura aqui</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent rec" style="left:510px;top:210px;width:480px">
+      <h2>RECEITAS</h2>
+      <ul>
+        <li class="k">RECE_ID (PK)</li>
+        <li>RECE_COMPETENCIA CHAR(7) 'yyyy-MM' NOT NULL</li>
+        <li>RECE_NOME VARCHAR(100) NOT NULL</li>
+        <li>RECE_DESCRICAO VARCHAR(512) NULL</li>
+        <li>RECE_VALOR DECIMAL(15,2) NOT NULL (&gt; 0 — RN05)</li>
+        <li>RECE_DT_LANCAMENTO DATE NOT NULL</li>
+        <li>RECE_FL_RECEBIDO BOOLEAN DEFAULT FALSE</li>
+        <li>RECE_DT_RECEBIMENTO DATE NULL</li>
+        <li>RECE_ORIGEM VARCHAR(20) {MANUAL|OPEN_FINANCE|IMPORTACAO} DEFAULT 'MANUAL'</li>
+        <li class="k">CTA_ID (FK → CONTAS) NULLABLE no schema · obrigatória na aplicação (RN03)</li>
+        <li class="k">CATE_ID (FK → CATEGORIAS) NULLABLE</li>
+        <li class="mut">audit_* — @Audited (Hibernate Envers)</li>
+      </ul>
+    </div>
+
+    <div class="ent opfi" style="left:1050px;top:210px;width:290px">
+      <h2>OPFI_TRANSACOES</h2>
+      <ul>
+        <li class="k">OPFI_ID (PK)</li>
+        <li class="mut">vínculo lógico com a receita gerada — não é FK</li>
+        <li class="mut">base da restrição de exclusão da receita importada (RN08)</li>
+        <li class="mut">Documento 0, Observações 19 e 21</li>
+      </ul>
+    </div>
+
+    <div class="legend" style="top:500px;left:510px;width:480px">
+      <b style="color:#8a5a12">RECEITAS</b>: CRUD + registro de recebimento, sempre no escopo do <code>USU_ID</code>
+      resolvido por <code>CTA_ID → CONTAS.USU_ID</code> (RN02).<br><br>
+      Sem trava de "em uso": nenhuma tabela do domínio tem FK para <code>RECEITAS</code> (RN09). A única restrição de
+      exclusão é a receita importada do Open Finance (<code>RECE_ORIGEM ≠ MANUAL</code> — RN08), cuja transação de
+      staging guarda um vínculo lógico (não físico) com a receita gerada.<br><br>
+      <code>CONTAS</code> e <code>CATEGORIAS</code> vêm dos documentos 2.03 e 2.01 — só leitura nesta tela.
+    </div>
+  </div>
+</div>
