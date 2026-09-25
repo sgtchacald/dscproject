@@ -1,0 +1,112 @@
+<title>DER — Manter Cartão de Crédito</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;background:#f7f9fb;font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2430}
+  #diagram{width:1440px;padding:26px 28px 32px;background:#f7f9fb}
+  h1{font-size:15px;margin:0 0 2px}
+  .note{color:#69747f;font-size:11.5px;margin:0 0 18px;max-width:1320px}
+  .canvas{position:relative;height:900px}
+  .ent{position:absolute;background:#fff;border:1px solid;border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgba(20,30,45,.06)}
+  .ent > h2{margin:0;font-size:12px;font-weight:700;text-align:center;padding:7px 8px;line-height:1.35}
+  .ent ul{margin:0;padding:0;list-style:none}
+  .ent li{padding:4px 10px;font-size:11px;border-top:1px solid #eef1f4;white-space:nowrap}
+  .ent li.k{font-weight:700}
+  .ent li.mut{color:#8b95a1}
+  .cacr > h2{background:#eaf7ef;color:#1f6b45}   .cacr{border-color:#1f6b45}
+  .cta  > h2{background:#eaf2fb;color:#1f3864}   .cta{border-color:#1f3864}
+  .usu  > h2{background:#f1eaf7;color:#5b3b86}   .usu{border-color:#5b3b86}
+  .uso  > h2{background:#fbf3e6;color:#8a5a12}   .uso{border-color:#8a5a12}
+  svg.wires{position:absolute;left:0;top:0;width:1440px;height:900px;pointer-events:none;overflow:visible}
+  .wires path{stroke:#69747f;stroke-width:1.4;fill:none}
+  .wires text{fill:#69747f;font-size:10.5px}
+  .legend{position:absolute;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;color:#69747f;font-size:10.5px;line-height:1.5}
+</style>
+<div id="diagram">
+  <h1>DER — Manter Cartão de Crédito</h1>
+  <p class="note">Subconjunto do DER do Documento 0 — QUADRO_DESCRITIVO_6 (<code>CARTOES_CREDITO</code>), _5 (<code>CONTAS</code>) e _2 (<code>USUARIOS</code>), mais as FKs <code>CACR_ID</code> de <code>FATURAS_CARTAO</code> e <code>DESPESAS</code>. Este documento não cria tabela nova nem faz <code>ALTER TABLE</code>.</p>
+  <div class="canvas">
+    <svg class="wires" viewBox="0 0 1440 900" preserveAspectRatio="none">
+      <path d="M370,150 C440,150 450,255 510,268"/>
+      <text x="380" y="112">USU_ID &#160; 1 &#8594; N &#160; (NOT NULL &#183; escopo row-level RN02)</text>
+      <path d="M370,470 C440,470 450,360 510,350" stroke-dasharray="5 4"/>
+      <text x="380" y="562">CTA_ID &#160; 1 &#8594; N &#160; (NULLABLE &#183; RN07)</text>
+      <path d="M990,240 C1012,240 1012,150 1030,142"/>
+      <text x="1000" y="302">CACR_ID &#160; 1 &#8594; N &#160; (NOT NULL)</text>
+      <path d="M990,340 C1014,390 1014,480 1030,485" stroke-dasharray="5 4"/>
+      <text x="1000" y="404">CACR_ID &#160; 1 &#8594; N &#160; (NULLABLE)</text>
+    </svg>
+
+    <div class="ent usu" style="left:0;top:90px;width:370px">
+      <h2>USUARIOS</h2>
+      <ul>
+        <li class="k">USU_ID (PK)</li>
+        <li>USU_NOME</li>
+        <li>USU_LOGIN (UK) · USU_EMAIL (UK)</li>
+        <li>PERF_ID (FK → PERFIS)</li>
+        <li class="mut">dono do cartão — CARTOES_CREDITO.USU_ID</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent cta" style="left:0;top:400px;width:370px">
+      <h2>CONTAS</h2>
+      <ul>
+        <li class="k">CTA_ID (PK)</li>
+        <li>CTA_DESCRICAO</li>
+        <li>CTA_FL_ATIVO BOOLEAN</li>
+        <li>USU_ID (FK → USUARIOS) NOT NULL</li>
+        <li class="mut">documento 2.03 — só leitura aqui (SB02, RN07)</li>
+        <li class="mut">audit_*</li>
+      </ul>
+    </div>
+
+    <div class="ent cacr" style="left:510px;top:150px;width:480px">
+      <h2>CARTOES_CREDITO</h2>
+      <ul>
+        <li class="k">CACR_ID (PK)</li>
+        <li>CACR_DESCRICAO VARCHAR(100) NOT NULL</li>
+        <li>CACR_BANDEIRA VARCHAR(30) NULL</li>
+        <li>CACR_FINAL_CARTAO CHAR(4) NULL</li>
+        <li>CACR_LIMITE DECIMAL(15,2) NULL</li>
+        <li>CACR_DIA_FECHAMENTO TINYINT NULL — CHECK 1..31</li>
+        <li>CACR_DIA_VENCIMENTO TINYINT NULL — CHECK 1..31</li>
+        <li>CACR_FL_ATIVO BOOLEAN DEFAULT TRUE</li>
+        <li class="k">CTA_ID (FK → CONTAS) NULLABLE</li>
+        <li class="k">USU_ID (FK → USUARIOS) NOT NULL</li>
+        <li class="mut">audit_* — @Audited (Hibernate Envers)</li>
+      </ul>
+    </div>
+
+    <div class="ent uso" style="left:1030px;top:70px;width:370px">
+      <h2>FATURAS_CARTAO</h2>
+      <ul>
+        <li class="k">FACA_ID (PK)</li>
+        <li class="k">CACR_ID (FK → CARTOES_CREDITO) <b>NOT NULL</b></li>
+        <li class="mut">cartão com fatura nunca é excluível (RN08)</li>
+        <li class="mut">documento 2.08 — fora do escopo aqui</li>
+        <li class="mut">audit_data_exclusao</li>
+      </ul>
+    </div>
+
+    <div class="ent uso" style="left:1030px;top:420px;width:370px">
+      <h2>DESPESAS</h2>
+      <ul>
+        <li class="k">DESP_ID (PK)</li>
+        <li>CACR_ID (FK → CARTOES_CREDITO) <b>NULLABLE</b></li>
+        <li class="mut">bloqueio parametrizável (RN08 · CARTAO_EXCLUSAO_...)</li>
+        <li class="mut">documento 2.06 — fora do escopo aqui</li>
+        <li class="mut">audit_data_exclusao</li>
+      </ul>
+    </div>
+
+    <div class="legend" style="top:640px;left:510px;width:480px">
+      <b style="color:#1f6b45">CARTOES_CREDITO</b>: CRUD + desativação, sempre no escopo do
+      <code>USU_ID</code> autenticado (RN02). <code>CTA_ID</code> (conta de débito) é opcional e,
+      quando informado, precisa ser de uma conta ativa do mesmo usuário (RN07, via C5).<br><br>
+      A trava de exclusão (RN08 / C4) atravessa as duas FKs <code>CACR_ID</code>. <code>FATURAS_CARTAO.CACR_ID</code>
+      é <code>NOT NULL</code> — sempre bloqueia; <code>DESPESAS.CACR_ID</code> é <code>NULLABLE</code> e o bloqueio
+      depende do parâmetro <code>CARTAO_EXCLUSAO_BLOQUEIA_EM_USO</code>.
+    </div>
+  </div>
+</div>

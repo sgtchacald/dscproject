@@ -3,7 +3,7 @@
 # do Documento 0 - Fundação do dscproject-spring-mvc.
 import html, os, textwrap
 
-OUT = "/home/dscordeiro/dev_home/dscproject/dsc-spring-mvc/docs/modulos-sistema/00 - analise-geral"
+OUT = os.path.dirname(os.path.abspath(__file__))
 
 AUDIT = [("audit_data_criacao", "DATETIME(6)"), ("audit_criado_por", "VARCHAR(400)"),
          ("audit_data_alteracao", "DATETIME(6)"), ("audit_alterado_por", "VARCHAR(400)"),
@@ -218,7 +218,7 @@ def gen_der():
            f'<mxGraphModel dx="1600" dy="1000" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" '
            f'arrows="1" fold="1" page="1" pageScale="1" pageWidth="4000" pageHeight="3200" math="0" shadow="0">'
            f'<root>{body}</root></mxGraphModel></diagram></mxfile>')
-    open(os.path.join(OUT, "documento-0-fundacao-der.drawio"), "w").write(xml)
+    open(os.path.join(OUT, "documento-0-fundacao-der.drawio"), "w", encoding="utf-8").write(xml)
     print("DER:", en, "FKs")
 
 # ---------------------------------------------------------------- PlantUML
@@ -278,7 +278,7 @@ def gen_puml():
           'enum StatusConexao { ATUALIZANDO\nATUALIZADO\nERRO_LOGIN\nDESATUALIZADO\nAGUARDANDO_USUARIO }',
           'enum StatusConciliacao { PENDENTE\nCONCILIADA\nIGNORADA }',
           '@enduml']
-    open(os.path.join(OUT, "documento-0-fundacao-classes.puml"), "w").write("\n".join(L))
+    open(os.path.join(OUT, "documento-0-fundacao-classes.puml"), "w", encoding="utf-8").write("\n".join(L))
     print("PUML ok")
 
 # ---------------------------------------------------------------- XMI / Umbrello
@@ -403,7 +403,7 @@ def gen_xmi():
     out.append('</XMI.extension>')
     out.append('</XMI.content>')
     out.append('</XMI>')
-    open(os.path.join(OUT, "documento-0-fundacao-classes.xmi"), "w").write("\n".join(out))
+    open(os.path.join(OUT, "documento-0-fundacao-classes.xmi"), "w", encoding="utf-8").write("\n".join(out))
     print("XMI ok")
 
 def _tablecell(cells, cid, title, rows, x, y, w, fill, stroke):
@@ -497,7 +497,7 @@ def gen_classes_drawio():
          f'<mxGraphModel dx="1600" dy="1000" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" '
          f'arrows="1" fold="1" page="1" pageScale="1" pageWidth="4000" pageHeight="2600" math="0" shadow="0">'
          f'<root>{"".join(cells)}</root></mxGraphModel></diagram></mxfile>')
-    open(os.path.join(OUT,"documento-0-fundacao-classes.drawio"),"w").write(xml)
+    open(os.path.join(OUT,"documento-0-fundacao-classes.drawio"),"w", encoding="utf-8").write(xml)
     print("classes.drawio:", en, "assoc")
 
 gen_der()

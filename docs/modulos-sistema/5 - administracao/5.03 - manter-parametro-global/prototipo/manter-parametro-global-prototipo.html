@@ -1,0 +1,484 @@
+<title>Protótipo Manter Parâmetro Global</title>
+<style>
+  :root{
+    --ground:#f5f6f8; --surface:#ffffff; --surface-2:#fbfbfc; --border:#e5e7eb;
+    --ink:#1b2430; --muted:#69747f; --primary:#1f6fd0; --primary-ink:#ffffff;
+    --ok:#1f9d57; --ok-bg:#e4f5ec; --warn:#8a6d1f; --warn-bg:#fbf1d9;
+    --gone:#8b95a1; --gone-bg:#eef0f2;
+    --edit-bg:#fff8e1; --edit-ring:#e0a800;
+    --marker:#d1367f; --shadow:0 1px 2px rgba(20,30,45,.06),0 8px 24px rgba(20,30,45,.08);
+    --radius:9px;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#12171e; --surface:#1a212a; --surface-2:#161d25; --border:#2a333e;
+      --ink:#e7eaee; --muted:#93a0ad; --primary:#4c96e6; --primary-ink:#0c1116;
+      --ok:#41c37e; --ok-bg:#12331f; --warn:#d8b25a; --warn-bg:#332a12;
+      --gone:#7c8894; --gone-bg:#232b34;
+      --edit-bg:#2c2610; --edit-ring:#d8b25a;
+      --marker:#ec6aa8; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#12171e; --surface:#1a212a; --surface-2:#161d25; --border:#2a333e;
+    --ink:#e7eaee; --muted:#93a0ad; --primary:#4c96e6; --primary-ink:#0c1116;
+    --ok:#41c37e; --ok-bg:#12331f; --warn:#d8b25a; --warn-bg:#332a12;
+    --gone:#7c8894; --gone-bg:#232b34;
+    --edit-bg:#2c2610; --edit-ring:#d8b25a;
+    --marker:#ec6aa8; --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+  h1,h2,h3,p{margin:0}
+  button{font:inherit;color:inherit;cursor:pointer}
+  a{color:var(--primary);text-decoration:none}
+
+  /* shell */
+  .app{display:grid;grid-template-columns:224px 1fr;min-height:100vh}
+  .side{background:var(--surface);border-right:1px solid var(--border);padding:18px 12px;display:flex;flex-direction:column;gap:6px}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px;padding:6px 8px 14px}
+  .brand .dot{width:22px;height:22px;border-radius:6px;background:var(--primary);display:grid;place-items:center;color:var(--primary-ink);font-size:12px}
+  .navlabel{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:14px 8px 4px}
+  .navitem{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:var(--muted);font-weight:500}
+  .navitem svg{width:16px;height:16px;flex:none}
+  .navitem.active{background:color-mix(in srgb,var(--primary) 12%,transparent);color:var(--primary)}
+  .topbar{height:56px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 22px}
+  .who{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13px}
+  .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#8b5cf6);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:600}
+  .main{padding:26px 30px 110px;max-width:1140px}
+  .crumb{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .page-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:4px}
+  .page-h h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .sub{color:var(--muted);margin-bottom:20px;max-width:640px}
+  .toolbar{display:flex;gap:10px;margin-bottom:14px}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:13px}
+  .btn svg{width:15px;height:15px}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+  .btn.ghost{background:transparent}
+  .btn.link{border:none;background:none;color:var(--primary);padding:8px 2px}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{text-align:left;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:13px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+  tbody td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--surface-2)}
+  td.mono{font-family:var(--mono);font-size:12px}
+  td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .badge.type{background:color-mix(in srgb,var(--primary) 12%,transparent);color:var(--primary)}
+  .badge.ok{background:var(--ok-bg);color:var(--ok)}
+  .badge.gone{background:var(--gone-bg);color:var(--gone)}
+  .rowact{display:flex;gap:4px}
+  .iconbtn{width:30px;height:30px;border-radius:7px;border:1px solid transparent;background:transparent;display:grid;place-items:center;color:var(--muted)}
+  .iconbtn:hover{background:var(--surface-2);border-color:var(--border);color:var(--ink)}
+  .iconbtn svg{width:16px;height:16px}
+  .tblfoot{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;color:var(--muted);font-size:12.5px}
+  .pager{display:flex;gap:4px}
+  .pager span{min-width:28px;height:28px;border-radius:6px;border:1px solid var(--border);display:grid;place-items:center;font-size:12px}
+  .pager span.on{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+
+  /* editable cells */
+  td.editable{cursor:text;position:relative}
+  td.editable:hover{background:var(--edit-bg)}
+  td.editable:hover::after{content:"✎";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--edit-ring)}
+  td.editing{background:var(--edit-bg);box-shadow:inset 0 0 0 2px var(--edit-ring)}
+  td.editing::after{content:none}
+  td .cell-editor{width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--edit-ring);background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+  td .cell-editor.bool{display:inline-flex;gap:4px}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}
+  .seg button{padding:4px 12px;background:var(--surface);border:none;font-size:12px;font-weight:600;color:var(--muted)}
+  .seg button.on{background:var(--primary);color:var(--primary-ink)}
+
+  /* forms */
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .field label{font-size:12.5px;font-weight:600}
+  .field label .req{color:#d6336c}
+  .field input,.field select,.field textarea{padding:9px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit}
+  .field textarea{resize:vertical;min-height:64px}
+  .field .hint{font-size:11.5px;color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+  .kv{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+  .kv .k{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .kv .v{font-size:13.5px}
+  .diff{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 11px}
+  .diff .from{color:var(--muted);text-decoration:line-through}
+  .diff .arrow{color:var(--muted);margin:0 6px}
+  .diff .to{color:var(--ok);font-weight:700}
+  .warnbox{display:flex;gap:9px;background:var(--warn-bg);border:1px solid color-mix(in srgb,var(--warn) 45%,transparent);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
+  .warnbox svg{width:16px;height:16px;flex:none;margin-top:1px}
+
+  /* modal */
+  .scrim{position:fixed;inset:0;background:rgba(15,22,32,.5);display:grid;place-items:center;padding:24px;z-index:40}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);width:min(460px,100%);max-height:88vh;overflow:auto}
+  .modal.wide{width:min(680px,100%)}
+  .modal-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .modal-h h3{font-size:15px;font-weight:700}
+  .modal-b{padding:18px 20px}
+  .modal-f{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border)}
+  .x{border:none;background:none;color:var(--muted);font-size:18px;line-height:1;padding:4px}
+
+  /* numbered markers */
+  .mk{position:absolute;z-index:30;width:20px;height:20px;border-radius:50%;background:var(--marker);color:#fff;
+      font:600 11px/20px var(--mono);text-align:center;box-shadow:0 0 0 2px var(--surface),0 2px 6px rgba(0,0,0,.35);pointer-events:none}
+  body.no-mk .mk{display:none}
+  .anchor{position:relative}
+
+  /* prototype chrome */
+  .proto-bar{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;
+     background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:8px;max-width:min(94vw,760px)}
+  .proto-bar button{padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);font-size:12px;font-weight:600;color:var(--muted)}
+  .proto-bar button.on{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
+  .proto-tag{position:fixed;left:16px;bottom:16px;z-index:60;font:600 11px/1 var(--mono);color:var(--muted);
+     background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;box-shadow:var(--shadow)}
+  .legend{position:fixed;left:16px;bottom:52px;z-index:60;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+     box-shadow:var(--shadow);padding:12px 14px;font-size:12px;max-width:320px;display:none}
+  body.show-legend .legend{display:block}
+  .legend h4{font:600 11px/1.4 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+  .screen{display:none}
+  .screen.on{display:block}
+  @media (max-width:820px){.app{grid-template-columns:1fr}.side{display:none}}
+</style>
+
+<!-- ============ SCREEN: app shell (7.1 + 7.2 + 7.3 + 7.4) ============ -->
+<div class="screen on" id="s-app">
+  <div class="app">
+    <aside class="side">
+      <div class="brand"><span class="dot">d</span> dscproject</div>
+      <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg> Início</div>
+      <div class="navlabel">Financeiro</div>
+      <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg> Contas</div>
+      <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 6H9a3 3 0 000 6h6a3 3 0 010 6H7"/></svg> Despesas</div>
+      <div class="navlabel">Administração</div>
+      <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Usuários</div>
+      <div class="navitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4M7.8 4.3a2 2 0 011.9-1.3h4.6a2 2 0 011.9 1.3l.5 1.3 1.4.8 1.4-.2a2 2 0 012 1l2.3 4a2 2 0 01-.4 2.4l-1 1v1.6l1 1a2 2 0 01.4 2.4l-2.3 4a2 2 0 01-2 1l-1.4-.2-1.4.8-.5 1.3a2 2 0 01-1.9 1.3H9.7a2 2 0 01-1.9-1.3"/></svg> Perfis e Permissões</div>
+      <div class="navitem active anchor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg> Parâmetros Globais
+        <span class="mk" style="right:6px;top:6px">0</span></div>
+    </aside>
+    <div>
+      <div class="topbar">
+        <strong style="font-size:14px">Parâmetros Globais</strong>
+        <div class="who"><span>Diego Cordeiro</span><span class="avatar">DC</span></div>
+      </div>
+      <main class="main">
+        <div class="anchor">
+          <div class="crumb">Administração <span style="opacity:.5">›</span> Parâmetros Globais <span class="mk" style="left:-26px;top:-2px">1</span></div>
+          <div class="page-h">
+            <h1 class="anchor">Parâmetros Globais <span class="mk" style="left:-26px;top:2px">2</span></h1>
+            <div class="toolbar" style="margin:0">
+              <button class="btn ghost anchor" onclick="openF()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg> Filtrar
+                <span class="mk" style="left:-11px;top:-11px">4</span></button>
+            </div>
+          </div>
+          <p class="sub anchor">Ajuste os valores de configuração que o sistema lê em tempo de execução. Os parâmetros são definidos no código; aqui você edita apenas o valor. <span class="mk" style="left:-26px;top:0">3</span></p>
+
+          <div class="card anchor">
+            <span class="mk" style="left:-13px;top:44px">5</span>
+            <div style="overflow-x:auto">
+            <table>
+              <thead><tr>
+                <th class="anchor">Módulo <span class="mk" style="left:52px;top:8px">6</span></th>
+                <th class="anchor">Código <span class="mk" style="left:52px;top:8px">7</span></th>
+                <th class="anchor">Nome <span class="mk" style="left:42px;top:8px">8</span></th>
+                <th class="anchor">Tipo <span class="mk" style="left:36px;top:8px">9</span></th>
+                <th class="anchor">Valor <span class="mk" style="left:40px;top:8px">10</span></th>
+                <th class="anchor">Situação <span class="mk" style="left:56px;top:8px">11</span></th>
+                <th class="anchor">Última alteração <span class="mk" style="left:104px;top:8px">12</span></th>
+                <th class="anchor" style="width:96px">Ações <span class="mk" style="left:38px;top:8px">13</span></th>
+              </tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+            </div>
+            <div class="tblfoot">
+              <span>Mostrando 1–8 de 8</span>
+              <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+            </div>
+          </div>
+          <p style="margin-top:10px;color:var(--muted);font-size:12px">
+            Grid <b>client-side</b> (DataTables) com edição inline — clique na célula <b>Valor</b> para editar (Obs. 11/15, RT04); o editor se adapta ao tipo da linha. Tipo é somente-leitura. Ao confirmar, abre o modal de confirmação (RT05).
+          </p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- modal: filtrar (7.2) -->
+  <div class="scrim" id="mF" style="display:none">
+    <div class="modal">
+      <div class="modal-h"><h3 class="anchor">Filtrar Parâmetros <span class="mk" style="left:-24px;top:0">1</span></h3><button class="x" onclick="closeF()">×</button></div>
+      <div class="modal-b">
+        <div class="field anchor"><label>Busca</label>
+          <input placeholder="Código ou nome">
+          <span class="hint">Parte do código ou do nome — sem acento.</span>
+          <span class="mk" style="left:-11px;top:22px">2</span></div>
+        <div class="grid2">
+          <div class="field anchor"><label>Módulo</label>
+            <select><option>Todos</option><option>Parâmetros Globais</option><option>Categoria</option><option>Conta</option><option>Instituição Financeira</option></select>
+            <span class="mk" style="left:-11px;top:22px">3</span></div>
+          <div class="field anchor"><label>Tipo</label>
+            <select><option>Todos</option><option>STRING</option><option>INTEGER</option><option>DECIMAL</option><option>BOOLEAN</option></select>
+            <span class="mk" style="left:-11px;top:22px">4</span></div>
+        </div>
+        <div class="field anchor" style="max-width:220px"><label>Situação</label>
+          <select><option>Todas</option><option>Ativo</option><option>Órfão</option></select>
+          <span class="mk" style="left:-11px;top:22px">5</span></div>
+      </div>
+      <div class="modal-f">
+        <button class="btn ghost anchor" onclick="closeF()">Limpar <span class="mk" style="left:-11px;top:-11px">7</span></button>
+        <button class="btn primary anchor" onclick="closeF()">Aplicar <span class="mk" style="right:-11px;top:-11px">6</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- modal: confirmar alteração (7.3) -->
+  <div class="scrim" id="mC" style="display:none">
+    <div class="modal">
+      <div class="modal-h"><h3 class="anchor">Confirmar alteração <span class="mk" style="left:-24px;top:0">1</span></h3><button class="x" onclick="closeC()">×</button></div>
+      <div class="modal-b">
+        <div class="kv anchor"><span class="k">Parâmetro</span><span class="v"><b id="cCod" style="font-family:var(--mono)">CONTA_MOEDA_PADRAO</b> — <span id="cNome">Moeda padrão de novas contas</span></span>
+          <span class="mk" style="left:-11px;top:4px">2</span></div>
+        <div class="kv anchor" id="cValorRow"><span class="k">Valor</span>
+          <div class="diff"><span class="from" id="cValFrom">BRL</span><span class="arrow">→</span><span class="to" id="cValTo">USD</span></div>
+          <span class="mk" style="left:-11px;top:4px">3</span></div>
+        <div class="warnbox anchor" id="cOrfa" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+          <span>Este parâmetro não existe mais no catálogo do sistema. Ele ainda pode estar sendo lido por rotinas antigas.</span>
+          <span class="mk" style="left:-11px;top:-11px">4</span></div>
+        <div class="field anchor"><label>Motivo <span class="req">*</span></label>
+          <textarea placeholder="Explique por que este valor está mudando." maxlength="255"></textarea>
+          <span class="hint">Obrigatório. Vai para o histórico de revisões (RN03).</span>
+          <span class="mk" style="left:-11px;top:22px">5</span></div>
+      </div>
+      <div class="modal-f">
+        <button class="btn ghost anchor" onclick="closeC(true)">Cancelar <span class="mk" style="left:-11px;top:-11px">7</span></button>
+        <button class="btn primary anchor" onclick="saveC()">Salvar <span class="mk" style="right:-11px;top:-11px">6</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- modal: histórico (7.4) -->
+  <div class="scrim" id="mH" style="display:none">
+    <div class="modal wide">
+      <div class="modal-h">
+        <div>
+          <h3 class="anchor">Histórico — <span style="font-family:var(--mono)" id="hCod">CATEGORIA_EXCLUSAO_BLOQUEIA_EM_USO</span> <span class="mk" style="left:-24px;top:0">1</span></h3>
+          <p class="anchor" style="color:var(--muted);font-size:12px;margin-top:2px" id="hSub">Bloqueia excluir categoria em uso · Módulo: Categoria <span class="mk" style="left:-24px;top:0">2</span></p>
+        </div>
+        <button class="x" onclick="closeH()">×</button>
+      </div>
+      <div class="modal-b" style="padding:0">
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th class="anchor">Data/Hora <span class="mk" style="left:66px;top:8px">4</span></th>
+            <th class="anchor">Autor <span class="mk" style="left:42px;top:8px">5</span></th>
+            <th class="anchor">Tipo <span class="mk" style="left:36px;top:8px">6</span></th>
+            <th class="anchor">Valor <span class="mk" style="left:40px;top:8px">7</span></th>
+            <th class="anchor">Motivo <span class="mk" style="left:48px;top:8px">8</span></th>
+          </tr></thead>
+          <tbody>
+            <tr><td class="num">18/09/2026 14:22</td><td>Diego Cordeiro</td><td><span class="badge type">BOOLEAN</span></td><td class="mono">true</td><td>Reforço de trava por auditoria interna</td></tr>
+            <tr><td class="num">03/07/2026 09:10</td><td>Marina Souza</td><td><span class="badge type">BOOLEAN</span></td><td class="mono">false</td><td>Liberação temporária para limpeza de base</td></tr>
+            <tr><td class="num">08/09/2026 00:00</td><td>sistema (carga)</td><td><span class="badge type">BOOLEAN</span></td><td class="mono">true</td><td>—</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="anchor" style="padding:12px 20px;color:var(--muted);font-size:12px;margin:0">Somente leitura. Revisões via Hibernate Envers, da mais recente para a mais antiga (EDP05). <span class="mk" style="left:6px;top:2px">3</span></p>
+      </div>
+      <div class="modal-f">
+        <button class="btn ghost anchor" onclick="closeH()">Fechar <span class="mk" style="left:-11px;top:-11px">9</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- prototype chrome -->
+<div class="proto-tag">5.03 · Manter Parâmetro Global — protótipo</div>
+<div class="legend">
+  <h4>Marcadores</h4>
+  <p style="color:var(--muted);margin-bottom:6px">Os números <span style="color:var(--marker);font-weight:700">●</span> ligam a tela aos itens do QUADRO_DESCRITIVO da Seção 7 do documento.</p>
+  <p style="color:var(--muted)">Passe o mouse na célula <b>Valor</b> e clique para ver a edição inline. Tipo é somente-leitura.</p>
+</div>
+<div class="proto-bar">
+  <button data-s="s-app" data-view="list" class="on" onclick="go(this)">7.1 Listagem</button>
+  <button data-s="s-app" data-view="filtro" onclick="go(this)">7.2 Modal Filtrar</button>
+  <button data-s="s-app" data-view="confirm" onclick="go(this)">7.3 Confirmar Alteração</button>
+  <button data-s="s-app" data-view="hist" onclick="go(this)">7.4 Histórico</button>
+  <button onclick="document.body.classList.toggle('no-mk')" style="margin-left:6px">◉ marcadores</button>
+  <button onclick="document.body.classList.toggle('show-legend')">? legenda</button>
+</div>
+
+<script>
+  // [modulo, codigo, nome, tipo, valor, orfa, alteradoPor, dataAlteracao, valorDefault]
+  const params = [
+    ["Parâmetros Globais","PARAMETROS_SYNC_CATALOGO_NA_INICIALIZACAO","Sincronizar catálogo na inicialização","BOOLEAN","true",false,"sistema (carga)","08/09/2026","true"],
+    ["Parâmetros Globais","PARAMETROS_VALOR_CACHE","Cachear valor lido por código","BOOLEAN","true",false,"Diego Cordeiro","10/09/2026","true"],
+    ["Categoria","CATEGORIA_EXCLUSAO_BLOQUEIA_EM_USO","Bloqueia excluir categoria em uso","BOOLEAN","true",false,"Diego Cordeiro","18/09/2026","true"],
+    ["Categoria","CATEGORIA_COMBOBOX_CACHE","Cache do combobox de categorias (min)","INTEGER","30",false,"","","30"],
+    ["Conta","CONTA_MOEDA_PADRAO","Moeda padrão de novas contas","STRING","BRL",false,"Marina Souza","22/08/2026","BRL"],
+    ["Conta","CONTA_EXCLUSAO_BLOQUEIA_EM_USO","Bloqueia excluir conta em uso","BOOLEAN","true",false,"","","true"],
+    ["Instituição Financeira","INSTITUICAO_COMBOBOX_CACHE","Cache do combobox de instituições (min)","DECIMAL","15,5",false,"Rafael Antunes","01/09/2026","10"],
+    ["—","RECURSO_ANTIGO","(sem correspondente no catálogo)","STRING","legado",true,"","","legado"],
+  ];
+  const icon = {
+    restore:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/></svg>',
+    hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 7v5l3 2M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4"/></svg>'
+  };
+  const rows = document.getElementById('rows');
+  let editing = null; // {tr, field}
+
+  function badgeType(t){ return `<span class="badge type">${t}</span>`; }
+  function valDisplay(tipo,v){
+    if(tipo==='BOOLEAN') return `<span class="badge ${v==='true'?'ok':'gone'}">${v==='true'?'Sim':'Não'}</span>`;
+    return `<span class="mono">${v}</span>`;
+  }
+
+  function render(){
+    rows.innerHTML='';
+    params.forEach((p,i)=>{
+      const orfa=p[5];
+      const tr=document.createElement('tr');
+      tr.dataset.i=i;
+      const showRestore = p[4]!==p[8];
+      tr.innerHTML = `
+        <td>${p[0]}</td>
+        <td class="mono">${p[1]}</td>
+        <td>${p[2]}</td>
+        <td class="anchor">${badgeType(p[3])}${i===4?'<span class="mk" style="right:-2px;top:-9px">9</span>':''}</td>
+        <td class="editable anchor" data-f="valor">${valDisplay(p[3],p[4])}${i===4?'<span class="mk" style="right:-2px;top:-9px">10</span>':''}</td>
+        <td><span class="badge ${orfa?'gone':'ok'}">${orfa?'Órfão':'Ativo'}</span></td>
+        <td class="num">${p[6]?`${p[6]}<br><span style="color:var(--muted);font-size:11px">${p[7]}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+        <td><div class="rowact">
+          ${showRestore?`<button class="iconbtn anchor" title="Restaurar valor padrão (${p[8]})" onclick="restore(${i})">${icon.restore}${i===6?'<span class="mk" style="left:-2px;top:-9px">13</span>':''}</button>`:''}
+          <button class="iconbtn anchor" title="Ver histórico" onclick="openH(${i})">${icon.hist}</button>
+        </div></td>`;
+      rows.appendChild(tr);
+    });
+    document.querySelectorAll('td.editable').forEach(td=>td.addEventListener('click',()=>startEdit(td)));
+  }
+
+  function startEdit(td){
+    if(td.classList.contains('editing')) return;
+    cancelEdit();
+    const tr=td.closest('tr'); const i=+tr.dataset.i; const p=params[i];
+    editing={tr,td,i,orig:p[4]};
+    td.classList.add('editing');
+    if(p[3]==='BOOLEAN'){
+      td.innerHTML=`<span class="seg"><button data-v="true" class="${p[4]==='true'?'on':''}">Sim</button><button data-v="false" class="${p[4]==='false'?'on':''}">Não</button></span>`;
+      td.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>commit(b.dataset.v)));
+    } else {
+      const hint=p[3]==='INTEGER'?'inteiro (ex.: 30)':p[3]==='DECIMAL'?'decimal (ex.: 10,5)':p[3]==='JSON'?'JSON válido':'texto livre';
+      td.innerHTML=`<input class="cell-editor" value="${p[4]}" placeholder="${hint}">`;
+      const inp=td.querySelector('input'); inp.focus(); inp.select();
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter') commit(inp.value); if(e.key==='Escape') cancelEdit(); });
+      inp.addEventListener('blur',()=>commit(inp.value));
+    }
+  }
+
+  function valid(tipo,v){
+    if(tipo==='INTEGER') return /^-?\d+$/.test(v.trim());
+    if(tipo==='DECIMAL') return /^-?\d+([.,]\d+)?$/.test(v.trim());
+    if(tipo==='BOOLEAN') return v==='true'||v==='false';
+    if(tipo==='JSON'){ try{ JSON.parse(v); return true; }catch(e){ return false; } }
+    return v.trim().length>0;
+  }
+
+  function commit(newVal){
+    if(!editing) return;
+    const {i,orig}=editing; const p=params[i];
+    if(newVal===orig){ cancelEdit(); return; }
+    if(!valid(p[3],newVal)){
+      const inp=editing.td.querySelector('.cell-editor');
+      if(inp){ inp.style.borderColor='#d6336c'; inp.title='Valor inválido para o tipo '+p[3]; }
+      alert(mSeg(p[3]));
+      return; // fica em edição
+    }
+    openConfirm(i,{valTo:newVal});
+  }
+  function mSeg(t){ return t==='INTEGER'?'MSG03 — O valor informado não é um número inteiro válido.'
+      : t==='DECIMAL'?'MSG04 — O valor informado não é um número decimal válido.'
+      : t==='BOOLEAN'?'MSG05 — O valor informado não é um booleano válido. Use "true" ou "false".'
+      : t==='JSON'?'MSG06 — O valor informado não é um JSON válido.'
+      : 'MSG02 — O valor é obrigatório.'; }
+
+  function cancelEdit(){
+    if(!editing) return;
+    const {td,i}=editing; td.classList.remove('editing');
+    const p=params[i];
+    td.innerHTML = valDisplay(p[3],p[4])+(i===4?'<span class="mk" style="right:-2px;top:-9px">10</span>':'');
+    editing=null;
+  }
+
+  // pending change carried into the confirm modal
+  let pending=null;
+  function openConfirm(i,d){
+    pending={i,d};
+    const p=params[i];
+    document.getElementById('cCod').textContent=p[1];
+    document.getElementById('cNome').textContent=p[2];
+    document.getElementById('cValFrom').textContent=p[4];
+    document.getElementById('cValTo').textContent=d.valTo;
+    document.getElementById('cOrfa').hidden = !p[5];
+    const ta=document.querySelector('#mC textarea'); ta.value=''; ta.style.borderColor='';
+    document.getElementById('mC').style.display='grid';
+  }
+  function closeC(cancel){
+    document.getElementById('mC').style.display='none';
+    if(cancel) cancelEdit();
+    pending=null;
+  }
+  function saveC(){
+    const ta=document.querySelector('#mC textarea');
+    if(!ta.value.trim()){ ta.style.borderColor='#d6336c'; alert('MSG02 — O campo Motivo é obrigatório.'); return; }
+    let restore=false;
+    if(pending){
+      const {i,d}=pending; const p=params[i];
+      restore = d.valTo===p[8] && p[4]!==p[8];
+      p[4]=d.valTo;
+      p[6]='Diego Cordeiro'; p[7]=new Date().toLocaleDateString('pt-BR');
+    }
+    document.getElementById('mC').style.display='none';
+    editing=null; pending=null;
+    render();
+    toast(restore?'MSG10 — Valor restaurado para o padrão do sistema.':'MSG01 — Parâmetro atualizado com sucesso.');
+  }
+
+  function restore(i){
+    const p=params[i];
+    if(!confirm(`MSG11 — Confirma restaurar o parâmetro "${p[2]}" para o valor padrão "${p[8]}"?`)) return;
+    openConfirm(i,{valTo:p[8]});
+  }
+
+  function openH(i){
+    const p=params[i];
+    document.getElementById('hCod').textContent=p[1];
+    document.getElementById('hSub').textContent=`${p[2]} · Módulo: ${p[0]}`;
+    document.getElementById('mH').style.display='grid';
+  }
+  function closeH(){document.getElementById('mH').style.display='none'}
+  function openF(){document.getElementById('mF').style.display='grid'}
+  function closeF(){document.getElementById('mF').style.display='none'}
+
+  function toast(msg){
+    const t=document.createElement('div');
+    t.textContent=msg;
+    t.style.cssText='position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:80;box-shadow:var(--shadow)';
+    document.body.appendChild(t); setTimeout(()=>t.remove(),2600);
+  }
+
+  function go(btn){
+    document.querySelectorAll('.proto-bar button[data-s]').forEach(b=>b.classList.toggle('on',b===btn));
+    closeF();closeC();closeH();cancelEdit();
+    const v=btn.dataset.view;
+    if(v==='filtro') openF();
+    if(v==='confirm') openConfirm(4,{valTo:'USD'});
+    if(v==='hist') openH(2);
+    window.scrollTo(0,0);
+  }
+
+  render();
+</script>
