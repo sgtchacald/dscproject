@@ -1,0 +1,44 @@
+# Proxy reverso unico da VPS: TLS automatico (Let's Encrypt) para prod e hml.
+# Na VPS: /opt/dscproject/proxy/{compose.yml,Caddyfile,.env}. Unico servico que publica 80/443.
+name: dscproject-proxy
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      PROD_DOMINIO: ${PROD_DOMINIO:?}
+      HML_DOMINIO: ${HML_DOMINIO:?}
+      ACME_EMAIL: ${ACME_EMAIL:?}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  # Certificados e chaves ACME: perder o volume forca reemissao (limite do Let's Encrypt)
+  caddy_data:
+  caddy_config:
+
+networks:
+  edge:
+    name: dscproject-edge
+    external: true

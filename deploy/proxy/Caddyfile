@@ -1,0 +1,44 @@
+{
+	email {$ACME_EMAIL}
+}
+
+(comum) {
+	# Actuator so e usado pelo healthcheck interno do Docker
+	@actuator path /actuator /actuator/*
+	respond @actuator 404
+
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	log {
+		output stdout
+		format json
+	}
+}
+
+{$PROD_DOMINIO} {
+	import comum
+	# lb_try_duration segura as requisicoes enquanto o container e recriado no deploy
+	reverse_proxy dscproject-prod-app:8080 {
+		lb_try_duration 60s
+		lb_try_interval 1s
+	}
+}
+
+www.{$PROD_DOMINIO} {
+	redir https://{$PROD_DOMINIO}{uri} permanent
+}
+
+{$HML_DOMINIO} {
+	import comum
+	header X-Robots-Tag "noindex, nofollow"
+	reverse_proxy dscproject-hml-app:8080 {
+		lb_try_duration 60s
+		lb_try_interval 1s
+	}
+}

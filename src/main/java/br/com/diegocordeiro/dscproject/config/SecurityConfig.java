@@ -23,7 +23,9 @@ public class SecurityConfig {
         "/usuarios/existe",
         "/usuarios/cadastrar-site",
         "/usuarios/recuperar-senha",
-        "/webjars/**", "/css/**", "/js/**", "/image/**"
+        "/webjars/**", "/css/**", "/js/**", "/image/**",
+        // Healthcheck do container (sem detalhes). O proxy bloqueia /actuator/** para a internet.
+        "/actuator/health", "/actuator/health/**"
     };
     private static final String[] PUBLICO_POST = {
         "/usuarios/cadastrar-site",

@@ -95,7 +95,9 @@ git merge --no-ff release/X.Y.Z -m "chore: Merge release/X.Y.Z em homologacao"
 git push origin homologacao
 ```
 
-> Faça o deploy para homologação e aguarde a aprovação.
+> O push em `homologacao` dispara o deploy automático em homologação
+> (workflow `entrega` — ver [Pipeline de CI/CD](../pipeline/pipeline-ci-cd.md#3-publicar-em-homologação)).
+> Valide em homologação e aguarde a aprovação.
 
 ### Novos commits com a release ainda pendente
 
@@ -123,7 +125,9 @@ git merge --no-ff release/X.Y.Z -m "chore: Merge release/X.Y.Z em main"
 git push origin main
 ```
 
-> Faça o deploy em produção a partir da `main` (ou da tag `vX.Y.Z`).
+> O push na `main` dispara o deploy de produção, que fica **aguardando aprovação**
+> no environment `production` do GitHub. A imagem é a mesma já testada em homologação
+> quando o conteúdo é igual — ver [Pipeline de CI/CD](../pipeline/pipeline-ci-cd.md#4-publicar-em-produção).
 
 ---
 

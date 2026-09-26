@@ -1,0 +1,269 @@
+# Entrega continua na VPS Hostinger (hml e prod na mesma maquina).
+#   push em homologacao -> CI -> imagem -> deploy automatico em homologacao
+#   push em main        -> reaproveita a imagem ja testada em hml (mesmo conteudo)
+#                          ou faz CI + imagem -> aguarda aprovacao -> producao
+#   Actions > entrega > Run workflow -> redeploy/rollback de uma tag ja publicada
+# Guia completo: docs/pipeline/pipeline-ci-cd.md
+name: entrega
+
+on:
+  push:
+    branches:
+      - homologacao
+      - main
+  workflow_dispatch:
+    inputs:
+      ambiente:
+        description: Ambiente (production so pode ser disparado a partir da main)
+        type: choice
+        options:
+          - homologacao
+          - production
+        required: true
+      tag:
+        description: SHA (40 caracteres) de uma imagem ja publicada no GHCR
+        type: string
+        required: true
+
+permissions: {}
+
+jobs:
+  resolver:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      ambiente: ${{ steps.alvo.outputs.ambiente }}
+      amb: ${{ steps.alvo.outputs.amb }}
+      tag: ${{ steps.alvo.outputs.tag }}
+      imagem: ${{ steps.alvo.outputs.imagem }}
+      arvore: ${{ steps.alvo.outputs.arvore }}
+      acao: ${{ steps.imagem.outputs.acao }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Define ambiente, tag e imagem
+        id: alvo
+        env:
+          EVENTO: ${{ github.event_name }}
+          INPUT_AMBIENTE: ${{ inputs.ambiente }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [[ "$EVENTO" == "workflow_dispatch" ]]; then
+            ambiente="$INPUT_AMBIENTE"; tag="$INPUT_TAG"
+          elif [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            ambiente=production; tag="$GITHUB_SHA"
+          else
+            ambiente=homologacao; tag="$GITHUB_SHA"
+          fi
+          case "$ambiente" in
+            production) amb=prod ;;
+            homologacao) amb=hml ;;
+            *) echo "::error::ambiente invalido: $ambiente"; exit 1 ;;
+          esac
+          [[ "$tag" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::tag invalida (use o SHA completo de 40 caracteres)"; exit 1; }
+          {
+            echo "ambiente=$ambiente"
+            echo "amb=$amb"
+            echo "tag=$tag"
+            echo "imagem=ghcr.io/${GITHUB_REPOSITORY,,}"
+            echo "arvore=$(git rev-parse 'HEAD^{tree}')"
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # build = imagem nova | promover = mesmo conteudo ja tem imagem (hml -> prod) | nenhuma = dispatch
+      - name: Decide se precisa de build
+        id: imagem
+        env:
+          EVENTO: ${{ github.event_name }}
+          IMAGEM: ${{ steps.alvo.outputs.imagem }}
+          TAG: ${{ steps.alvo.outputs.tag }}
+          ARVORE: ${{ steps.alvo.outputs.arvore }}
+        run: |
+          existe() { docker buildx imagetools inspect "$1" >/dev/null 2>&1; }
+          if [[ "$EVENTO" == "workflow_dispatch" ]]; then
+            existe "$IMAGEM:$TAG" || { echo "::error::imagem $IMAGEM:$TAG nao existe no GHCR"; exit 1; }
+            acao=nenhuma
+          elif existe "$IMAGEM:$TAG"; then
+            acao=nenhuma
+          elif existe "$IMAGEM:tree-$ARVORE"; then
+            acao=promover
+          else
+            acao=build
+          fi
+          echo "acao=$acao" >> "$GITHUB_OUTPUT"
+          echo "### $acao -> $IMAGEM:$TAG" >> "$GITHUB_STEP_SUMMARY"
+
+  ci:
+    needs: resolver
+    if: needs.resolver.outputs.acao == 'build'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+    with:
+      publicar-jar: true
+
+  imagem:
+    needs: [resolver, ci]
+    if: >-
+      always() && needs.resolver.result == 'success' &&
+      ((needs.resolver.outputs.acao == 'build' && needs.ci.result == 'success') ||
+        needs.resolver.outputs.acao == 'promover')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGEM: ${{ needs.resolver.outputs.imagem }}
+      TAG: ${{ needs.resolver.outputs.tag }}
+      ARVORE: ${{ needs.resolver.outputs.arvore }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.resolver.outputs.acao == 'build'
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: needs.resolver.outputs.acao == 'build'
+        with:
+          name: app-jar
+          path: target
+
+      - name: Versao do pom
+        id: versao
+        if: needs.resolver.outputs.acao == 'build'
+        run: |
+          jar="$(ls target/*.jar)"
+          versao="$(basename "$jar" .jar)"; versao="${versao#dscproject-}"
+          echo "versao=$versao" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push
+        if: needs.resolver.outputs.acao == 'build'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          provenance: true
+          sbom: true
+          build-args: |
+            VERSION=${{ steps.versao.outputs.versao }}
+            REVISION=${{ needs.resolver.outputs.tag }}
+          tags: |
+            ${{ env.IMAGEM }}:${{ env.TAG }}
+            ${{ env.IMAGEM }}:tree-${{ env.ARVORE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build once, deploy many: o commit da main aponta para a MESMA imagem testada em hml
+      - name: Promove imagem existente
+        if: needs.resolver.outputs.acao == 'promover'
+        run: docker buildx imagetools create --tag "$IMAGEM:$TAG" "$IMAGEM:tree-$ARVORE"
+
+  deploy:
+    needs: [resolver, imagem]
+    if: >-
+      always() && needs.resolver.result == 'success' &&
+      (needs.imagem.result == 'success' ||
+        (needs.imagem.result == 'skipped' && needs.resolver.outputs.acao == 'nenhuma'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: ${{ needs.resolver.outputs.ambiente }}
+      url: ${{ vars.APP_URL }}
+    concurrency:
+      group: deploy-${{ needs.resolver.outputs.amb }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    env:
+      AMB: ${{ needs.resolver.outputs.amb }}
+      TAG: ${{ needs.resolver.outputs.tag }}
+      VPS_HOST: ${{ vars.VPS_HOST }}
+      VPS_USUARIO: ${{ vars.VPS_USUARIO || 'deploy' }}
+      VPS_DIR: ${{ vars.VPS_DIR || '/opt/dscproject' }}
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Valida variaveis do environment
+        env:
+          ATOR: ${{ github.actor }}
+        run: |
+          [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]] || { echo "::error::vars.VPS_HOST ausente/invalida"; exit 1; }
+          [[ "$VPS_USUARIO" =~ ^[a-z_][a-z0-9_-]*$ ]] || { echo "::error::vars.VPS_USUARIO invalida"; exit 1; }
+          [[ "$VPS_DIR" =~ ^/[A-Za-z0-9._/-]+$ ]] || { echo "::error::vars.VPS_DIR invalida"; exit 1; }
+          [[ "$APP_URL" =~ ^https://[A-Za-z0-9.-]+$ ]] || { echo "::error::vars.APP_URL ausente/invalida (https://host, sem barra)"; exit 1; }
+          [[ "$ATOR" =~ ^[A-Za-z0-9-]+(\[bot\])?$ ]] || { echo "::error::github.actor inesperado"; exit 1; }
+
+      - name: Configura SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          [[ -n "$SSH_KEY" && -n "$KNOWN_HOSTS" ]] || { echo "::error::secrets VPS_SSH_KEY/VPS_KNOWN_HOSTS ausentes no environment"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host vps
+            HostName $VPS_HOST
+            User $VPS_USUARIO
+            IdentityFile ~/.ssh/id_deploy
+            IdentitiesOnly yes
+            BatchMode yes
+            StrictHostKeyChecking yes
+            ConnectTimeout 15
+            ServerAliveInterval 20
+          EOF
+
+      - name: Envia arquivos de deploy
+        run: |
+          tar -czf - -C deploy/app compose.yml deploy.sh backup-mysql.sh .env.example \
+            | ssh vps "set -e; d='$VPS_DIR/$AMB/.recebido'; rm -rf \"\$d\"; mkdir -p \"\$d\"; tar -xzf - -C \"\$d\""
+
+      - name: Atualiza proxy (so producao)
+        if: env.AMB == 'prod'
+        run: |
+          tar -czf - -C deploy/proxy compose.yml Caddyfile atualizar-proxy.sh .env.example \
+            | ssh vps "set -e; d='$VPS_DIR/proxy/.recebido'; rm -rf \"\$d\"; mkdir -p \"\$d\"; tar -xzf - -C \"\$d\""
+          ssh vps "bash '$VPS_DIR/proxy/.recebido/atualizar-proxy.sh'"
+
+      - name: Deploy
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ATOR: ${{ github.actor }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | ssh vps \
+            "bash '$VPS_DIR/$AMB/.recebido/deploy.sh' --ambiente '$AMB' --tag '$TAG' --ghcr-usuario '$ATOR'"
+
+      - name: Smoke test pela internet
+        run: |
+          curl -fsS --retry 10 --retry-delay 6 --retry-all-errors --max-time 15 \
+            -o /dev/null -w "HTTP %{http_code} em %{time_total}s\n" "$APP_URL/login"
+          echo "### ${AMB}: $TAG no ar em $APP_URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Limpa chave
+        if: always()
+        run: rm -f ~/.ssh/id_deploy

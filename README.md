@@ -75,3 +75,8 @@ do MySQL precisa estar de pé (`docker compose up -d`).
 - **"Manter-me conectado"** no login usa remember-me: o cookie sobrevive aos
   restarts do devtools, então você não precisa logar de novo. Em
   homologação/produção, defina `APP_REMEMBER_ME_KEY` no ambiente.
+
+## Deploy (homologação e produção)
+
+Pipeline GitHub Actions → GHCR → VPS Hostinger: veja [docs/pipeline/pipeline-ci-cd.md](docs/pipeline/pipeline-ci-cd.md).
+Fluxo de branches e releases: [docs/gitflow/git-workflow.md](docs/gitflow/git-workflow.md).

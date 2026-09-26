@@ -1,0 +1,94 @@
+# Stack de UM ambiente (hml ou prod): aplicacao + MySQL proprio.
+# Na VPS: /opt/dscproject/<hml|prod>/compose.yml, ao lado do .env (copiado de .env.example).
+# APP_TAG (SHA do commit) e passado pelo deploy.sh; nunca "latest".
+
+name: dscproject-${AMBIENTE:?defina AMBIENTE=hml|prod no .env}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    image: mysql:8.4.11@sha256:0744ee5ef89ce6ccfa13de3e579fe6b9e27f93dd70da9c06d2c908b1b193fb8d
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_SENHA:?}
+      MYSQL_DATABASE: ${MYSQL_BANCO:?}
+      MYSQL_USER: ${MYSQL_USUARIO:?}
+      MYSQL_PASSWORD: ${MYSQL_SENHA:?}
+      TZ: America/Sao_Paulo
+    # performance_schema desligado economiza ~300 MB por instancia numa VPS de 8 GB
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=${MYSQL_BUFFER_POOL:-256M}
+      - --max-connections=${MYSQL_MAX_CONEXOES:-40}
+      - --performance-schema=OFF
+      - --skip-name-resolve
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - interno
+    healthcheck:
+      # 127.0.0.1 (TCP) so responde depois do init; o servidor temporario do entrypoint roda sem rede
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysqladmin ping -h 127.0.0.1 -u root --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+    mem_limit: ${MYSQL_MEMORIA:-768m}
+    logging: *logging
+
+  app:
+    image: ${APP_IMAGEM:-ghcr.io/sgtchacald/dscproject}:${APP_TAG:?informe a tag (SHA do commit)}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${AMBIENTE}
+      TZ: America/Sao_Paulo
+      JAVA_TOOL_OPTIONS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}
+      MYSQL_HOST: db
+      MYSQL_BANCO: ${MYSQL_BANCO}
+      MYSQL_USUARIO: ${MYSQL_USUARIO}
+      MYSQL_SENHA: ${MYSQL_SENHA}
+      APP_BASE_URL: ${APP_BASE_URL:?}
+      APP_REMEMBER_ME_KEY: ${APP_REMEMBER_ME_KEY:?}
+      APP_ADMIN_LOGIN: ${APP_ADMIN_LOGIN:-}
+      APP_ADMIN_EMAIL: ${APP_ADMIN_EMAIL:-}
+      APP_ADMIN_SENHA: ${APP_ADMIN_SENHA:-}
+      APP_ADMIN_NOME: ${APP_ADMIN_NOME:-Administrador}
+      APP_ADMIN_OBRIGATORIO: ${APP_ADMIN_OBRIGATORIO:-true}
+      GMAIL_APP_EMAIL: ${GMAIL_APP_EMAIL:?}
+      GMAIL_APP_SENHA: ${GMAIL_APP_SENHA:?}
+    networks:
+      interno: {}
+      # Rede do Caddy; o alias e o nome usado no Caddyfile (dscproject-hml-app / dscproject-prod-app)
+      edge:
+        aliases:
+          - dscproject-${AMBIENTE}-app
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+    stop_grace_period: 30s
+    mem_limit: ${APP_MEMORIA:-1g}
+    logging: *logging
+
+volumes:
+  dbdata:
+
+networks:
+  # Sem saida para a internet e sem porta publicada: o banco so e visto pela app
+  interno:
+    internal: true
+  # Criada pelo deploy.sh / compose do proxy; da a app a saida para a internet (SMTP, Pluggy, Binance)
+  edge:
+    external: true
+    name: dscproject-edge
