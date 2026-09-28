@@ -6,12 +6,12 @@
         <div class="card-body p-0">
             <table class="table table-sm mb-0">
                 <tbody>
-                <tr th:if="${#lists.isEmpty(dashboard.contas)}">
+                <tr th:if="${#lists.isEmpty(dados.contas)}">
                     <td colspan="3" class="text-center text-secondary py-3">
                         Nenhuma conta cadastrada.
                     </td>
                 </tr>
-                <tr th:each="conta : ${dashboard.contas}">
+                <tr th:each="conta : ${dados.contas}">
                     <td>
                         <i class="ph ph-bank" aria-hidden="true"></i>
                         <span th:text="${conta.descricao}">Nome da Conta</span>

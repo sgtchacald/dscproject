@@ -1,17 +1,15 @@
 package br.com.diegocordeiro.dscproject.service.dashboard;
 
-import br.com.diegocordeiro.dscproject.dto.dashboards.DashboardFinanceiroDTO;
+import br.com.diegocordeiro.dscproject.dto.dashboards.cards.*;
 import br.com.diegocordeiro.dscproject.model.conta.Conta;
 import br.com.diegocordeiro.dscproject.model.usuario.Usuario;
 import br.com.diegocordeiro.dscproject.repository.cartao.CartaoCreditoRepository;
 import br.com.diegocordeiro.dscproject.repository.conta.ContaRepository;
 import br.com.diegocordeiro.dscproject.repository.despesa.DespesaRepository;
-import br.com.diegocordeiro.dscproject.repository.despesa.DespesaUsuarioRepository;
 import br.com.diegocordeiro.dscproject.repository.receita.ReceitaRepository;
 import br.com.diegocordeiro.dscproject.repository.usuario.UsuarioRepository;
 import br.com.diegocordeiro.dscproject.service.despesa.DespesaService;
 import br.com.diegocordeiro.dscproject.service.receita.ReceitaService;
-import org.springframework.data.repository.query.Param;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,9 +20,11 @@ import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true) // Aplica transação de leitura otimizada para todos os métodos públicos
 public class DashboardService {
 
     private final ContaRepository contaRepository;
@@ -35,7 +35,10 @@ public class DashboardService {
     private final DespesaService despesaService;
     private final CartaoCreditoRepository cartaoCreditoRepository;
 
-    public DashboardService(ContaRepository contaRepository, UsuarioRepository usuarioRepository, ReceitaService receitaService, DespesaService despesaService, CartaoCreditoRepository cartaoCreditoRepository, ReceitaRepository  receitaRepository, DespesaRepository despesaRepository) {
+    public DashboardService(ContaRepository contaRepository, UsuarioRepository usuarioRepository,
+                            ReceitaService receitaService, DespesaService despesaService,
+                            CartaoCreditoRepository cartaoCreditoRepository,
+                            ReceitaRepository receitaRepository, DespesaRepository despesaRepository) {
         this.contaRepository = contaRepository;
         this.usuarioRepository = usuarioRepository;
         this.receitaService = receitaService;
@@ -45,145 +48,85 @@ public class DashboardService {
         this.despesaRepository = despesaRepository;
     }
 
-    @Transactional(readOnly = true)
-    public DashboardFinanceiroDTO carregarDashboardFinanceiro(YearMonth competencia,Integer anoInicioParam, Integer anoFimParam) {
+    // MÉTODOS INDEPENDENTES POR CARTÃO (Isolamento para Carregamento Assíncrono via AJAX)
+
+    public Card1SaldoConsolidadoDTO carregarSaldoConsolidado() {
         Long usuarioId = obterUsuarioIdAutenticado();
-
-        DashboardFinanceiroDTO dto = new DashboardFinanceiroDTO();
-        dto.setCompetenciaSelecionada(competencia.toString());
-
-        // Card 1: Saldo Consolidado (C1)
         BigDecimal saldoConsolidado = contaRepository.calcularSaldoConsolidado(usuarioId);
-        dto.setSaldoConsolidado(saldoConsolidado != null ? saldoConsolidado : BigDecimal.ZERO);
+        return new Card1SaldoConsolidadoDTO(saldoConsolidado);
+    }
 
-        // Card 2: Saldo por Conta Bancária (C2)
+    public Card2SaldoContaDTO carregarSaldoConta() {
+        Long usuarioId = obterUsuarioIdAutenticado();
         List<Conta> contasAtivas = contaRepository.listarContasParaDashboard(usuarioId);
-        List<DashboardFinanceiroDTO.ContaResumoDTO> contasResumo = contasAtivas.stream()
-                .map(conta -> new DashboardFinanceiroDTO.ContaResumoDTO(
+
+        List<Card2SaldoContaDTO.ContaResumoDTO> contasResumo = contasAtivas.stream()
+                .map(conta -> new Card2SaldoContaDTO.ContaResumoDTO(
                         conta.getId(),
                         conta.getDescricao(),
                         conta.getTipo() != null ? conta.getTipo().getDescricao() : "",
                         conta.getSaldo(),
                         conta.isConsideraSaldo()
-                ))
-                .collect(Collectors.toList());
+                )).collect(Collectors.toList());
 
-        dto.setContas(contasResumo);
+        return new Card2SaldoContaDTO(contasResumo);
+    }
 
-
-        //card 3 pt1
+    public Card3ReceitasDespesasDTO carregarReceitasDespesas(YearMonth competencia) {
+        Long usuarioId = obterUsuarioIdAutenticado();
         BigDecimal totalReceitas = receitaService.somarPorCompetencia(competencia, usuarioId);
-        dto.setTotalReceitas(totalReceitas != null ? totalReceitas : BigDecimal.ZERO);
-
-        //card3 pt2
         BigDecimal totalDespesas = despesaService.somarCotaLiquidaPorCompetencia(competencia, usuarioId);
-        dto.setTotalDespesas(totalDespesas != null ? totalDespesas : BigDecimal.ZERO);
+        return new Card3ReceitasDespesasDTO(totalReceitas, totalDespesas);
+    }
 
-        // Card 4: Despesas por Categoria
-        List<DashboardFinanceiroDTO.CategoriaResumoDTO> despesasPorCategoria =
+    public Card4DespesasCategoriaDTO carregarDespesasPorCategoria(YearMonth competencia) {
+        Long usuarioId = obterUsuarioIdAutenticado();
+
+        // Supondo que você adaptou o método do DespesaService para retornar a nova classe CategoriaResumoDTO
+        List<Card4DespesasCategoriaDTO.CategoriaResumoDTO> despesasPorCategoria =
                 despesaService.buscarDespesasPorCategoriaParaDashboard(competencia, usuarioId);
-        dto.setDespesasPorCategoria(despesasPorCategoria);
-        dto.setConicGradientDespesas(calcularConicGradient(despesasPorCategoria));
 
-        // Card 5: Pagas vs Pendentes
-        DashboardFinanceiroDTO.StatusPagamentoResumoDTO statusPagamento =
-                despesaService.buscarResumoStatusPagamento(competencia, usuarioId);
-        dto.setStatusPagamento(statusPagamento);
-
-        // Card 6: Total Rateado por Pessoa
-        List<DashboardFinanceiroDTO.RateioPorContatoDTO> rateioPorContato =
-               despesaService .buscarResumoRateioPorContato(competencia, usuarioId);
-        dto.setRateioPorContato(rateioPorContato);
-
-        // Card 7: Limite Usado × Disponível por Cartão
-        List<DashboardFinanceiroDTO.CartaoLimiteResumoDTO> cartoesLimite =
-                buscarResumoLimiteCartoes(usuarioId);
-        dto.setCartoesLimite(cartoesLimite);
-
-        processarCard8Evolucao(dto, usuarioId, anoInicioParam, anoFimParam);
-
-        return dto;
+        String conicGradient = calcularConicGradient(despesasPorCategoria);
+        return new Card4DespesasCategoriaDTO(despesasPorCategoria, conicGradient);
     }
 
-    private Long obterUsuarioIdAutenticado() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
-            String login = ((UserDetails) authentication.getPrincipal()).getUsername();
-
-            // busca o usuario no banco pelo login usando o metodo dentro do UsuarioRepository
-            Usuario usuario = usuarioRepository.findByLogin(login)
-                    .orElseThrow(() -> new IllegalStateException("Usuário não encontrado: " + login));
-
-            return usuario.getId();
-        }
-        throw new IllegalStateException("Usuário autenticado não encontrado no contexto de segurança.");
-    }
-    private String calcularConicGradient(List<DashboardFinanceiroDTO.CategoriaResumoDTO> categorias) {
-        if (categorias == null || categorias.isEmpty()) {
-            return "conic-gradient(#69747f 0% 100%)";
-        }
-
-        // 1. soma o valor total de todas as categorias do mês
-        BigDecimal somaTotal = categorias.stream()
-                .map(DashboardFinanceiroDTO.CategoriaResumoDTO::getTotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (somaTotal.compareTo(BigDecimal.ZERO) == 0) {
-            return "conic-gradient(#69747f 0% 100%)";
-        }
-
-        // 2. constrói dinamicamente a string do conic-gradient com base nas percentagens
-        StringBuilder sb = new StringBuilder("conic-gradient(");
-        double acumuladoPercentual = 0.0;
-
-        for (int i = 0; i < categorias.size(); i++) {
-            DashboardFinanceiroDTO.CategoriaResumoDTO cat = categorias.get(i);
-
-            // calcula a percentagem da categoria
-            double percentual = cat.getTotal().doubleValue() / somaTotal.doubleValue() * 100.0;
-            double proximoAcumulado = acumuladoPercentual + percentual;
-
-            // Adiciona a cor e o intervalo de graus/percentagem no padrão CSS
-            sb.append(cat.getCor())
-                    .append(" ")
-                    .append(String.format(java.util.Locale.US, "%.2f", acumuladoPercentual))
-                    .append("% ")
-                    .append(String.format(java.util.Locale.US, "%.2f", proximoAcumulado))
-                    .append("%");
-
-            if (i < categorias.size() - 1) {
-                sb.append(", ");
-            }
-            acumuladoPercentual = proximoAcumulado;
-        }
-        sb.append(")");
-        return sb.toString();
+    public Card5StatusPagamentoDTO carregarStatusPagamento(YearMonth competencia) {
+        Long usuarioId = obterUsuarioIdAutenticado();
+        return despesaService.buscarResumoStatusPagamento(competencia, usuarioId);
     }
 
-    @Transactional(readOnly = true)
-    public List<DashboardFinanceiroDTO.CartaoLimiteResumoDTO> buscarResumoLimiteCartoes(Long usuarioId) {
-        // Executa a query C7 do documento de análise
+    public Card6RateioContatoDTO carregarRateioPorContato(YearMonth competencia) {
+        Long usuarioId = obterUsuarioIdAutenticado();
+        List<Card6RateioContatoDTO.RateioPorContatoDTO> rateioPorContato =
+                despesaService.buscarResumoRateioPorContato(competencia, usuarioId);
+        return new Card6RateioContatoDTO(rateioPorContato);
+    }
+
+    public Card7LimiteCartaoDTO carregarLimiteCartoes() {
+        Long usuarioId = obterUsuarioIdAutenticado();
         List<Object[]> resultados = cartaoCreditoRepository.buscarLimiteUsadoPorCartao(usuarioId);
 
-        return resultados.stream().map(obj -> {
+        List<Card7LimiteCartaoDTO.CartaoLimiteResumoDTO> cartoes = resultados.stream().map(obj -> {
             Long cartaoId = ((Number) obj[0]).longValue();
             String descricao = (String) obj[1];
-            BigDecimal limite = (BigDecimal) obj[2]; // Pode ser nulo (RN11)
+            BigDecimal limite = (BigDecimal) obj[2];
             BigDecimal usado = (BigDecimal) obj[3];
-
-            return new DashboardFinanceiroDTO.CartaoLimiteResumoDTO(cartaoId, descricao, limite, usado);
+            return new Card7LimiteCartaoDTO.CartaoLimiteResumoDTO(cartaoId, descricao, limite, usado);
         }).toList();
+
+        return new Card7LimiteCartaoDTO(cartoes);
     }
-    @Transactional(readOnly = true)
-    public void processarCard8Evolucao(DashboardFinanceiroDTO dto, Long usuarioId, Integer anoInicioParam, Integer anoFimParam) {
+
+    public Card8EvolucaoDTO carregarEvolucao(YearMonth competenciaBase, Integer anoInicioParam, Integer anoFimParam) {
+        Long usuarioId = obterUsuarioIdAutenticado();
+        Card8EvolucaoDTO dto = new Card8EvolucaoDTO();
+        dto.setCompetenciaSelecionada(competenciaBase.toString());
+
         List<Integer> anosDisponiveis = despesaRepository.buscarAnosDisponiveisParaEvolucao(usuarioId);
         dto.setAnosDisponiveis(anosDisponiveis);
 
         if (anosDisponiveis == null || anosDisponiveis.isEmpty()) {
-            dto.setRotulosGrafico(List.of());
-            dto.setReceitasGrafico(List.of());
-            dto.setDespesasGrafico(List.of());
-            return;
+            return dto; // Retorna DTO vazio se não houver anos disponíveis
         }
 
         int anoCorrente = java.time.LocalDate.now().getYear();
@@ -210,15 +153,62 @@ public class DashboardService {
             dto.setModoMensal(false);
             processarEvolucaoAnual(dto, usuarioId, anoInicio, anoFim);
         }
+
+        return dto;
     }
 
-    private void processarEvolucaoMensal(DashboardFinanceiroDTO dto, Long usuarioId, int ano) {
-        String anoStr = String.valueOf(ano);
-        List<Object[]> receitasBrutas = receitaRepository.somarReceitasPorMesEAnual(usuarioId, anoStr);
-        List<Object[]> despesasBrutas = despesaRepository.somarDespesasPorMesEAnual(usuarioId, anoStr);
+    // METODOS AUXILIARES PRIVADOS
 
-        java.util.Map<String, BigDecimal> mapReceitas = converterParaMapa(receitasBrutas);
-        java.util.Map<String, BigDecimal> mapDespesas = converterParaMapa(despesasBrutas);
+    private Long obterUsuarioIdAutenticado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            String login = ((UserDetails) authentication.getPrincipal()).getUsername();
+            Usuario usuario = usuarioRepository.findByLogin(login)
+                    .orElseThrow(() -> new IllegalStateException("Usuário não encontrado: " + login));
+            return usuario.getId();
+        }
+        throw new IllegalStateException("Usuário autenticado não encontrado no contexto de segurança.");
+    }
+
+    private String calcularConicGradient(List<Card4DespesasCategoriaDTO.CategoriaResumoDTO> categorias) {
+        if (categorias == null || categorias.isEmpty()) {
+            return "conic-gradient(#69747f 0% 100%)";
+        }
+
+        BigDecimal somaTotal = categorias.stream()
+                .map(Card4DespesasCategoriaDTO.CategoriaResumoDTO::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (somaTotal.compareTo(BigDecimal.ZERO) == 0) {
+            return "conic-gradient(#69747f 0% 100%)";
+        }
+
+        StringBuilder sb = new StringBuilder("conic-gradient(");
+        double acumuladoPercentual = 0.0;
+
+        for (int i = 0; i < categorias.size(); i++) {
+            Card4DespesasCategoriaDTO.CategoriaResumoDTO cat = categorias.get(i);
+            double percentual = cat.getTotal().doubleValue() / somaTotal.doubleValue() * 100.0;
+            double proximoAcumulado = acumuladoPercentual + percentual;
+
+            sb.append(cat.getCor())
+                    .append(" ")
+                    .append(String.format(java.util.Locale.US, "%.2f", acumuladoPercentual)).append("% ")
+                    .append(String.format(java.util.Locale.US, "%.2f", proximoAcumulado)).append("%");
+
+            if (i < categorias.size() - 1) {
+                sb.append(", ");
+            }
+            acumuladoPercentual = proximoAcumulado;
+        }
+        sb.append(")");
+        return sb.toString();
+    }
+
+    private void processarEvolucaoMensal(Card8EvolucaoDTO dto, Long usuarioId, int ano) {
+        String anoStr = String.valueOf(ano);
+        Map<String, BigDecimal> mapReceitas = converterParaMapa(receitaRepository.somarReceitasPorMesEAnual(usuarioId, anoStr));
+        Map<String, BigDecimal> mapDespesas = converterParaMapa(despesaRepository.somarDespesasPorMesEAnual(usuarioId, anoStr));
 
         List<String> rotulos = List.of("Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez");
         List<BigDecimal> receitas = new ArrayList<>();
@@ -235,15 +225,12 @@ public class DashboardService {
         dto.setDespesasGrafico(despesas);
     }
 
-    private void processarEvolucaoAnual(DashboardFinanceiroDTO dto, Long usuarioId, int anoInicio, int anoFim) {
+    private void processarEvolucaoAnual(Card8EvolucaoDTO dto, Long usuarioId, int anoInicio, int anoFim) {
         String inicioStr = String.valueOf(anoInicio);
         String fimStr = String.valueOf(anoFim);
 
-        List<Object[]> receitasBrutas = receitaRepository.somarReceitasPorIntervaloAnos(usuarioId, inicioStr, fimStr);
-        List<Object[]> despesasBrutas = despesaRepository.somarDespesasPorIntervaloAnos(usuarioId, inicioStr, fimStr);
-
-        java.util.Map<String, BigDecimal> mapReceitas = converterParaMapa(receitasBrutas);
-        java.util.Map<String, BigDecimal> mapDespesas = converterParaMapa(despesasBrutas);
+        Map<String, BigDecimal> mapReceitas = converterParaMapa(receitaRepository.somarReceitasPorIntervaloAnos(usuarioId, inicioStr, fimStr));
+        Map<String, BigDecimal> mapDespesas = converterParaMapa(despesaRepository.somarDespesasPorIntervaloAnos(usuarioId, inicioStr, fimStr));
 
         List<String> rotulos = new ArrayList<>();
         List<BigDecimal> receitas = new ArrayList<>();
@@ -261,14 +248,12 @@ public class DashboardService {
         dto.setDespesasGrafico(despesas);
     }
 
-    private java.util.Map<String, BigDecimal> converterParaMapa(List<Object[]> resultados) {
-        java.util.Map<String, BigDecimal> mapa = new java.util.HashMap<>();
+    private Map<String, BigDecimal> converterParaMapa(List<Object[]> resultados) {
+        Map<String, BigDecimal> mapa = new java.util.HashMap<>();
         if (resultados != null) {
             for (Object[] obj : resultados) {
                 if (obj[0] != null) {
-                    String chave = obj[0].toString();
-                    BigDecimal valor = (BigDecimal) obj[1];
-                    mapa.put(chave, valor != null ? valor : BigDecimal.ZERO);
+                    mapa.put(obj[0].toString(), (BigDecimal) obj[1]);
                 }
             }
         }

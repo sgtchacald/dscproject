@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DashboardFinanceiroDTO {
+public class DashboardFinanceiroDTOOLD {
     private String competenciaSelecionada;
 
     // Card 1 Saldo Consolidado
@@ -13,7 +13,7 @@ public class DashboardFinanceiroDTO {
     // Card 2
     private List<ContaResumoDTO> contas;
 
-    public DashboardFinanceiroDTO() {}
+    public DashboardFinanceiroDTOOLD() {}
 
     public String getCompetenciaSelecionada() {
         return competenciaSelecionada;
