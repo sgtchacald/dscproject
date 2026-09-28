@@ -1,6 +1,9 @@
 package br.com.diegocordeiro.dscproject.service.despesa;
 
-import br.com.diegocordeiro.dscproject.dto.dashboards.DashboardFinanceiroDTO;
+import br.com.diegocordeiro.dscproject.dto.dashboards.DashboardFinanceiroDTOOLD;
+import br.com.diegocordeiro.dscproject.dto.dashboards.cards.Card4DespesasCategoriaDTO;
+import br.com.diegocordeiro.dscproject.dto.dashboards.cards.Card5StatusPagamentoDTO;
+import br.com.diegocordeiro.dscproject.dto.dashboards.cards.Card6RateioContatoDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.ContatoRapidoDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.ContatoRateioDTO;
 import br.com.diegocordeiro.dscproject.dto.despesa.DespesaEdicaoDTO;
@@ -1050,7 +1053,7 @@ public class DespesaService {
     }
 
     @Transactional(readOnly = true)
-    public List<DashboardFinanceiroDTO.CategoriaResumoDTO> buscarDespesasPorCategoriaParaDashboard(YearMonth competencia, Long usuarioId) {
+    public List<Card4DespesasCategoriaDTO.CategoriaResumoDTO> buscarDespesasPorCategoriaParaDashboard(YearMonth competencia, Long usuarioId) {
         List<Object[]> resultados = despesaRepository.somarPorCategoriaECompetencia(competencia, usuarioId);
 
         return resultados.stream().map(obj -> {
@@ -1058,15 +1061,15 @@ public class DespesaService {
             String cor = (String) obj[1];       // Pega a cor cadastrada (ex: #e0a800)
             BigDecimal total = (BigDecimal) obj[2]; // Pega a soma da cota líquida
 
-            return new DashboardFinanceiroDTO.CategoriaResumoDTO(categoria, cor, total);
+            return new Card4DespesasCategoriaDTO.CategoriaResumoDTO(categoria, cor, total);
         }).toList();
     }
 
     @Transactional(readOnly = true)
-    public DashboardFinanceiroDTO.StatusPagamentoResumoDTO buscarResumoStatusPagamento(YearMonth competencia, Long usuarioId) {
+    public Card5StatusPagamentoDTO buscarResumoStatusPagamento(YearMonth competencia, Long usuarioId) {
         List<Object[]> resultados = despesaRepository.somarPorStatusPagamentoECompetencia(competencia, usuarioId);
 
-        DashboardFinanceiroDTO.StatusPagamentoResumoDTO resumo = new DashboardFinanceiroDTO.StatusPagamentoResumoDTO();
+        Card5StatusPagamentoDTO resumo = new Card5StatusPagamentoDTO();
         BigDecimal totalGeral = BigDecimal.ZERO;
 
         for (Object[] obj : resultados) {
@@ -1083,16 +1086,17 @@ public class DespesaService {
 
             totalGeral = totalGeral.add(valor);
         }
+
         if (totalGeral.compareTo(BigDecimal.ZERO) > 0) {
             resumo.setPctPagas(resumo.getPagas().multiply(new BigDecimal("100")).divide(totalGeral, 0, java.math.RoundingMode.HALF_UP).intValue());
             resumo.setPctPendentes(resumo.getPendentes().multiply(new BigDecimal("100")).divide(totalGeral, 0, java.math.RoundingMode.HALF_UP).intValue());
             resumo.setPctNaoSeAplica(resumo.getNaoSeAplica().multiply(new BigDecimal("100")).divide(totalGeral, 0, java.math.RoundingMode.HALF_UP).intValue());
         }
 
-        return resumo;
+        return resumo; // Retorna o objeto novo
     }
 
-    public List<DashboardFinanceiroDTO.RateioPorContatoDTO> buscarResumoRateioPorContato(YearMonth competencia, @Param("usuarioId") Long usuarioId) {
+    public List<Card6RateioContatoDTO.RateioPorContatoDTO> buscarResumoRateioPorContato(YearMonth competencia, @Param("usuarioId") Long usuarioId) {
 
         List<Object[]> resultados = despesaUsuarioRepository.somarRateioPorContatoECompetencia(competencia, usuarioId);
 
@@ -1100,18 +1104,18 @@ public class DespesaService {
             return new java.util.ArrayList<>();
         }
 
-        List<DashboardFinanceiroDTO.RateioPorContatoDTO> listaRateios = resultados.stream().map(obj ->{
+        List<Card6RateioContatoDTO.RateioPorContatoDTO> listaRateios = resultados.stream().map(obj ->{
             Long contatoId = ((Number)obj[0]).longValue();
             String nome = (String) obj[1];
             BigDecimal total = (BigDecimal)obj[2];
 
-            return new DashboardFinanceiroDTO.RateioPorContatoDTO(contatoId, nome, total);
+            return new Card6RateioContatoDTO.RateioPorContatoDTO(contatoId, nome, total);
         }).collect(java.util.stream.Collectors.toList());
 
         BigDecimal maiorValor = listaRateios.get(0).getTotal();
 
         if(maiorValor.compareTo(BigDecimal.ZERO) > 0) {
-            for (DashboardFinanceiroDTO.RateioPorContatoDTO rateio : listaRateios) {
+            for (Card6RateioContatoDTO.RateioPorContatoDTO rateio : listaRateios) {
 
                 int porcentual = rateio.getTotal().multiply(new BigDecimal("100")).divide(maiorValor, 0, java.math.RoundingMode.HALF_UP).intValue();
 
