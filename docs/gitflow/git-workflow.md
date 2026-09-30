@@ -126,7 +126,7 @@ git push origin main
 ```
 
 > O push na `main` dispara o deploy de produção, que fica **aguardando aprovação**
-> no environment `production` do GitHub. A imagem é a mesma já testada em homologação
+> no environment `producao` do GitHub. A imagem é a mesma já testada em homologação
 > quando o conteúdo é igual — ver [Pipeline de CI/CD](../pipeline/pipeline-ci-cd.md#4-publicar-em-produção).
 
 ---

@@ -14,11 +14,11 @@ on:
   workflow_dispatch:
     inputs:
       ambiente:
-        description: Ambiente (production so pode ser disparado a partir da main)
+        description: Ambiente (producao so pode ser disparado a partir da main)
         type: choice
         options:
           - homologacao
-          - production
+          - producao
         required: true
       tag:
         description: SHA (40 caracteres) de uma imagem ja publicada no GHCR
@@ -56,12 +56,12 @@ jobs:
           if [[ "$EVENTO" == "workflow_dispatch" ]]; then
             ambiente="$INPUT_AMBIENTE"; tag="$INPUT_TAG"
           elif [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            ambiente=production; tag="$GITHUB_SHA"
+            ambiente=producao; tag="$GITHUB_SHA"
           else
             ambiente=homologacao; tag="$GITHUB_SHA"
           fi
           case "$ambiente" in
-            production) amb=prod ;;
+            producao) amb=prod ;;
             homologacao) amb=hml ;;
             *) echo "::error::ambiente invalido: $ambiente"; exit 1 ;;
           esac

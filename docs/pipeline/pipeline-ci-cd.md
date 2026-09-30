@@ -39,7 +39,7 @@ Nada de `git pull` ou build na VPS.
 2. `ci` — build e testes (só quando há `build`).
 3. `imagem` — `docker build` + push `ghcr.io/sgtchacald/dscproject:<sha>` e `:tree-<árvore>`,
    com SBOM e proveniência. Em `promover`, só cria a tag `<sha>` apontando para a imagem existente.
-4. `deploy` — environment `homologacao` ou `production`; envia `deploy/app/` para a VPS e roda
+4. `deploy` — environment `homologacao` ou `producao`; envia `deploy/app/` para a VPS e roda
    `deploy.sh`: dump do banco → `docker compose up --wait` → rollback automático se o healthcheck falhar.
    Em produção também aplica `deploy/proxy/`. Fecha com `GET <APP_URL>/login` pela internet.
 
@@ -66,7 +66,7 @@ Cada ambiente tem seu próprio MySQL (volume próprio, sem porta publicada, rede
 | | Homologação | Produção |
 |---|---|---|
 | Branch | `homologacao` | `main` |
-| Environment GitHub | `homologacao` | `production` (aprovação manual) |
+| Environment GitHub | `homologacao` | `producao` (aprovação manual) |
 | URL (`vars.APP_URL`) | `https://hml.dscproject.com.br` | `https://dscproject.com.br` (`www` redireciona para o raiz) |
 | Perfil Spring | `hml` (`application-hml.properties`) | `prod` (`application-prod.properties`) |
 | Pasta na VPS | `/opt/dscproject/hml` | `/opt/dscproject/prod` |
@@ -98,7 +98,7 @@ Siga o passo 5 do [git-workflow](../gitflow/git-workflow.md#5-aprovado--tag-de-p
 (tag `vX.Y.Z` + merge na `main` + push):
 
 1. O workflow `entrega` roda e **para no job `deploy`**, aguardando revisão.
-2. Aprove em **Actions → run → Review deployments → production → Approve and deploy**
+2. Aprove em **Actions → run → Review deployments → producao → Approve and deploy**
    (o GitHub também avisa por e-mail).
 3. Depois do deploy, confira `https://dscproject.com.br`.
 
@@ -122,7 +122,7 @@ quando o healthcheck da nova versão falha. Histórico em `deploys.log`.
    - `ambiente` e `tag` (SHA completo).
 3. Produção pede aprovação de novo.
 
-Via `gh`: `gh workflow run entrega.yml --ref main -f ambiente=production -f tag=<sha>`.
+Via `gh`: `gh workflow run entrega.yml --ref main -f ambiente=producao -f tag=<sha>`.
 
 **Direto na VPS** (GitHub fora do ar; a imagem precisa estar no disco — o deploy mantém 14 dias):
 
@@ -142,7 +142,7 @@ depois dele — decisão humana.
 
 Nunca coloque valores neste documento, no código ou em chat.
 
-**GitHub — por environment** (Settings → Environments → `homologacao` / `production`; mesmos nomes nos dois):
+**GitHub — por environment** (Settings → Environments → `homologacao` / `producao`; mesmos nomes nos dois):
 
 | Nome | Tipo | Para quê |
 |---|---|---|
@@ -285,20 +285,20 @@ falha se ele não responder). Confira a propagação antes de subir o proxy:
    *Fork pull request workflows*: exigir aprovação para colaboradores externos.
 2. **Settings → Environments**:
    - `homologacao`: *Deployment branches* = *Selected branches* → `homologacao`. Sem revisor.
-   - `production`: *Deployment branches* → `main`; *Required reviewers* = você;
+   - `producao`: *Deployment branches* → `main`; *Required reviewers* = você;
      **desmarque** *Prevent self-review* (senão você não consegue aprovar o próprio deploy).
 3. Secrets e vars de cada environment (seção 6). Pelo `gh`, no seu PC:
 
    ```bash
    ssh-keyscan -t ed25519 31.97.28.150 > kh && ssh-keygen -lf kh   # igual à fingerprint da 7.4
-   for e in homologacao production; do
+   for e in homologacao producao; do
      gh secret set VPS_KNOWN_HOSTS --env $e < kh
      gh variable set VPS_HOST --env $e --body 31.97.28.150
    done
    gh secret set VPS_SSH_KEY --env homologacao < ci-dscproject-hml
-   gh secret set VPS_SSH_KEY --env production  < ci-dscproject-prod
+   gh secret set VPS_SSH_KEY --env producao  < ci-dscproject-prod
    gh variable set APP_URL --env homologacao --body https://hml.dscproject.com.br
-   gh variable set APP_URL --env production  --body https://dscproject.com.br
+   gh variable set APP_URL --env producao  --body https://dscproject.com.br
    rm ci-dscproject-hml ci-dscproject-prod kh      # a chave privada só existe no GitHub
    ```
 
@@ -399,7 +399,7 @@ Leia primeiro o **passo que falhou** e a **primeira** mensagem de erro, não a �
 |---|---|---|
 | `ci` vermelho em *Build e testes* | teste quebrado | baixe o artifact `relatorios-teste` do run |
 | `resolver`: `imagem ... nao existe no GHCR` | tag errada no dispatch | use o SHA completo de um deploy anterior |
-| `deploy` parado em *Waiting* | aguardando aprovação de `production` | *Review deployments* |
+| `deploy` parado em *Waiting* | aguardando aprovação de `producao` | *Review deployments* |
 | `deploy`: *environment protection rules* / branch não permitida | dispatch da branch errada | *Use workflow from* `main` (prod) ou `homologacao` (hml) |
 | `Host key verification failed` | `VPS_KNOWN_HOSTS` desatualizado (VPS reinstalada) | refaça o `ssh-keyscan`, confira a fingerprint na VPS |
 | `Permission denied (publickey)` | chave errada no environment ou `authorized_keys` | confira `/home/deploy/.ssh/authorized_keys` |
