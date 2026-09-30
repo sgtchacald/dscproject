@@ -1,0 +1,3 @@
+# Contexto minimo: a imagem so precisa do JAR gerado pelo Maven
+*
+!target/*.jar
